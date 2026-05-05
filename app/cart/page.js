@@ -1,9 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useStore } from '../../context/StoreContext';
-import Navbar from '../../components/Navbar';
-import Footer from '../../components/Footer';
+import { useStore } from '@/context/StoreContext';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
 
 export default function CartPage() {
   const { cart, cartTotal, updateQuantity, removeFromCart, clearCart } = useStore();

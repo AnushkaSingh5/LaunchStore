@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { storeData } from '../data/mockData';
+import { storeData } from '@/data/mockData';
 
 export default function Footer() {
   return (

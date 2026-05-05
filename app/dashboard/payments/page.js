@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { dashboardService } from '../../../services/dashboardService';
-import Toggle from '../../../components/UI/Toggle';
-import Select from '../../../components/UI/Select';
-import Input from '../../../components/UI/Input';
-import Button from '../../../components/UI/Button';
+import { dashboardService } from '@/services/dashboardService';
+import Toggle from '@/components/UI/Toggle';
+import Select from '@/components/UI/Select';
+import Input from '@/components/UI/Input';
+import Button from '@/components/UI/Button';
 
 export default function PaymentsPage() {
   const [payments, setPayments] = useState(null);

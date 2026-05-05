@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { dashboardService } from '../../../services/dashboardService';
-import Table from '../../../components/UI/Table';
-import Button from '../../../components/UI/Button';
-import Modal from '../../../components/UI/Modal';
-import Input from '../../../components/UI/Input';
-import Select from '../../../components/UI/Select';
+import { dashboardService } from '@/services/dashboardService';
+import Table from '@/components/UI/Table';
+import Button from '@/components/UI/Button';
+import Modal from '@/components/UI/Modal';
+import Input from '@/components/UI/Input';
+import Select from '@/components/UI/Select';
 
 export default function ProductsPage() {
   const [products, setProducts] = useState([]);

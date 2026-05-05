@@ -1,4 +1,4 @@
-import { StoreProvider } from "../context/StoreContext";
+import { StoreProvider } from '@/context/StoreContext';
 import "./globals.css";
 
 export const metadata = {

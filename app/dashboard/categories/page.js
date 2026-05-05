@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { dashboardService } from '../../../services/dashboardService';
-import Table from '../../../components/UI/Table';
-import Button from '../../../components/UI/Button';
-import Modal from '../../../components/UI/Modal';
-import Input from '../../../components/UI/Input';
+import { dashboardService } from '@/services/dashboardService';
+import Table from '@/components/UI/Table';
+import Button from '@/components/UI/Button';
+import Modal from '@/components/UI/Modal';
+import Input from '@/components/UI/Input';
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState([]);

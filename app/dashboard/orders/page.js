@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { dashboardService } from '../../../services/dashboardService';
-import Table from '../../../components/UI/Table';
-import Button from '../../../components/UI/Button';
-import Select from '../../../components/UI/Select';
-import Modal from '../../../components/UI/Modal';
+import { dashboardService } from '@/services/dashboardService';
+import Table from '@/components/UI/Table';
+import Button from '@/components/UI/Button';
+import Select from '@/components/UI/Select';
+import Modal from '@/components/UI/Modal';
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState([]);

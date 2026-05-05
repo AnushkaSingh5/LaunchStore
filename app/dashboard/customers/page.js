@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { dashboardService } from '../../../services/dashboardService';
-import Table from '../../../components/UI/Table';
-import Button from '../../../components/UI/Button';
+import { dashboardService } from '@/services/dashboardService';
+import Table from '@/components/UI/Table';
+import Button from '@/components/UI/Button';
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState([]);

@@ -1,4 +1,4 @@
-import { storeData } from '../data/mockData';
+import { storeData } from '@/data/mockData';
 
 export default function Hero() {
   return (

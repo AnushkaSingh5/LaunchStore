@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { useStore } from '../context/StoreContext';
-import { storeData } from '../data/mockData';
+import { useStore } from '@/context/StoreContext';
+import { storeData } from '@/data/mockData';
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);

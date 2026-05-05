@@ -1,4 +1,4 @@
-import { products, categories, storeData } from '../data/mockData';
+import { products, categories, storeData } from '@/data/mockData';
 
 export const storeService = {
   getProducts: async () => {

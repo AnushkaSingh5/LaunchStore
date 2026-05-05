@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useStore } from '../context/StoreContext';
+import { useStore } from '@/context/StoreContext';
 
 export default function ProductCard({ product }) {
   const { addToCart, toggleWishlist, isInWishlist } = useStore();

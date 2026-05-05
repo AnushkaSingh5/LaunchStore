@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { dashboardService } from '../../../services/dashboardService';
-import Input from '../../../components/UI/Input';
-import Select from '../../../components/UI/Select';
-import Toggle from '../../../components/UI/Toggle';
-import Button from '../../../components/UI/Button';
+import { dashboardService } from '@/services/dashboardService';
+import Input from '@/components/UI/Input';
+import Select from '@/components/UI/Select';
+import Toggle from '@/components/UI/Toggle';
+import Button from '@/components/UI/Button';
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState(null);

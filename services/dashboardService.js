@@ -1,4 +1,4 @@
-import { mockDashboardData } from '../data/mockDashboardData';
+import { mockDashboardData } from '@/data/mockDashboardData';
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 

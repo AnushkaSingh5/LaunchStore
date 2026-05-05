@@ -1,6 +1,6 @@
 'use client';
 
-import { useStore } from '../context/StoreContext';
+import { useStore } from '@/context/StoreContext';
 
 export default function CategoryCard({ category }) {
   const { selectedCategory, setSelectedCategory } = useStore();

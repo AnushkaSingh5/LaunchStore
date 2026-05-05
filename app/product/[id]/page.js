@@ -2,11 +2,11 @@
 
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { useStore } from '../../../context/StoreContext';
-import { storeService } from '../../../services/storeService';
-import Navbar from '../../../components/Navbar';
-import Footer from '../../../components/Footer';
-import ProductCard from '../../../components/ProductCard';
+import { useStore } from '@/context/StoreContext';
+import { storeService } from '@/services/storeService';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
+import ProductCard from '@/components/ProductCard';
 
 export default function ProductDetails({ params }) {
   const { id } = use(params);
