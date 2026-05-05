@@ -53,7 +53,7 @@ export default function ProductCard({ product }) {
         <div className="product-meta">
           <span className="product-cat">{product.category}</span>
           <div className="product-rating">
-            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="star"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="currentColor" className="star"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
             <span>4.8</span>
           </div>
         </div>
@@ -79,6 +79,7 @@ export default function ProductCard({ product }) {
           gap: 12px;
           background: var(--white);
           height: 100%;
+          min-width: 0;
           transition: var(--transition-smooth);
         }
 
@@ -120,15 +121,31 @@ export default function ProductCard({ product }) {
           display: flex;
           flex-direction: column;
           gap: 8px;
-          opacity: 0;
-          transform: translateX(10px);
-          transition: var(--transition-smooth);
           z-index: 10;
+          
+          /* Forced Hidden State */
+          opacity: 0 !important;
+          visibility: hidden !important;
+          pointer-events: none !important;
+          transform: translateX(10px);
+          transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s ease;
         }
 
-        .product-card:hover .visual-actions {
-          opacity: 1;
-          transform: translateX(0);
+        /* Desktop Hover Behavior - Only active on true hoverable devices */
+        @media (hover: hover) {
+          .product-card:hover .visual-actions {
+            opacity: 1 !important;
+            visibility: visible !important;
+            pointer-events: auto !important;
+            transform: translateX(0);
+          }
+        }
+
+        /* Strictly hide for touch-only devices to ensure they NEVER show by accident */
+        @media (hover: none) {
+          .visual-actions {
+            display: none !important;
+          }
         }
 
         .action-circle {
@@ -158,9 +175,9 @@ export default function ProductCard({ product }) {
           position: absolute;
           top: 12px;
           left: 12px;
-          padding: 4px 12px;
+          padding: 4px 10px;
           border-radius: 20px;
-          font-size: 10px;
+          font-size: 9px;
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.5px;
@@ -184,6 +201,7 @@ export default function ProductCard({ product }) {
           flex-direction: column;
           gap: 6px;
           flex: 1;
+          min-width: 0;
         }
 
         .product-meta {
@@ -193,24 +211,27 @@ export default function ProductCard({ product }) {
         }
 
         .product-cat {
-          font-size: 11px;
+          font-size: 10px;
           font-weight: 600;
           color: var(--text-sub);
           text-transform: uppercase;
           letter-spacing: 0.5px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
 
         .product-rating {
           display: flex;
           align-items: center;
           gap: 4px;
-          font-size: 11px;
+          font-size: 10px;
           font-weight: 700;
           color: #f59e0b;
         }
 
         .product-name {
-          font-size: 16px;
+          font-size: 15px;
           font-weight: 600;
           color: var(--text-main);
           white-space: nowrap;
@@ -229,22 +250,25 @@ export default function ProductCard({ product }) {
           align-items: center;
           margin-top: auto;
           padding-top: 8px;
+          gap: 8px;
         }
 
         .product-price {
-          font-size: 18px;
+          font-size: 16px;
           font-weight: 700;
           color: var(--primary);
+          white-space: nowrap;
         }
 
         .buy-btn {
-          padding: 8px 24px;
+          padding: 8px 16px;
           background: var(--primary);
           color: var(--white);
           border-radius: 10px;
-          font-size: 14px;
+          font-size: 13px;
           font-weight: 700;
           transition: var(--transition-fast);
+          flex-shrink: 0;
         }
 
         .buy-btn:hover {
@@ -253,9 +277,31 @@ export default function ProductCard({ product }) {
         }
 
         @media (max-width: 768px) {
-          .visual-actions {
-            opacity: 1;
-            transform: translateX(0);
+          .product-card {
+            padding: 8px;
+            gap: 6px;
+          }
+          .product-body {
+            padding: 4px;
+          }
+          .product-name {
+            font-size: 13px;
+          }
+          .product-price {
+            font-size: 14px;
+          }
+          .buy-btn {
+            padding: 6px 12px;
+            font-size: 11px;
+            border-radius: 8px;
+          }
+          .action-circle {
+            width: 30px;
+            height: 30px;
+          }
+          .action-circle svg {
+            width: 14px;
+            height: 14px;
           }
         }
       `}</style>

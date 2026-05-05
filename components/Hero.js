@@ -114,6 +114,7 @@ export default function Hero() {
           border-radius: 12px;
           font-weight: 600;
           box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+          transition: var(--transition-smooth);
         }
 
         .primary-btn:hover {
@@ -129,6 +130,7 @@ export default function Hero() {
           border-radius: 12px;
           border: 1px solid rgba(255, 255, 255, 0.3);
           font-weight: 600;
+          transition: var(--transition-smooth);
         }
 
         .secondary-btn:hover {
@@ -137,16 +139,41 @@ export default function Hero() {
         }
 
         @media (max-width: 768px) {
+          .hero-section {
+            padding-top: 160px; /* Increased padding for the 2-row mobile navbar */
+            padding-bottom: 20px;
+          }
           .hero-card {
             height: auto;
-            padding: 40px 24px;
+            padding: 40px 20px;
             text-align: center;
+            border-radius: 20px;
+          }
+          .hero-content {
+            max-width: 100%;
+          }
+          .hero-title {
+            font-size: 28px;
+            margin-bottom: 12px;
+          }
+          .hero-subtitle {
+            font-size: 14px;
+            margin-bottom: 24px;
           }
           .hero-actions {
             flex-direction: column;
+            width: 100%;
+            gap: 12px;
+          }
+          .primary-btn, .secondary-btn {
+            width: 100%;
+            padding: 12px 24px;
+            font-size: 14px;
           }
           .welcome-tag {
-            margin-bottom: 16px;
+            margin-bottom: 12px;
+            font-size: 11px;
+            padding: 4px 12px;
           }
         }
       `}</style>

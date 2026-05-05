@@ -1,9 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useStore } from '../../context/StoreContext';
-import Navbar from '../../components/Navbar';
-import Footer from '../../components/Footer';
+import { useStore } from '../../../../context/StoreContext';
+import Navbar from '../../../../components/Navbar';
+import Footer from '../../../../components/Footer';
 
 export default function CartPage() {
   const { cart, cartTotal, updateQuantity, removeFromCart, clearCart } = useStore();
@@ -18,7 +18,7 @@ export default function CartPage() {
 
       <main className="container main-content">
         <h1 className="page-title">Shopping Cart</h1>
-        
+
         {cart.length === 0 ? (
           <div className="empty-cart dashboard-card fade-in">
             <div className="empty-icon">🛍️</div>
@@ -33,15 +33,14 @@ export default function CartPage() {
                 <span>Product</span>
                 <span>Quantity</span>
                 <span>Total</span>
-                <span></span>
               </div>
-              
+
               {cart.map((item) => (
                 <div key={item.id} className="cart-item">
                   <div className="item-info">
                     <div className="item-image">
                       <img src={item.image} alt={item.name} />
-                      <button className="mobile-remove-btn" onClick={() => removeFromCart(item.id)}>
+                      <button className="remove-btn" onClick={() => removeFromCart(item.id)}>
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
                       </button>
                     </div>
@@ -63,10 +62,6 @@ export default function CartPage() {
                   <div className="item-total">
                     ${(item.price * item.quantity).toLocaleString()}
                   </div>
-
-                  <button className="remove-btn" onClick={() => removeFromCart(item.id)}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
-                  </button>
                 </div>
               ))}
 
@@ -78,7 +73,7 @@ export default function CartPage() {
 
             <div className="cart-summary dashboard-card fade-in">
               <h2 className="summary-title">Order Summary</h2>
-              
+
               <div className="summary-row">
                 <span>Subtotal</span>
                 <span>${cartTotal.toLocaleString()}</span>
@@ -91,14 +86,14 @@ export default function CartPage() {
                 <span>Shipping</span>
                 <span className="free">FREE</span>
               </div>
-              
+
               <div className="summary-total">
                 <span>Total</span>
                 <span>${total.toLocaleString()}</span>
               </div>
 
               <button className="checkout-btn">Proceed to Checkout</button>
-              
+
               <div className="payment-icons">
                 <span>Secure payments via</span>
                 <div className="icons">💳 🏦 📦</div>
@@ -182,7 +177,7 @@ export default function CartPage() {
 
         .items-header {
           display: grid;
-          grid-template-columns: 1fr 140px 100px 60px;
+          grid-template-columns: 1fr 140px 100px;
           gap: 40px;
           padding: 24px 40px;
           border-bottom: 1px solid var(--secondary);
@@ -195,7 +190,7 @@ export default function CartPage() {
 
         .cart-item {
           display: grid;
-          grid-template-columns: 1fr 140px 100px 60px;
+          grid-template-columns: 1fr 140px 100px;
           gap: 40px;
           align-items: center;
           padding: 30px 40px;
@@ -209,6 +204,7 @@ export default function CartPage() {
         }
 
         .item-image {
+          position: relative;
           width: 100px;
           height: 100px;
           border-radius: 12px;
@@ -244,7 +240,7 @@ export default function CartPage() {
           color: var(--accent);
         }
 
-        .quantity-selector {
+         .quantity-selector {
           display: flex;
           align-items: center;
           background: var(--bg-main);
@@ -277,18 +273,29 @@ export default function CartPage() {
         }
 
         .remove-btn {
+          position: absolute;
+          top: 8px;
+          right: 8px;
           color: #ef4444;
-          opacity: 0.6;
+          background: rgba(255, 255, 255, 0.9);
+          border-radius: 50%;
+          padding: 6px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          opacity: 0;
           transition: var(--transition-fast);
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .item-image:hover .remove-btn {
+          opacity: 1;
         }
 
         .remove-btn:hover {
           opacity: 1;
           transform: scale(1.1);
-        }
-
-        .mobile-remove-btn {
-          display: none;
+          background: white;
         }
 
         .cart-footer {
@@ -386,50 +393,51 @@ export default function CartPage() {
         }
 
         @media (max-width: 768px) {
+          .page-title {
+            font-size: 28px;
+            margin-bottom: 24px;
+            padding: 0 10px;
+          }
           .items-header {
             display: none;
           }
           .cart-item {
             grid-template-columns: 1fr;
-            gap: 20px;
-            padding: 24px;
+            gap: 16px;
+            padding: 24px 15px;
             position: relative;
           }
           .item-info {
             flex-direction: column;
             text-align: center;
+            gap: 16px;
           }
           .item-image {
             width: 100%;
-            max-width: 120px;
+            max-width: 180px;
             height: auto;
             aspect-ratio: 1/1;
             margin: 0 auto;
-            position: relative;
-          }
-          .mobile-remove-btn {
-            display: flex;
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            color: #ef4444;
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 50%;
-            padding: 6px;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-            transition: var(--transition-fast);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-          }
-          .item-image:hover .mobile-remove-btn {
-            opacity: 1;
           }
           .item-quantity, .item-total {
             justify-self: center;
           }
+          .item-total {
+            border-top: 1px solid var(--secondary);
+            width: 100%;
+            text-align: center;
+            padding-top: 12px;
+          }
           .remove-btn {
-            display: none;
+            opacity: 1; /* Always show on mobile since there is no hover */
+          }
+          .cart-footer {
+            padding: 20px 15px;
+            flex-direction: column;
+            gap: 16px;
+          }
+          .cart-summary {
+            padding: 24px 15px;
           }
         }
       `}</style>

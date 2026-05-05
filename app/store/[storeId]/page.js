@@ -52,12 +52,12 @@ export default function StorePage() {
       
       <div className="container main-content">
         {/* Categories Section */}
-        <section className="section-wrapper">
+        <section className="section-wrapper categories-section">
           <div className="section-header">
             <h2 className="section-title">Explore Categories</h2>
-            <p className="section-subtitle">Browse our curated selection of home essentials.</p>
+            <p className="section-subtitle">Curated collections for your home.</p>
           </div>
-          <div className="categories-grid scroll-mobile">
+          <div className="categories-grid">
             {categories.map(category => (
               <CategoryCard key={category.id} category={category} />
             ))}
@@ -126,6 +126,10 @@ export default function StorePage() {
           flex-direction: column;
           gap: 40px;
           padding-bottom: 80px;
+        }
+
+        .section-wrapper {
+          margin-bottom: 20px;
         }
 
         .section-card {
@@ -237,33 +241,48 @@ export default function StorePage() {
         }
 
         @media (max-width: 768px) {
-          .scroll-mobile {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-            gap: 10px;
+          .main-content {
+            gap: 20px;
           }
-          .scroll-mobile :global(.category-tile) {
-            height: 90px;
-            padding: 10px;
+          .section-wrapper {
+            margin-bottom: 0;
           }
-          .scroll-mobile :global(.tile-title) {
+          .categories-section {
+            padding: 0;
+          }
+          .section-title {
+            font-size: 22px;
+            margin-bottom: 4px;
+          }
+          .section-subtitle {
             font-size: 13px;
           }
-          .scroll-mobile :global(.tile-link) {
-            display: none;
+          .section-header {
+            margin-bottom: 20px;
+          }
+          .categories-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
           }
           .products-grid {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 16px;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
           }
           .section-card {
-            padding: 30px 20px;
+            padding: 30px 12px;
+            margin-top: 10px;
+          }
+          .title-box {
+            justify-content: center;
+          }
+          .section-header.align-left {
+            text-align: center;
           }
         }
 
         @media (max-width: 480px) {
-          .products-grid {
-            grid-template-columns: 1fr;
+          .categories-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
           }
         }
       `}</style>

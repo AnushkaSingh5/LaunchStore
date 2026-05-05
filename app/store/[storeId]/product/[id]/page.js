@@ -42,7 +42,7 @@ export default function ProductDetails({ params }) {
   return (
     <div className="product-details-page">
       <Navbar />
-      
+
       <main className="container main-content">
         <div className="product-layout dashboard-card fade-in">
           <div className="product-gallery">
@@ -59,15 +59,15 @@ export default function ProductDetails({ params }) {
 
             <h1 className="title">{product.name}</h1>
             <p className="price">${product.price.toLocaleString()}</p>
-            
+
             <div className="rating">
               <div className="stars">★★★★★</div>
               <span className="reviews">(128 reviews)</span>
             </div>
 
             <p className="description">
-              Experience unparalleled quality and minimalist design. This {product.name.toLowerCase()} 
-              is crafted from premium materials to elevate your living space and provide 
+              Experience unparalleled quality and minimalist design. This {product.name.toLowerCase()}
+              is crafted from premium materials to elevate your living space and provide
               lasting comfort and style.
             </p>
 
@@ -77,7 +77,7 @@ export default function ProductDetails({ params }) {
                 <span>{quantity}</span>
                 <button onClick={() => setQuantity(quantity + 1)}>+</button>
               </div>
-              <button 
+              <button
                 className="add-to-cart-btn"
                 onClick={handleBuyNow}
               >
@@ -238,8 +238,6 @@ export default function ProductDetails({ params }) {
 
         .add-to-cart-btn {
           flex: 1;
-          width: 100%;
-          padding: 16px;
           background: var(--primary);
           color: var(--white);
           font-weight: 700;

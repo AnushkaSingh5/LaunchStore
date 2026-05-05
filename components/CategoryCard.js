@@ -17,14 +17,14 @@ export default function CategoryCard({ category }) {
       </div>
       <div className="tile-content">
         <h3 className="tile-title">{category.title}</h3>
-        <span className="tile-link">{isActive ? 'Currently Viewing' : 'Browse Category'}</span>
+        <span className="tile-link">{isActive ? 'Viewing' : 'Explore'}</span>
       </div>
 
       <style jsx>{`
         .category-tile {
           position: relative;
           cursor: pointer;
-          height: 280px;
+          height: 240px;
           display: flex;
           flex-direction: column;
           justify-content: flex-end;
@@ -39,7 +39,7 @@ export default function CategoryCard({ category }) {
         }
 
         .category-tile:hover {
-          transform: scale(1.03);
+          transform: scale(1.02);
           box-shadow: var(--shadow-md);
         }
 
@@ -65,12 +65,12 @@ export default function CategoryCard({ category }) {
           left: 0;
           width: 100%;
           height: 100%;
-          background: linear-gradient(0deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.2) 60%, transparent 100%);
+          background: linear-gradient(0deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.1) 60%, transparent 100%);
           transition: var(--transition-fast);
         }
 
         .category-tile:hover .tile-overlay, .category-tile.active .tile-overlay {
-          background: linear-gradient(0deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.3) 60%, transparent 100%);
+          background: linear-gradient(0deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.2) 60%, transparent 100%);
         }
 
         .tile-content {
@@ -80,9 +80,9 @@ export default function CategoryCard({ category }) {
         }
 
         .tile-title {
-          font-size: 20px;
+          font-size: 18px;
           font-weight: 700;
-          margin-bottom: 6px;
+          margin-bottom: 4px;
           transition: var(--transition-fast);
         }
 
@@ -93,7 +93,7 @@ export default function CategoryCard({ category }) {
         }
 
         .tile-link {
-          font-size: 13px;
+          font-size: 12px;
           font-weight: 500;
           opacity: 0.8;
           text-transform: uppercase;
@@ -102,9 +102,22 @@ export default function CategoryCard({ category }) {
           transition: var(--transition-fast);
         }
 
-        .category-tile:hover .tile-link, .category-tile.active .tile-link {
-          opacity: 1;
-          transform: translateX(4px);
+        @media (max-width: 768px) {
+          .category-tile {
+            height: 160px;
+            padding: 15px;
+            border-radius: 16px;
+          }
+          .tile-title {
+            font-size: 15px;
+            margin-bottom: 2px;
+          }
+          .tile-link {
+            font-size: 10px;
+          }
+          .category-tile.active {
+            border-width: 2px;
+          }
         }
       `}</style>
     </div>
