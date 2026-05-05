@@ -7,7 +7,7 @@ import CategoryCard from '../../components/CategoryCard';
 import ProductCard from '../../components/ProductCard';
 import Footer from '../../components/Footer';
 import { useStore } from '../../context/StoreContext';
-import { storeService } from '../../services/storeService';
+import { storeService } from '../../../services/storeService';
 
 export default function StorePage() {
   const { selectedCategory, setSelectedCategory, searchQuery } = useStore();
@@ -37,9 +37,9 @@ export default function StorePage() {
   const filteredProducts = products.filter((product) => {
     const q = (searchQuery || '').toLowerCase().trim();
     const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
-    const matchesSearch = !q || 
-                          product.name.toLowerCase().includes(q) ||
-                          product.category.toLowerCase().includes(q);
+    const matchesSearch = !q ||
+      product.name.toLowerCase().includes(q) ||
+      product.category.toLowerCase().includes(q);
     return matchesCategory && matchesSearch;
   });
 
@@ -49,7 +49,7 @@ export default function StorePage() {
     <main className="dashboard-store">
       <Navbar />
       <Hero />
-      
+
       <div className="container main-content">
         {/* Categories Section */}
         <section className="section-wrapper categories-section">
@@ -93,7 +93,7 @@ export default function StorePage() {
               {filteredProducts.length} {filteredProducts.length === 1 ? 'item' : 'items'} found
             </p>
           </div>
-          
+
           {loading ? (
             <div className="loading-state">Loading products...</div>
           ) : filteredProducts.length > 0 ? (
