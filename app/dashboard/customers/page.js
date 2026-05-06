@@ -19,19 +19,23 @@ export default function CustomersPage() {
   }, []);
 
   const columns = [
-    { field: 'name', label: 'Customer', render: (row) => (
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>
-          {row.name.charAt(0)}
+    {
+      field: 'name', label: 'Customer', render: (row) => (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>
+            {row.name.charAt(0)}
+          </div>
+          <span style={{ fontWeight: 600 }}>{row.name}</span>
         </div>
-        <span style={{fontWeight: 600}}>{row.name}</span>
-      </div>
-    )},
+      )
+    },
     { field: 'email', label: 'Email', render: (row) => <a href={`mailto:${row.email}`} style={{ color: 'var(--primary)' }}>{row.email}</a> },
     { field: 'phone', label: 'Phone' },
-    { field: 'orders', label: 'Total Orders', render: (row) => (
-      <span style={{ fontWeight: 600, padding: '4px 12px', background: '#f1f5f9', borderRadius: '20px' }}>{row.orders}</span>
-    )},
+    {
+      field: 'orders', label: 'Total Orders', render: (row) => (
+        <span style={{ fontWeight: 600, padding: '4px 12px', background: '#f1f5f9', borderRadius: '20px' }}>{row.orders}</span>
+      )
+    },
   ];
 
   const actions = (row) => (

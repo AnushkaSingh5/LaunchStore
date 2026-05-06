@@ -9,11 +9,23 @@ export const dashboardService = {
       .filter(o => o.status !== 'Cancelled')
       .reduce((sum, o) => sum + o.total, 0);
     
+    const chartData = [
+      { name: '30 Apr', sales: 70 },
+      { name: '1 May', sales: 220 },
+      { name: '2 May', sales: 200 },
+      { name: '3 May', sales: 300 },
+      { name: '4 May', sales: 498 },
+      { name: '5 May', sales: 250 },
+      { name: '6 May', sales: 350 },
+    ];
+
     return {
       totalSales,
       totalOrders: mockDashboardData.orders.length,
       activeProducts: mockDashboardData.products.filter(p => p.status === 'Published').length,
-      totalCustomers: mockDashboardData.customers.length
+      totalCustomers: mockDashboardData.customers.length,
+      recentOrders: mockDashboardData.orders.slice(0, 4),
+      chartData
     };
   },
 

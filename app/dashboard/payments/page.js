@@ -48,28 +48,28 @@ export default function PaymentsPage() {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '24px', maxWidth: '800px' }}>
-        
+
         <div className="dashboard-card" style={{ padding: '30px' }}>
           <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '24px', borderBottom: '1px solid var(--secondary)', paddingBottom: '16px' }}>
             Payment Gateways
           </h3>
-          <Toggle 
-            label="Credit / Debit Cards" 
+          <Toggle
+            label="Credit / Debit Cards"
             description="Accept payments via Visa, Mastercard, and Amex via Stripe."
-            checked={payments.enableCard} 
-            onChange={(val) => handleChange('enableCard', val)} 
+            checked={payments.enableCard}
+            onChange={(val) => handleChange('enableCard', val)}
           />
-          <Toggle 
-            label="UPI / Local Wallets" 
+          <Toggle
+            label="UPI / Local Wallets"
             description="Enable Razorpay/Paytm integration for local payments."
-            checked={payments.enableUPI} 
-            onChange={(val) => handleChange('enableUPI', val)} 
+            checked={payments.enableUPI}
+            onChange={(val) => handleChange('enableUPI', val)}
           />
-          <Toggle 
-            label="Cash on Delivery (COD)" 
+          <Toggle
+            label="Cash on Delivery (COD)"
             description="Allow customers to pay when the product arrives."
-            checked={payments.enableCOD} 
-            onChange={(val) => handleChange('enableCOD', val)} 
+            checked={payments.enableCOD}
+            onChange={(val) => handleChange('enableCOD', val)}
           />
         </div>
 
@@ -77,9 +77,9 @@ export default function PaymentsPage() {
           <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '24px', borderBottom: '1px solid var(--secondary)', paddingBottom: '16px' }}>
             Shipping Rules
           </h3>
-          
-          <Select 
-            label="Shipping Cost Calculation" 
+
+          <Select
+            label="Shipping Cost Calculation"
             value={payments.shippingType}
             onChange={(e) => handleChange('shippingType', e.target.value)}
             options={[
@@ -91,8 +91,8 @@ export default function PaymentsPage() {
 
           {payments.shippingType === 'flat' && (
             <div style={{ marginTop: '16px' }}>
-              <Input 
-                label="Flat Shipping Fee ($)" 
+              <Input
+                label="Flat Shipping Fee ($)"
                 type="number"
                 value={payments.flatFee}
                 onChange={(e) => handleChange('flatFee', Number(e.target.value))}
@@ -101,8 +101,8 @@ export default function PaymentsPage() {
           )}
 
           <div style={{ marginTop: '24px' }}>
-            <Select 
-              label="Shipping Handled By" 
+            <Select
+              label="Shipping Handled By"
               value={payments.shippingHandler}
               onChange={(e) => handleChange('shippingHandler', e.target.value)}
               options={[
