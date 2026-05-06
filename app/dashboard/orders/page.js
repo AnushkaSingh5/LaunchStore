@@ -36,11 +36,6 @@ export default function OrdersPage() {
 
   return (
     <div className="orders-page">
-      <div className="breadcrumbs">
-        Dashboard <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
-        <span className="current">Orders</span>
-      </div>
-
       <div className="header-row">
         <div className="header-left">
           <h1>Orders</h1>
