@@ -57,7 +57,7 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggle }) {
                     onClick={() => { if(window.innerWidth <= 1024) onClose(); }}
                   >
                     <span className={styles.icon} style={{ color: isActive ? '#fff' : item.color }}>{item.icon}</span>
-                    {item.label}
+                    <span className={styles.linkLabel}>{item.label}</span>
                   </Link>
                 </li>
               );

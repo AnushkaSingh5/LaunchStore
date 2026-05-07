@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { dashboardService } from '@/services/dashboardService';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useDashboard } from '@/context/DashboardContext';
 
 const Sparkline = ({ color, path }) => (
   <svg width="60" height="24" viewBox="0 0 60 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -18,18 +20,41 @@ const Sparkline = ({ color, path }) => (
 );
 
 export default function DashboardOverview() {
+  const router = useRouter();
+  const { products, orders, customers, loading: contextLoading } = useDashboard();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [chartLoading, setChartLoading] = useState(false);
+  const [timeframe, setTimeframe] = useState('Last 7 Days');
+  const [isTimeframeOpen, setIsTimeframeOpen] = useState(false);
 
   useEffect(() => {
     const fetchStats = async () => {
       setLoading(true);
       const data = await dashboardService.getOverviewStats();
-      setStats(data);
+      // Overwrite dynamic counts with context data
+      setStats({
+        ...data,
+        totalOrders: orders.length,
+        activeProducts: products.filter(p => p.status === 'Published').length,
+        totalCustomers: customers.length,
+        recentOrders: orders.slice(0, 4)
+      });
       setLoading(false);
     };
     fetchStats();
-  }, []);
+  }, [products, orders, customers]);
+
+  useEffect(() => {
+    if (loading) return;
+    const updateChartData = async () => {
+      setChartLoading(true);
+      const data = await dashboardService.getOverviewStats(timeframe);
+      setStats(prev => ({ ...prev, chartData: data.chartData }));
+      setChartLoading(false);
+    };
+    updateChartData();
+  }, [timeframe]);
 
   if (loading) return <div style={{ padding: '40px' }}>Loading dashboard...</div>;
 
@@ -109,11 +134,29 @@ export default function DashboardOverview() {
         <div className="chart-card dashboard-card">
           <div className="card-header">
             <h3>Sales Overview</h3>
-            <button className="dropdown-btn">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-              Last 7 Days
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-            </button>
+            <div className="dropdown-container">
+              <button className="dropdown-btn" onClick={() => setIsTimeframeOpen(!isTimeframeOpen)}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                {timeframe}
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: isTimeframeOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </button>
+              {isTimeframeOpen && (
+                <div className="dropdown-menu">
+                  {['Last 7 Days', 'Last 30 Days', 'Last 12 Months', 'All Time'].map(option => (
+                    <button 
+                      key={option} 
+                      className={`dropdown-item ${timeframe === option ? 'active' : ''}`}
+                      onClick={() => {
+                        setTimeframe(option);
+                        setIsTimeframeOpen(false);
+                      }}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
           
           <div className="chart-title">
@@ -124,7 +167,7 @@ export default function DashboardOverview() {
             </div>
           </div>
 
-          <div className="chart-container">
+          <div className={`chart-container ${chartLoading ? 'loading' : ''}`}>
             <ResponsiveContainer width="100%" height={250}>
               <AreaChart data={stats.chartData} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
                 <defs>
@@ -144,6 +187,11 @@ export default function DashboardOverview() {
                 <Area type="monotone" dataKey="sales" stroke="#8b5cf6" strokeWidth={3} fillOpacity={1} fill="url(#colorSales)" activeDot={{ r: 6, fill: '#8b5cf6', stroke: '#fff', strokeWidth: 2 }} />
               </AreaChart>
             </ResponsiveContainer>
+            {chartLoading && (
+              <div className="chart-loader-overlay">
+                <div className="shimmer"></div>
+              </div>
+            )}
           </div>
 
           <div className="chart-metrics">
@@ -180,7 +228,7 @@ export default function DashboardOverview() {
         <div className="recent-orders-card dashboard-card">
           <div className="card-header">
             <h3>Recent Orders</h3>
-            <button className="view-all-btn">View All Orders</button>
+            <button className="view-all-btn" onClick={() => router.push('/dashboard/orders')}>View All Orders</button>
           </div>
           <div className="orders-list">
             {stats.recentOrders.map(order => (
@@ -199,7 +247,7 @@ export default function DashboardOverview() {
               </div>
             ))}
           </div>
-          <button className="go-to-orders-btn">
+          <button className="go-to-orders-btn" onClick={() => router.push('/dashboard/orders')}>
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
             Go to Orders
           </button>
@@ -253,13 +301,22 @@ export default function DashboardOverview() {
 
         .stat-card {
           background: #fff;
-          border-radius: 20px;
-          padding: 20px;
+          border-radius: 24px;
+          padding: 24px;
           box-shadow: 0 2px 12px rgba(0,0,0,0.02);
           display: flex;
           flex-direction: column;
           gap: 16px;
           overflow: hidden;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          border: 1px solid #f1f5f9;
+          cursor: pointer;
+        }
+
+        .stat-card:hover {
+          transform: translateY(-5px);
+          box-shadow: 0 12px 30px rgba(0,0,0,0.06);
+          border-color: rgba(139, 92, 246, 0.2);
         }
 
         .stat-card-inner {
@@ -337,6 +394,10 @@ export default function DashboardOverview() {
           color: #1e293b;
         }
 
+        .dropdown-container {
+          position: relative;
+        }
+
         .dropdown-btn {
           display: flex;
           align-items: center;
@@ -349,6 +410,57 @@ export default function DashboardOverview() {
           font-weight: 600;
           color: #475569;
           cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .dropdown-btn:hover {
+          border-color: #8b5cf6;
+          color: #8b5cf6;
+        }
+
+        .dropdown-menu {
+          position: absolute;
+          top: calc(100% + 8px);
+          right: 0;
+          background: #fff;
+          border: 1px solid #e2e8f0;
+          border-radius: 12px;
+          padding: 8px;
+          width: 160px;
+          box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+          z-index: 100;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          animation: dropdownFade 0.2s ease-out;
+        }
+
+        @keyframes dropdownFade {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        .dropdown-item {
+          padding: 8px 12px;
+          border-radius: 8px;
+          font-size: 13px;
+          font-weight: 600;
+          color: #64748b;
+          background: none;
+          border: none;
+          text-align: left;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .dropdown-item:hover {
+          background: #f5f3ff;
+          color: #8b5cf6;
+        }
+
+        .dropdown-item.active {
+          background: #8b5cf6;
+          color: #fff;
         }
 
         .chart-title {
@@ -385,6 +497,34 @@ export default function DashboardOverview() {
 
         .chart-container {
           margin-bottom: 24px;
+          position: relative;
+          transition: opacity 0.3s ease;
+        }
+
+        .chart-container.loading {
+          opacity: 0.5;
+        }
+
+        .chart-loader-overlay {
+          position: absolute;
+          top: 0; left: 0; right: 0; bottom: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          pointer-events: none;
+        }
+
+        .shimmer {
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.05), transparent);
+          background-size: 200% 100%;
+          animation: shimmer 1.5s infinite;
+        }
+
+        @keyframes shimmer {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
         }
 
         .chart-metrics {

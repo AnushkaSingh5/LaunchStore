@@ -8,6 +8,33 @@ export default function CustomersPage() {
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  
+  const [filters, setFilters] = useState({
+    type: [],
+    activity: [],
+    spent: 'All',
+    orders: 'All',
+    region: 'All Regions',
+    dateRange: 'all',
+    sortBy: 'newest'
+  });
+
+  const mockCustomers = [
+    { id: 1, name: 'Alice Smith', email: 'alice@example.com', phone: '+1 234 567 8900', orders: 8, spent: 780, type: 'Returning Customers', activity: 'Active Recently (7 Days)', region: 'USA', date: '2023-10-20', lastOrder: '2 May 2026', color: '#f5f3ff', textColor: '#8b5cf6', initial: 'A' },
+    { id: 2, name: 'Bob Jones', email: 'bob@example.com', phone: '+1 234 567 8901', orders: 5, spent: 620, type: 'New Customers', activity: 'Active Recently (7 Days)', region: 'India', date: '2024-05-01', lastOrder: '5 May 2026', color: '#f0fdf4', textColor: '#22c55e', initial: 'B' },
+    { id: 3, name: 'Charlie Brown', email: 'charlie@example.com', phone: '+1 234 567 8902', orders: 12, spent: 1250, type: 'VIP Customers', activity: 'Active Recently (7 Days)', region: 'UK', date: '2022-12-15', lastOrder: '6 May 2026', color: '#fffbeb', textColor: '#f59e0b', initial: 'C' },
+    { id: 4, name: 'Diana Prince', email: 'diana@example.com', phone: '+1 234 567 8903', orders: 0, spent: 0, type: 'Guest Customers', activity: 'Never Purchased', region: 'Europe', date: '2024-05-07', lastOrder: '-', color: '#fef2f2', textColor: '#ef4444', initial: 'D' },
+    { id: 5, name: 'Ethan Hunt', email: 'ethan@impossible.com', phone: '+1 234 567 8904', orders: 2, spent: 150, type: 'Returning Customers', activity: 'Inactive (30+ Days)', region: 'Asia', date: '2023-01-10', lastOrder: '15 Mar 2026', color: '#eff6ff', textColor: '#3b82f6', initial: 'E' },
+    { id: 6, name: 'Fiona Gallagher', email: 'fiona@shameless.com', phone: '+1 234 567 8905', orders: 1, spent: 45, type: 'New Customers', activity: 'Active Recently (7 Days)', region: 'USA', date: '2024-04-28', lastOrder: '30 Apr 2026', color: '#f5f3ff', textColor: '#8b5cf6', initial: 'F' },
+  ];
+
+  useEffect(() => {
+    setCustomers(mockCustomers);
+    setLoading(false);
+  }, []);
 
   const stats = [
     { label: 'Total Customers', value: '4', sub: 'All time customers', color: '#f5f3ff', iconColor: '#8b5cf6', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> },
@@ -16,18 +43,92 @@ export default function CustomersPage() {
     { label: 'New Customers', value: '2', sub: 'This month', trend: '+ 25%', color: '#eff6ff', iconColor: '#3b82f6', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="19" y1="8" x2="19" y2="14"></line><line x1="22" y1="11" x2="16" y2="11"></line></svg> },
   ];
 
-  const mockCustomers = [
-    { id: 1, name: 'Alice Smith', email: 'alice@example.com', phone: '+1 234 567 8900', orders: 3, spent: 450, color: '#f5f3ff', textColor: '#8b5cf6', initial: 'A' },
-    { id: 2, name: 'Bob Jones', email: 'bob@example.com', phone: '+1 234 567 8901', orders: 1, spent: 199, color: '#f0fdf4', textColor: '#22c55e', initial: 'B' },
-    { id: 3, name: 'Charlie Brown', email: 'charlie@example.com', phone: '+1 234 567 8902', orders: 5, spent: 899, color: '#fffbeb', textColor: '#f59e0b', initial: 'C' },
-    { id: 4, name: 'Diana Prince', email: 'diana@example.com', phone: '+1 234 567 8903', orders: 0, spent: 0, color: '#fef2f2', textColor: '#ef4444', initial: 'D' },
-  ];
+  const filteredCustomers = customers.filter(cust => {
+    const matchesSearch = cust.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                         cust.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         cust.phone.includes(searchQuery);
+    
+    const matchesType = filters.type.length === 0 || filters.type.includes(cust.type);
+    const matchesActivity = filters.activity.length === 0 || filters.activity.includes(cust.activity);
+    
+    let matchesSpent = true;
+    if (filters.spent === '$0 - $100') matchesSpent = cust.spent <= 100;
+    else if (filters.spent === '$100 - $500') matchesSpent = cust.spent > 100 && cust.spent <= 500;
+    else if (filters.spent === '$500+') matchesSpent = cust.spent > 500;
 
-  useEffect(() => {
-    // In a real app, we would fetch from dashboardService
-    setCustomers(mockCustomers);
-    setLoading(false);
-  }, []);
+    let matchesOrders = true;
+    if (filters.orders === '0 Orders') matchesOrders = cust.orders === 0;
+    else if (filters.orders === '1 - 5 Orders') matchesOrders = cust.orders >= 1 && cust.orders <= 5;
+    else if (filters.orders === '5 - 10 Orders') matchesOrders = cust.orders > 5 && cust.orders <= 10;
+    else if (filters.orders === '10+ Orders') matchesOrders = cust.orders > 10;
+
+    const matchesRegion = filters.region === 'All Regions' || cust.region === filters.region;
+
+    return matchesSearch && matchesType && matchesActivity && matchesSpent && matchesOrders && matchesRegion;
+  }).sort((a, b) => {
+    if (filters.sortBy === 'spending') return b.spent - a.spent;
+    if (filters.sortBy === 'orders') return b.orders - a.orders;
+    if (filters.sortBy === 'newest') return new Date(b.date) - new Date(a.date);
+    if (filters.sortBy === 'oldest') return new Date(a.date) - new Date(b.date);
+    if (filters.sortBy === 'alpha') return a.name.localeCompare(b.name);
+    return 0;
+  });
+
+  const toggleFilter = (type, value) => {
+    setFilters(prev => {
+      const current = prev[type];
+      const next = current.includes(value) 
+        ? current.filter(v => v !== value) 
+        : [...current, value];
+      return { ...prev, [type]: next };
+    });
+  };
+
+  const handleFilterChange = (field, value) => {
+    setFilters(prev => ({ ...prev, [field]: value }));
+  };
+
+  const resetFilters = () => {
+    setFilters({
+      type: [],
+      activity: [],
+      spent: 'All',
+      orders: 'All',
+      region: 'All Regions',
+      dateRange: 'all',
+      sortBy: 'newest'
+    });
+  };
+
+  const activeFilterCount = filters.type.length + filters.activity.length + 
+                           (filters.spent !== 'All' ? 1 : 0) + 
+                           (filters.orders !== 'All' ? 1 : 0) +
+                           (filters.region !== 'All Regions' ? 1 : 0);
+
+  const exportToCSV = () => {
+    const headers = ['Name', 'Email', 'Phone', 'Total Orders', 'Total Spent', 'Region', 'Registration Date'];
+    const rows = filteredCustomers.map(c => [
+      c.name,
+      c.email,
+      c.phone,
+      c.orders,
+      c.spent.toFixed(2),
+      c.region,
+      c.date
+    ]);
+
+    const csvContent = "data:text/csv;charset=utf-8," 
+      + headers.join(",") + "\n" 
+      + rows.map(e => e.join(",")).join("\n");
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `customers_export_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <div className="customers-page">
@@ -36,7 +137,7 @@ export default function CustomersPage() {
           <h1>Customers</h1>
           <p>Manage your customer base and view their order history.</p>
         </div>
-        <button className="export-btn">
+        <button className="export-btn" onClick={exportToCSV}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
           Export CSV
         </button>
@@ -63,18 +164,75 @@ export default function CustomersPage() {
       <div className="table-filters-bar">
         <div className="search-box">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-          <input type="text" placeholder="Search by name, email or phone..." />
+          <input 
+            type="text" 
+            placeholder="Search by name, email or phone..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
-        <div className="filter-group">
-          <button className="bar-btn">
+        <div className="action-right-group">
+          <button className={`filter-btn-toggle ${isFilterOpen ? 'active' : ''}`} onClick={() => setIsFilterOpen(!isFilterOpen)}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
             Filters
+            {activeFilterCount > 0 && <span className="filter-badge">{activeFilterCount}</span>}
           </button>
-          <div className="sort-wrapper">
-            <span>Sort by: <strong>Newest First</strong></span>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          
+          <div className="sort-dropdown-container">
+            <select className="bar-select" value={filters.sortBy} onChange={(e) => handleFilterChange('sortBy', e.target.value)}>
+              <option value="newest">Sort: Newest First</option>
+              <option value="oldest">Sort: Oldest First</option>
+              <option value="spending">Sort: Highest Spending</option>
+              <option value="orders">Sort: Most Orders</option>
+              <option value="alpha">Sort: Alphabetical A-Z</option>
+            </select>
           </div>
         </div>
+      </div>
+
+      {(activeFilterCount > 0 || searchQuery) && (
+        <div className="active-filters-row">
+          <div className="active-chips">
+            <span className="results-text">{filteredCustomers.length} customers found</span>
+            {filters.type.map(t => (
+              <div key={t} className="filter-chip">
+                Type: {t}
+                <button onClick={() => toggleFilter('type', t)}>&times;</button>
+              </div>
+            ))}
+            {filters.spent !== 'All' && (
+              <div className="filter-chip">
+                Spent: {filters.spent}
+                <button onClick={() => handleFilterChange('spent', 'All')}>&times;</button>
+              </div>
+            )}
+            {filters.region !== 'All Regions' && (
+              <div className="filter-chip">
+                Region: {filters.region}
+                <button onClick={() => handleFilterChange('region', 'All Regions')}>&times;</button>
+              </div>
+            )}
+          </div>
+          <button className="clear-all-btn" onClick={resetFilters}>Clear all</button>
+        </div>
+      )}
+
+      <div className="quick-filters-bar">
+        <button className={`quick-chip ${filters.type.includes('VIP Customers') ? 'active' : ''}`} onClick={() => toggleFilter('type', 'VIP Customers')}>
+          <span className="dot yellow"></span> VIP Customers
+        </button>
+        <button className={`quick-chip ${filters.type.includes('New Customers') ? 'active' : ''}`} onClick={() => toggleFilter('type', 'New Customers')}>
+          <span className="dot green"></span> New Customers <span className="new-badge">New</span>
+        </button>
+        <button className={`quick-chip ${filters.activity.includes('Inactive (30+ Days)') ? 'active' : ''}`} onClick={() => toggleFilter('activity', 'Inactive (30+ Days)')}>
+          <span className="dot red"></span> Inactive (30+ Days)
+        </button>
+        <button className={`quick-chip ${filters.orders === '0 Orders' ? 'active' : ''}`} onClick={() => handleFilterChange('orders', filters.orders === '0 Orders' ? 'All' : '0 Orders')}>
+          <span className="dot blue"></span> No Orders
+        </button>
+        <button className={`quick-chip ${filters.spent === '$500+' ? 'active' : ''}`} onClick={() => handleFilterChange('spent', filters.spent === '$500+' ? 'All' : '$500+')}>
+          <span className="dot purple"></span> Top Spenders
+        </button>
       </div>
 
       <div className="list-container">
@@ -84,18 +242,22 @@ export default function CustomersPage() {
           <div className="col-phone">Phone</div>
           <div className="col-orders">Total Orders</div>
           <div className="col-spent">Total Spent</div>
+          <div className="col-last">Last Order</div>
           <div className="col-actions">Actions</div>
         </div>
 
         {loading ? (
           <div className="loading-state">Loading customers...</div>
         ) : (
-          customers.map(cust => (
+          filteredCustomers.map(cust => (
             <div className="customer-row" key={cust.id}>
               <div className="col-customer">
                 <div className="cust-avatar-box">
                   <div className="avatar" style={{ background: cust.color, color: cust.textColor }}>{cust.initial}</div>
-                  <strong>{cust.name}</strong>
+                  <div className="cust-name-box">
+                    <strong>{cust.name}</strong>
+                    {cust.type === 'VIP Customers' && <span className="vip-indicator">VIP</span>}
+                  </div>
                 </div>
               </div>
               <div className="col-email">{cust.email}</div>
@@ -106,11 +268,20 @@ export default function CustomersPage() {
               <div className="col-spent">
                 <strong>${cust.spent.toFixed(2)}</strong>
               </div>
+              <div className="col-last">
+                <div className="last-order-box">
+                  <strong>{cust.lastOrder}</strong>
+                  {cust.lastOrder !== '-' && <span>10:30 AM</span>}
+                </div>
+              </div>
               <div className="col-actions">
                 <div className="action-btns">
-                  <button className="row-btn view" onClick={() => setSelectedCustomer(cust)}>View History</button>
+                  <button className="row-btn view" onClick={() => setSelectedCustomer(cust)}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    View History
+                  </button>
                   <button className="menu-btn">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle></svg>
                   </button>
                 </div>
               </div>
@@ -119,14 +290,106 @@ export default function CustomersPage() {
         )}
 
         <div className="list-footer">
-          <p>Showing 1 to 4 of 4 customers</p>
+          <p>Showing 1 to {filteredCustomers.length} of {customers.length} customers</p>
           <div className="footer-right">
             <button className="nav-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
             <button className="num-btn active">1</button>
+            <button className="num-btn">2</button>
             <button className="nav-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
           </div>
         </div>
       </div>
+
+      {/* Filter Drawer */}
+      <div className={`filter-drawer ${isFilterOpen ? 'open' : ''}`}>
+        <div className="drawer-header">
+          <h2>Filter Customers</h2>
+          <button className="close-drawer" onClick={() => setIsFilterOpen(false)}>&times;</button>
+        </div>
+        
+        <div className="drawer-content">
+          <div className="filter-section">
+            <div className="section-header">
+              <h3>Customer Type</h3>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="18 15 12 9 6 15"></polyline></svg>
+            </div>
+            <div className="filter-options">
+              {['New Customers', 'Returning Customers', 'Guest Customers', 'VIP Customers'].map(t => (
+                <label key={t} className="checkbox-label">
+                  <input type="checkbox" checked={filters.type.includes(t)} onChange={() => toggleFilter('type', t)} />
+                  <span className="checkbox-custom"></span>
+                  {t}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="filter-section">
+            <div className="section-header">
+              <h3>Total Orders</h3>
+            </div>
+            <div className="filter-options">
+              {['All', '0 Orders', '1 - 5 Orders', '5 - 10 Orders', '10+ Orders'].map(o => (
+                <label key={o} className="radio-label">
+                  <input type="radio" name="cOrders" checked={filters.orders === o} onChange={() => handleFilterChange('orders', o)} />
+                  <span className="radio-custom"></span>
+                  {o}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="filter-section">
+            <div className="section-header">
+              <h3>Total Spent</h3>
+            </div>
+            <div className="filter-options">
+              {['All', '$0 - $100', '$100 - $500', '$500+'].map(s => (
+                <label key={s} className="radio-label">
+                  <input type="radio" name="cSpent" checked={filters.spent === s} onChange={() => handleFilterChange('spent', s)} />
+                  <span className="radio-custom"></span>
+                  {s}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="filter-section">
+            <div className="section-header">
+              <h3>Customer Activity</h3>
+            </div>
+            <div className="filter-options">
+              {['Active Recently (7 Days)', 'Inactive (30+ Days)', 'Never Purchased', 'Recently Ordered'].map(a => (
+                <label key={a} className="checkbox-label">
+                  <input type="checkbox" checked={filters.activity.includes(a)} onChange={() => toggleFilter('activity', a)} />
+                  <span className="checkbox-custom"></span>
+                  {a}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="filter-section">
+            <div className="section-header">
+              <h3>Location / Region</h3>
+            </div>
+            <select className="drawer-select" value={filters.region} onChange={(e) => handleFilterChange('region', e.target.value)}>
+              <option value="All Regions">All Regions</option>
+              <option value="India">India</option>
+              <option value="USA">USA</option>
+              <option value="UK">UK</option>
+              <option value="Europe">Europe</option>
+              <option value="Asia">Asia</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="drawer-footer">
+          <button className="reset-btn" onClick={resetFilters}>Reset</button>
+          <button className="apply-btn" onClick={() => setIsFilterOpen(false)}>Apply Filters</button>
+        </div>
+      </div>
+      {isFilterOpen && <div className="drawer-overlay" onClick={() => setIsFilterOpen(false)}></div>}
 
       <Modal
         isOpen={!!selectedCustomer}
@@ -239,12 +502,12 @@ export default function CustomersPage() {
                   </div>
                   <div className="h-col-total"><strong>{order.total}</strong></div>
                   <div className="h-col-items">{order.items}</div>
-                <div className="h-col-actions">
-                  <button className="row-btn view">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                    View Details
-                  </button>
-                </div>
+                  <div className="h-col-actions">
+                    <button className="row-btn view" onClick={() => setSelectedOrder(order)}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                      View Details
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -268,9 +531,85 @@ export default function CustomersPage() {
         </div>
       </Modal>
 
+      <Modal
+        isOpen={!!selectedOrder}
+        onClose={() => setSelectedOrder(null)}
+        title={selectedOrder && (
+          <div className="modal-header-content">
+            <div className="modal-icon detail-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            </div>
+            <div className="modal-title-box">
+              <div className="title-with-badge">
+                <h2>Order #{selectedOrder.id}</h2>
+                <span className="order-badge">OFFICIAL RECEIPT</span>
+              </div>
+              <p>Review full order details and customer information.</p>
+            </div>
+          </div>
+        )}
+        footer={
+          <div className="modal-footer-btns">
+            <button className="outline-btn" onClick={() => setSelectedOrder(null)}>Close</button>
+            <button className="primary-btn" onClick={() => window.print()}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+              Print Receipt
+            </button>
+          </div>
+        }
+      >
+        {selectedOrder && (
+          <div className="order-details-summary">
+            <div className="details-grid">
+              <div className="detail-item">
+                <span className="d-label">Status</span>
+                <span className="d-val status" style={{ background: selectedOrder.color, color: selectedOrder.textColor }}>{selectedOrder.status}</span>
+              </div>
+              <div className="detail-item">
+                <span className="d-label">Total Amount</span>
+                <span className="d-val"><strong>{selectedOrder.total}</strong></span>
+              </div>
+              <div className="detail-item">
+                <span className="d-label">Payment</span>
+                <span className="d-val">Paid via Credit Card</span>
+              </div>
+              <div className="detail-item">
+                <span className="d-label">Date</span>
+                <span className="d-val">{selectedOrder.date}</span>
+              </div>
+            </div>
+            
+            <div className="items-list-section">
+              <h4>Order Items</h4>
+              <div className="items-table">
+                <div className="i-head">
+                  <span>Product</span>
+                  <span>Qty</span>
+                  <span>Price</span>
+                  <span>Total</span>
+                </div>
+                <div className="i-row">
+                  <span>Premium Wireless Headphones</span>
+                  <span>1</span>
+                  <span>$299.00</span>
+                  <span>$299.00</span>
+                </div>
+                {selectedOrder.total === '$450.00' && (
+                  <div className="i-row">
+                    <span>Ergonomic Office Chair</span>
+                    <span>1</span>
+                    <span>$151.00</span>
+                    <span>$151.00</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
+
       <style jsx>{`
         .customers-page {
-          padding: 32px;
           display: flex;
           flex-direction: column;
           gap: 32px;
@@ -386,13 +725,13 @@ export default function CustomersPage() {
           background: transparent;
         }
 
-        .filter-group {
+        .action-right-group {
           display: flex;
           align-items: center;
           gap: 12px;
         }
 
-        .bar-btn {
+        .filter-btn-toggle {
           background: #fff;
           border: 1px solid #e2e8f0;
           padding: 0 20px;
@@ -401,26 +740,345 @@ export default function CustomersPage() {
           display: flex;
           align-items: center;
           gap: 8px;
+          font-weight: 700;
+          font-size: 14px;
+          color: #1e293b;
+          cursor: pointer;
+          transition: all 0.2s;
+          position: relative;
+        }
+
+        .filter-btn-toggle:hover, .filter-btn-toggle.active {
+          border-color: #6366f1;
+          color: #6366f1;
+          background: #f5f3ff;
+        }
+
+        .filter-badge {
+          background: #6366f1;
+          color: #fff;
+          font-size: 10px;
+          width: 18px;
+          height: 18px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 800;
+          margin-left: 4px;
+        }
+
+        .sort-dropdown-container {
+          background: #fff;
+          border: 1px solid #e2e8f0;
+          border-radius: 16px;
+          height: 48px;
+          display: flex;
+          align-items: center;
+          overflow: hidden;
+        }
+
+        .bar-select {
+          border: none;
+          outline: none;
+          padding: 0 16px;
+          height: 100%;
           font-weight: 600;
           font-size: 14px;
           color: #1e293b;
           cursor: pointer;
+          background: transparent;
         }
 
-        .sort-wrapper {
-          background: #fff;
-          border: 1px solid #e2e8f0;
-          padding: 0 20px;
-          height: 48px;
-          border-radius: 16px;
+        .active-filters-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-top: -12px;
+        }
+
+        .active-chips {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
+        .results-text {
+          font-size: 14px;
+          font-weight: 700;
+          color: #1e293b;
+          margin-right: 8px;
+        }
+
+        .filter-chip {
+          background: #f5f3ff;
+          color: #6366f1;
+          padding: 6px 12px;
+          border-radius: 10px;
+          font-size: 12px;
+          font-weight: 700;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          border: 1px solid #e0e7ff;
+        }
+
+        .filter-chip button {
+          background: none; border: none; color: #6366f1; font-size: 16px; cursor: pointer; padding: 0;
+        }
+
+        .clear-all-btn {
+          background: none; border: none; color: #6366f1; font-weight: 700; font-size: 13px;
+          cursor: pointer; text-decoration: underline;
+        }
+
+        .quick-filters-bar {
           display: flex;
           align-items: center;
           gap: 12px;
-          font-weight: 600;
-          font-size: 14px;
+          flex-wrap: wrap;
+          margin-top: -8px;
+        }
+
+        .quick-chip {
+          background: #fff;
+          border: 1px solid #e2e8f0;
+          padding: 8px 16px;
+          border-radius: 12px;
+          font-size: 13px;
+          font-weight: 700;
+          color: #475569;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .quick-chip:hover, .quick-chip.active {
+          border-color: #6366f1;
+          background: #fbfaff;
+          color: #6366f1;
+        }
+
+        .quick-chip .dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+        }
+
+        .dot.yellow { background: #f59e0b; }
+        .dot.red { background: #ef4444; }
+        .dot.purple { background: #8b5cf6; }
+        .dot.blue { background: #3b82f6; }
+        .dot.green { background: #22c55e; }
+
+        .new-badge {
+          background: #f0fdf4;
+          color: #22c55e;
+          font-size: 10px;
+          padding: 1px 6px;
+          border-radius: 6px;
+          border: 1px solid #dcfce7;
+        }
+
+        .filter-drawer {
+          position: fixed;
+          top: 0;
+          right: -400px;
+          width: 380px;
+          height: 100%;
+          background: #fff;
+          box-shadow: -10px 0 30px rgba(0,0,0,0.05);
+          z-index: 1000;
+          transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          display: flex;
+          flex-direction: column;
+        }
+
+        .filter-drawer.open {
+          right: 0;
+        }
+
+        .drawer-header {
+          padding: 24px;
+          border-bottom: 1px solid #f1f5f9;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .drawer-header h2 {
+          font-size: 18px;
+          font-weight: 800;
           color: #1e293b;
+          margin: 0;
+        }
+
+        .close-drawer {
+          background: #f1f5f9;
+          border: none;
+          width: 32px;
+          height: 32px;
+          border-radius: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 20px;
+          color: #64748b;
           cursor: pointer;
         }
+
+        .drawer-content {
+          flex: 1;
+          overflow-y: auto;
+          padding: 24px;
+          display: flex;
+          flex-direction: column;
+          gap: 24px;
+        }
+
+        .filter-section {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+
+        .section-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .section-header h3 {
+          font-size: 14px;
+          font-weight: 700;
+          color: #1e293b;
+          margin: 0;
+        }
+
+        .filter-options {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        .checkbox-label, .radio-label {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          font-size: 13px;
+          color: #475569;
+          cursor: pointer;
+          font-weight: 500;
+        }
+
+        .checkbox-custom, .radio-custom {
+          width: 18px;
+          height: 18px;
+          border: 2px solid #e2e8f0;
+          border-radius: 5px;
+          position: relative;
+          transition: all 0.2s;
+        }
+
+        .radio-custom { border-radius: 50%; }
+
+        input:checked + .checkbox-custom {
+          background: #6366f1;
+          border-color: #6366f1;
+        }
+
+        input:checked + .radio-custom {
+          border-color: #6366f1;
+        }
+
+        input:checked + .radio-custom::after {
+          content: '';
+          position: absolute;
+          width: 8px;
+          height: 8px;
+          background: #6366f1;
+          border-radius: 50%;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+        }
+
+        .drawer-select {
+          padding: 10px 12px;
+          border-radius: 10px;
+          border: 1px solid #e2e8f0;
+          background: #f8fafc;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+        }
+
+        .drawer-footer {
+          padding: 24px;
+          border-top: 1px solid #f1f5f9;
+          display: flex;
+          gap: 12px;
+        }
+
+        .reset-btn {
+          flex: 1;
+          padding: 12px;
+          border-radius: 12px;
+          border: 1px solid #e2e8f0;
+          background: #fff;
+          font-weight: 700;
+          color: #64748b;
+          cursor: pointer;
+        }
+
+        .apply-btn {
+          flex: 2;
+          padding: 12px;
+          border-radius: 12px;
+          border: none;
+          background: #6366f1;
+          color: #fff;
+          font-weight: 700;
+          cursor: pointer;
+          box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+        }
+
+        .drawer-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(15, 23, 42, 0.1);
+          backdrop-filter: blur(2px);
+          z-index: 999;
+        }
+
+        .action-buttons {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .secondary-btn {
+          background: #fff;
+          color: #64748b;
+          border: 1px solid #e2e8f0;
+          padding: 12px 20px;
+          border-radius: 14px;
+          font-weight: 700;
+          font-size: 14px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .secondary-btn:hover { background: #f8fafc; border-color: #cbd5e1; }
 
         .list-container {
           background: #fff;
@@ -449,7 +1107,34 @@ export default function CustomersPage() {
         .col-phone { flex: 1.5; color: #64748b; }
         .col-orders { flex: 0.8; text-align: center; }
         .col-spent { flex: 1; text-align: center; }
+        .col-last { flex: 1.2; text-align: left; }
         .col-actions { flex: 1.5; text-align: right; }
+
+        .cust-name-box {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+
+        .vip-indicator {
+          font-size: 9px;
+          background: #fffbeb;
+          color: #f59e0b;
+          padding: 1px 6px;
+          border-radius: 4px;
+          font-weight: 800;
+          width: fit-content;
+          border: 1px solid #fef3c7;
+        }
+
+        .last-order-box {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+
+        .last-order-box strong { font-size: 13px; color: #1e293b; }
+        .last-order-box span { font-size: 11px; color: #94a3b8; }
 
         .customer-row {
           padding: 16px 24px;
@@ -734,19 +1419,87 @@ export default function CustomersPage() {
         .notes-left { display: flex; align-items: center; gap: 16px; }
         .notes-left p { margin: 0; font-size: 13px; color: #64748b; }
 
-        .add-note-btn {
-          background: #fff;
-          border: 1px solid #e2e8f0;
-          padding: 8px 16px;
-          border-radius: 10px;
-          font-size: 12px;
-          font-weight: 700;
-          color: #6366f1;
+        .order-badge {
+          background: #f1f5f9;
+          color: #475569;
+          padding: 2px 10px;
+          border-radius: 6px;
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: 0.5px;
+        }
+
+        .modal-icon.detail-icon {
+          background: #f5f3ff;
+          color: #8b5cf6;
+          width: 44px;
+          height: 44px;
+          border-radius: 12px;
           display: flex;
           align-items: center;
-          gap: 8px;
-          cursor: pointer;
+          justify-content: center;
         }
+
+        .order-details-summary {
+          display: flex;
+          flex-direction: column;
+          gap: 24px;
+        }
+
+        .details-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 16px;
+          background: #f8fafc;
+          padding: 20px;
+          border-radius: 16px;
+          border: 1px solid #f1f5f9;
+        }
+
+        .detail-item {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .d-label { font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; }
+        .d-val { font-size: 14px; color: #1e293b; font-weight: 600; }
+        .d-val.status { width: fit-content; padding: 2px 10px; border-radius: 20px; font-size: 12px; }
+
+        .items-list-section h4 {
+          font-size: 15px;
+          font-weight: 800;
+          color: #1e293b;
+          margin: 0 0 12px 0;
+        }
+
+        .items-table {
+          border: 1px solid #f1f5f9;
+          border-radius: 12px;
+          overflow: hidden;
+        }
+
+        .i-head {
+          background: #f8fafc;
+          padding: 10px 16px;
+          display: grid;
+          grid-template-columns: 2fr 0.5fr 1fr 1fr;
+          font-size: 11px;
+          font-weight: 800;
+          color: #94a3b8;
+          text-transform: uppercase;
+        }
+
+        .i-row {
+          padding: 12px 16px;
+          display: grid;
+          grid-template-columns: 2fr 0.5fr 1fr 1fr;
+          font-size: 13px;
+          border-bottom: 1px solid #f1f5f9;
+          color: #1e293b;
+        }
+
+        .i-row:last-child { border-bottom: none; }
 
         .modal-footer-btns {
           display: flex;
@@ -775,6 +1528,25 @@ export default function CustomersPage() {
           align-items: center;
           gap: 10px;
           cursor: pointer;
+        }
+        @media print {
+          .sidebar, .top-bar, .header-row, .stats-grid, .table-filters-bar, 
+          .active-filters-row, .quick-filters-bar, .list-footer, .drawer-overlay,
+          .filter-drawer, .action-buttons, .modal-footer-btns, .close-modal-btn {
+            display: none !important;
+          }
+          
+          :global(.overlay) { background: white !important; position: static !important; }
+          :global(.modal) { 
+            box-shadow: none !important; 
+            border: none !important; 
+            width: 100% !important; 
+            max-width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            position: static !important;
+          }
+          .customers-page { padding: 0 !important; margin: 0 !important; }
         }
       `}</style>
     </div>

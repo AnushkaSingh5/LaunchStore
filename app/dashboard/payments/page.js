@@ -16,7 +16,6 @@ export default function PaymentsPage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    // In a real app, we would fetch from dashboardService
     setLoading(false);
   }, []);
 
@@ -26,7 +25,6 @@ export default function PaymentsPage() {
 
   const handleSave = async () => {
     setSaving(true);
-    // Simulate API call
     await new Promise(r => setTimeout(r, 800));
     setSaving(false);
   };
@@ -53,70 +51,79 @@ export default function PaymentsPage() {
         </div>
 
         <div className="gateway-list">
-          <div className="gateway-item">
-            <div className="gateway-left">
-              <div className="gateway-icon">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" style={{ height: '12px' }} />
-                <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" style={{ height: '18px' }} />
+          {/* Credit / Debit Cards */}
+          <div className="gateway-container">
+            <div className="gateway-item">
+              <div className="gateway-left">
+                <div className="gateway-icon">
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" style={{ height: '12px' }} />
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" style={{ height: '18px' }} />
+                </div>
+                <div className="gateway-info">
+                  <strong>Credit / Debit Cards</strong>
+                  <p>Accept payments via Visa, Mastercard, and Amex via Stripe.</p>
+                </div>
               </div>
-              <div className="gateway-info">
-                <strong>Credit / Debit Cards</strong>
-                <p>Accept payments via Visa, Mastercard, and Amex via Stripe.</p>
+              <div className="gateway-right">
+                <label className="switch">
+                  <input type="checkbox" checked={payments.enableCard} onChange={(e) => handleChange('enableCard', e.target.checked)} />
+                  <span className="slider round"></span>
+                </label>
+                <span className={`status-badge ${payments.enableCard ? 'enabled' : 'disabled'}`}>
+                  {payments.enableCard ? 'Enabled' : 'Disabled'}
+                </span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
               </div>
-            </div>
-            <div className="gateway-right">
-              <label className="switch">
-                <input type="checkbox" checked={payments.enableCard} onChange={(e) => handleChange('enableCard', e.target.checked)} />
-                <span className="slider round"></span>
-              </label>
-              <span className={`status-badge ${payments.enableCard ? 'enabled' : 'disabled'}`}>
-                {payments.enableCard ? 'Enabled' : 'Disabled'}
-              </span>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
             </div>
           </div>
 
-          <div className="gateway-item">
-            <div className="gateway-left">
-              <div className="gateway-icon">
-                <span className="upi-logo">UPI</span>
+          {/* UPI / Local Wallets */}
+          <div className="gateway-container">
+            <div className="gateway-item">
+              <div className="gateway-left">
+                <div className="gateway-icon">
+                  <span className="upi-logo">UPI</span>
+                </div>
+                <div className="gateway-info">
+                  <strong>UPI / Local Wallets</strong>
+                  <p>Enable Razorpay/Paytm integration for local payments.</p>
+                </div>
               </div>
-              <div className="gateway-info">
-                <strong>UPI / Local Wallets</strong>
-                <p>Enable Razorpay/Paytm integration for local payments.</p>
+              <div className="gateway-right">
+                <label className="switch">
+                  <input type="checkbox" checked={payments.enableUPI} onChange={(e) => handleChange('enableUPI', e.target.checked)} />
+                  <span className="slider round"></span>
+                </label>
+                <span className={`status-badge ${payments.enableUPI ? 'enabled' : 'disabled'}`}>
+                  {payments.enableUPI ? 'Enabled' : 'Disabled'}
+                </span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
               </div>
-            </div>
-            <div className="gateway-right">
-              <label className="switch">
-                <input type="checkbox" checked={payments.enableUPI} onChange={(e) => handleChange('enableUPI', e.target.checked)} />
-                <span className="slider round"></span>
-              </label>
-              <span className={`status-badge ${payments.enableUPI ? 'enabled' : 'disabled'}`}>
-                {payments.enableUPI ? 'Enabled' : 'Disabled'}
-              </span>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
             </div>
           </div>
 
-          <div className="gateway-item">
-            <div className="gateway-left">
-              <div className="gateway-icon cash">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="12" cy="12" r="2"></circle><path d="M6 12h.01M18 12h.01"></path></svg>
+          {/* Cash on Delivery */}
+          <div className="gateway-container">
+            <div className="gateway-item">
+              <div className="gateway-left">
+                <div className="gateway-icon cash">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="12" cy="12" r="2"></circle><path d="M6 12h.01M18 12h.01"></path></svg>
+                </div>
+                <div className="gateway-info">
+                  <strong>Cash on Delivery (COD)</strong>
+                  <p>Allow customers to pay when the product arrives.</p>
+                </div>
               </div>
-              <div className="gateway-info">
-                <strong>Cash on Delivery (COD)</strong>
-                <p>Allow customers to pay when the product arrives.</p>
+              <div className="gateway-right">
+                <label className="switch">
+                  <input type="checkbox" checked={payments.enableCOD} onChange={(e) => handleChange('enableCOD', e.target.checked)} />
+                  <span className="slider round"></span>
+                </label>
+                <span className={`status-badge ${payments.enableCOD ? 'enabled' : 'disabled'}`}>
+                  {payments.enableCOD ? 'Enabled' : 'Disabled'}
+                </span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
               </div>
-            </div>
-            <div className="gateway-right">
-              <label className="switch">
-                <input type="checkbox" checked={payments.enableCOD} onChange={(e) => handleChange('enableCOD', e.target.checked)} />
-                <span className="slider round"></span>
-              </label>
-              <span className={`status-badge ${payments.enableCOD ? 'enabled' : 'disabled'}`}>
-                {payments.enableCOD ? 'Enabled' : 'Disabled'}
-              </span>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
             </div>
           </div>
         </div>
@@ -139,16 +146,18 @@ export default function PaymentsPage() {
               </select>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </div>
+            <span className="field-hint">Charge a fixed shipping fee for every order.</span>
           </div>
 
           <div className="form-group">
             <label>Flat Shipping Fee ($)</label>
-            <input
-              type="number"
-              value={payments.flatFee}
+            <input 
+              type="number" 
+              value={payments.flatFee} 
               onChange={(e) => handleChange('flatFee', Number(e.target.value))}
               placeholder="0.00"
             />
+            <span className="field-hint">This amount will be added to every order.</span>
           </div>
 
           <div className="form-group">
@@ -160,6 +169,7 @@ export default function PaymentsPage() {
               </select>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </div>
+            <span className="field-hint">We'll choose the best delivery partner automatically.</span>
           </div>
         </div>
 
@@ -176,7 +186,6 @@ export default function PaymentsPage() {
 
       <style jsx>{`
         .payments-page {
-          padding: 32px;
           display: flex;
           flex-direction: column;
           gap: 32px;
@@ -238,18 +247,23 @@ export default function PaymentsPage() {
 
         .gateway-list { display: flex; flex-direction: column; gap: 16px; }
 
-        .gateway-item {
+        .gateway-container {
           background: #fff;
           border: 1px solid #f1f5f9;
-          border-radius: 16px;
-          padding: 20px 24px;
+          border-radius: 20px;
+          overflow: hidden;
+          transition: all 0.3s;
+        }
+
+        .gateway-item {
+          padding: 24px 32px;
           display: flex;
           justify-content: space-between;
           align-items: center;
-          transition: all 0.2s;
+          transition: background 0.2s;
         }
 
-        .gateway-item:hover { border-color: #e2e8f0; background: #fbfbff; }
+        .gateway-item:hover { background: #fbfbff; }
 
         .gateway-left { display: flex; align-items: center; gap: 20px; }
 
@@ -269,17 +283,17 @@ export default function PaymentsPage() {
         .upi-logo { font-size: 10px; font-weight: 900; font-style: italic; color: #1e293b; letter-spacing: -0.5px; border-bottom: 1px solid #333; }
         .gateway-icon.cash { color: #6366f1; background: #f5f3ff; }
 
-        .gateway-info strong { font-size: 15px; color: #1e293b; display: block; margin-bottom: 4px; }
+        .gateway-info strong { font-size: 16px; color: #1e293b; display: block; margin-bottom: 4px; }
         .gateway-info p { font-size: 13px; color: #64748b; margin: 0; }
 
         .gateway-right { display: flex; align-items: center; gap: 24px; }
 
         .status-badge {
-          padding: 4px 14px;
+          padding: 6px 14px;
           border-radius: 20px;
           font-size: 12px;
           font-weight: 700;
-          min-width: 80px;
+          min-width: 85px;
           text-align: center;
         }
 
@@ -325,7 +339,9 @@ export default function PaymentsPage() {
         }
 
         .form-group { display: flex; flex-direction: column; gap: 8px; }
-        .form-group label { font-size: 13px; font-weight: 600; color: #64748b; }
+        .form-group label { font-size: 13px; font-weight: 600; color: #1e293b; }
+
+        .field-hint { font-size: 11px; color: #94a3b8; font-weight: 500; }
 
         .form-group input, .select-wrapper select {
           background: #fff;
@@ -371,7 +387,7 @@ export default function PaymentsPage() {
 
         .loading { padding: 40px; text-align: center; color: #94a3b8; }
 
-        @media (max-width: 1024px) {
+        @media (max-width: 768px) {
           .shipping-form { grid-template-columns: 1fr; }
         }
       `}</style>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { dashboardService } from '@/services/dashboardService';
 import Input from '@/components/UI/Input';
 import Select from '@/components/UI/Select';
@@ -11,6 +11,9 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  const logoInputRef = useRef(null);
+  const bannerInputRef = useRef(null);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -33,20 +36,22 @@ export default function SettingsPage() {
     setSettings(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleFileUpload = (field, e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        handleChange(field, reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   if (loading) return <div>Loading settings...</div>;
 
   return (
     <div className="settings-page">
       {/* Header section with title and breadcrumbs */}
-      <div className="settings-header-top">
-        <div className="breadcrumbs">
-          <span>Dashboard</span>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
-          <span>Settings</span>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
-          <span className="current">Store Settings</span>
-        </div>
-      </div>
 
       <div className="settings-title-row">
         <div className="title-left">
@@ -72,17 +77,17 @@ export default function SettingsPage() {
           <div className="form-grid">
             <div className="form-group">
               <label>Store Name</label>
-              <input 
-                type="text" 
-                value={settings.storeName} 
+              <input
+                type="text"
+                value={settings.storeName}
                 onChange={(e) => handleChange('storeName', e.target.value)}
                 placeholder="Enter store name"
               />
             </div>
             <div className="form-group">
               <label>Description</label>
-              <textarea 
-                value={settings.description} 
+              <textarea
+                value={settings.description}
                 onChange={(e) => handleChange('description', e.target.value)}
                 placeholder="Enter store description"
                 rows="3"
@@ -92,23 +97,61 @@ export default function SettingsPage() {
 
           <div className="upload-grid">
             <div className="upload-group">
-              <label>Store Logo</label>
-              <div className="upload-box">
-                <div className="upload-circle">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-                </div>
-                <strong>Upload Logo</strong>
-                <p>PNG, JPG up to 2MB</p>
+              <label><b>Store Logo</b></label>
+              <input
+                type="file"
+                ref={logoInputRef}
+                style={{ display: 'none' }}
+                accept="image/*"
+                onChange={(e) => handleFileUpload('logo', e)}
+              />
+              <div className="upload-box" onClick={() => logoInputRef.current.click()}>
+                {settings.logo ? (
+                  <div className="preview-container">
+                    <img src={settings.logo} alt="Logo preview" className="logo-preview" />
+                    <div className="preview-overlay">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                      <span>Change Logo</span>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="upload-circle">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                    </div>
+                    <strong>Upload Logo</strong>
+                    <p>PNG, JPG up to 2MB</p>
+                  </>
+                )}
               </div>
             </div>
             <div className="upload-group">
-              <label>Store Banner</label>
-              <div className="upload-box banner">
-                <div className="upload-circle">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-                </div>
-                <strong>Upload Banner</strong>
-                <p>PNG, JPG up to 5MB</p>
+              <label><b>Store Banner</b></label>
+              <input
+                type="file"
+                ref={bannerInputRef}
+                style={{ display: 'none' }}
+                accept="image/*"
+                onChange={(e) => handleFileUpload('banner', e)}
+              />
+              <div className="upload-box banner" onClick={() => bannerInputRef.current.click()}>
+                {settings.banner ? (
+                  <div className="preview-container">
+                    <img src={settings.banner} alt="Banner preview" className="banner-preview" />
+                    <div className="preview-overlay">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                      <span>Change Banner</span>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="upload-circle">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                    </div>
+                    <strong>Upload Banner</strong>
+                    <p>PNG, JPG up to 5MB</p>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -130,10 +173,10 @@ export default function SettingsPage() {
                 <p>Display category navigation on the homepage.</p>
               </div>
               <label className="switch">
-                <input 
-                  type="checkbox" 
-                  checked={settings.showCategories} 
-                  onChange={(e) => handleChange('showCategories', e.target.checked)} 
+                <input
+                  type="checkbox"
+                  checked={settings.showCategories}
+                  onChange={(e) => handleChange('showCategories', e.target.checked)}
                 />
                 <span className="slider round"></span>
               </label>
@@ -144,10 +187,10 @@ export default function SettingsPage() {
                 <p>Highlight specific products on the storefront.</p>
               </div>
               <label className="switch">
-                <input 
-                  type="checkbox" 
-                  checked={settings.showFeatured} 
-                  onChange={(e) => handleChange('showFeatured', e.target.checked)} 
+                <input
+                  type="checkbox"
+                  checked={settings.showFeatured}
+                  onChange={(e) => handleChange('showFeatured', e.target.checked)}
                 />
                 <span className="slider round"></span>
               </label>
@@ -157,7 +200,7 @@ export default function SettingsPage() {
           <div className="form-group" style={{ marginTop: '24px' }}>
             <label>Default Product Sorting</label>
             <div className="select-wrapper">
-              <select 
+              <select
                 value={settings.defaultSort}
                 onChange={(e) => handleChange('defaultSort', e.target.value)}
               >
@@ -180,26 +223,6 @@ export default function SettingsPage() {
           padding-bottom: 40px;
         }
 
-        .settings-header-top {
-          margin-bottom: -8px;
-        }
-
-        .breadcrumbs {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          font-size: 13px;
-          color: #94a3b8;
-        }
-
-        .breadcrumbs svg {
-          color: #cbd5e1;
-        }
-
-        .breadcrumbs span.current {
-          color: #8b5cf6;
-          font-weight: 600;
-        }
 
         .settings-title-row {
           display: flex;
@@ -359,6 +382,52 @@ export default function SettingsPage() {
           font-size: 12px;
           color: #94a3b8;
           margin: 0;
+        }
+
+        .preview-container {
+          width: 100%;
+          height: 100%;
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .logo-preview {
+          max-width: 100px;
+          max-height: 100px;
+          object-fit: contain;
+        }
+
+        .banner-preview {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          border-radius: 12px;
+        }
+
+        .preview-overlay {
+          position: absolute;
+          top: 0; left: 0; right: 0; bottom: 0;
+          background: rgba(0, 0, 0, 0.4);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          opacity: 0;
+          transition: opacity 0.2s;
+          border-radius: 12px;
+        }
+
+        .preview-container:hover .preview-overlay {
+          opacity: 1;
+        }
+
+        .preview-overlay span {
+          color: #fff;
+          font-size: 12px;
+          font-weight: 700;
         }
 
         .toggle-grid {
