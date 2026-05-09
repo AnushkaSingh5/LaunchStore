@@ -14,6 +14,8 @@ export function DashboardProvider({ children }) {
 
   // Initial load
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     const loadData = async () => {
       try {
         // Try localStorage first
@@ -56,11 +58,14 @@ export function DashboardProvider({ children }) {
 
   // Persist to localStorage
   useEffect(() => {
-    if (!loading) {
-      localStorage.setItem('dash_categories', JSON.stringify(categories));
-      localStorage.setItem('dash_products', JSON.stringify(products));
-      localStorage.setItem('dash_orders', JSON.stringify(orders));
-      localStorage.setItem('dash_customers', JSON.stringify(customers));
+    if (!loading && typeof window !== 'undefined') {
+      const timer = setTimeout(() => {
+        localStorage.setItem('dash_categories', JSON.stringify(categories));
+        localStorage.setItem('dash_products', JSON.stringify(products));
+        localStorage.setItem('dash_orders', JSON.stringify(orders));
+        localStorage.setItem('dash_customers', JSON.stringify(customers));
+      }, 500); // Debounce saves
+      return () => clearTimeout(timer);
     }
   }, [categories, products, orders, customers, loading]);
 
