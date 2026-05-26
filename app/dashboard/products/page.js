@@ -11,6 +11,12 @@ import { useDashboard } from '@/context/DashboardContext';
 
 export default function ProductsPage() {
   const { products, categories, loading, addProduct, updateProduct, deleteProduct } = useDashboard();
+  
+  console.log('[LaunchCart - ProductsPage] render values:', { 
+    productsCount: products?.length, 
+    categoriesCount: categories?.length, 
+    loading 
+  });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [productImages, setProductImages] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -54,8 +60,8 @@ export default function ProductsPage() {
   };
 
   const handleSaveProduct = () => {
-    if (!formData.name || !formData.price || !formData.category) {
-      alert('Please fill in all required fields');
+    if (!formData.name || !formData.price) {
+      alert('Please fill in all required fields (Name and Price)');
       return;
     }
 
@@ -109,29 +115,45 @@ export default function ProductsPage() {
     setProductImages([]);
   };
 
-  const filteredProducts = products.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                         product.id.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredProducts = (products || []).filter(product => {
+    if (!product) return false;
+    const name = String(product.name || '');
+    const id = String(product.id || '');
+    const status = String(product.status || 'Published');
+    const category = String(product.category || 'Uncategorized');
+    const price = parseFloat(product.price) || 0;
+    const stock = parseInt(product.stock) || 0;
+
+    const matchesSearch = name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                         id.toLowerCase().includes(searchQuery.toLowerCase());
     
-    const matchesStatus = filters.status.length === 0 || filters.status.includes(product.status);
-    const matchesCategory = filters.category.length === 0 || filters.category.includes(product.category);
+    const matchesStatus = filters.status.length === 0 || filters.status.includes(status);
+    const matchesCategory = filters.category.length === 0 || filters.category.includes(category);
     
     let matchesStock = true;
-    if (filters.stock === 'In Stock') matchesStock = product.stock > 0;
-    else if (filters.stock === 'Low Stock (<10)') matchesStock = product.stock > 0 && product.stock < 10;
-    else if (filters.stock === 'Out of Stock') matchesStock = product.stock === 0;
+    if (filters.stock === 'In Stock') matchesStock = stock > 0;
+    else if (filters.stock === 'Low Stock (<10)') matchesStock = stock > 0 && stock < 10;
+    else if (filters.stock === 'Out of Stock') matchesStock = stock === 0;
 
-    const matchesPrice = (!filters.minPrice || product.price >= parseFloat(filters.minPrice)) && 
-                        (!filters.maxPrice || product.price <= parseFloat(filters.maxPrice));
+    const matchesPrice = (!filters.minPrice || price >= parseFloat(filters.minPrice)) && 
+                        (!filters.maxPrice || price <= parseFloat(filters.maxPrice));
 
     return matchesSearch && matchesStatus && matchesCategory && matchesStock && matchesPrice;
   }).sort((a, b) => {
-    if (filters.sortBy === 'price_low') return a.price - b.price;
-    if (filters.sortBy === 'price_high') return b.price - a.price;
-    if (filters.sortBy === 'az') return a.name.localeCompare(b.name);
-    if (filters.sortBy === 'za') return b.name.localeCompare(a.name);
-    if (filters.sortBy === 'stock') return b.stock - a.stock;
-    return 0; // Default: newest (assuming ID or order in mock data)
+    if (!a || !b) return 0;
+    const aPrice = parseFloat(a.price) || 0;
+    const bPrice = parseFloat(b.price) || 0;
+    const aName = String(a.name || '');
+    const bName = String(b.name || '');
+    const aStock = parseInt(a.stock) || 0;
+    const bStock = parseInt(b.stock) || 0;
+
+    if (filters.sortBy === 'price_low') return aPrice - bPrice;
+    if (filters.sortBy === 'price_high') return bPrice - aPrice;
+    if (filters.sortBy === 'az') return aName.localeCompare(bName);
+    if (filters.sortBy === 'za') return bName.localeCompare(aName);
+    if (filters.sortBy === 'stock') return bStock - aStock;
+    return 0;
   });
 
   const toggleFilter = (type, value) => {
@@ -179,10 +201,10 @@ export default function ProductsPage() {
     setProductImages(prev => prev.filter((_, i) => i !== index));
   };
 
-  const totalProducts = products.length;
-  const publishedCount = products.filter(p => p.status === 'Published').length;
-  const draftCount = products.filter(p => p.status === 'Draft').length;
-  const outOfStockCount = products.filter(p => p.stock === 0 || p.status === 'Out of Stock').length;
+  const totalProducts = (products || []).length;
+  const publishedCount = (products || []).filter(p => String(p?.status || '').toLowerCase() === 'published').length;
+  const draftCount = (products || []).filter(p => String(p?.status || '').toLowerCase() === 'draft').length;
+  const outOfStockCount = (products || []).filter(p => (parseInt(p?.stock) || 0) === 0 || String(p?.status || '').toLowerCase() === 'out of stock').length;
 
   if (loading) return <div style={{ padding: '40px' }}>Loading products...</div>;
 
@@ -319,27 +341,33 @@ export default function ProductsPage() {
               <tr><td colSpan="7" style={{ textAlign: 'center', padding: '40px' }}>Loading products...</td></tr>
             ) : filteredProducts.length === 0 ? (
               <tr><td colSpan="7" style={{ textAlign: 'center', padding: '40px' }}>No products found matching your criteria.</td></tr>
-            ) : filteredProducts.map(product => (
-              <tr key={product.id}>
-                <td>{product.id}</td>
-                <td>
-                  <div className="product-name-cell">
-                    <img src={product.image || 'https://images.unsplash.com/photo-1533090481720-856c6e3c1fdc?auto=format&fit=crop&q=80&w=300'} alt="" />
-                    <span>{product.name}</span>
-                  </div>
-                </td>
-                <td>{product.category}</td>
-                <td className="price-cell">${product.price.toLocaleString()}</td>
-                <td>
-                  <span style={{ color: product.stock === 0 ? '#ef4444' : 'inherit', fontWeight: product.stock === 0 ? 600 : 400 }}>
-                    {product.stock === 0 ? 'Out of Stock' : product.stock}
-                  </span>
-                </td>
-                <td>
-                  <span className={`status-pill ${product.status.toLowerCase()}`}>
-                    {product.status}
-                  </span>
-                </td>
+            ) : filteredProducts.map(product => {
+              const price = parseFloat(product.price) || 0;
+              const stock = parseInt(product.stock) || 0;
+              const status = String(product.status || 'Published');
+              const category = String(product.category || 'Uncategorized');
+
+              return (
+                <tr key={product.id}>
+                  <td>{String(product.id || '')}</td>
+                  <td>
+                    <div className="product-name-cell">
+                      <img src={product.image || 'https://images.unsplash.com/photo-1533090481720-856c6e3c1fdc?auto=format&fit=crop&q=80&w=300'} alt="" />
+                      <span>{product.name || 'Unnamed Product'}</span>
+                    </div>
+                  </td>
+                  <td>{category}</td>
+                  <td className="price-cell">${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                  <td>
+                    <span style={{ color: stock === 0 ? '#ef4444' : 'inherit', fontWeight: stock === 0 ? 600 : 400 }}>
+                      {stock === 0 ? 'Out of Stock' : stock}
+                    </span>
+                  </td>
+                  <td>
+                    <span className={`status-pill ${status.toLowerCase()}`}>
+                      {status}
+                    </span>
+                  </td>
                 <td>
                   <div className="action-buttons">
                     <button className="edit-btn" onClick={() => handleEditClick(product)}>
@@ -355,8 +383,9 @@ export default function ProductsPage() {
                     </button>
                   </div>
                 </td>
-              </tr>
-            ))}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
 
@@ -452,7 +481,7 @@ export default function ProductsPage() {
           </div>
 
           <div className="form-group">
-            <label>Category <span className="required">*</span></label>
+            <label>Category <span className="optional">(optional)</span></label>
             <div className="input-with-icon">
               <div className="input-prefix">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path></svg>
@@ -461,7 +490,7 @@ export default function ProductsPage() {
                 value={formData.category}
                 onChange={(e) => setFormData({...formData, category: e.target.value})}
               >
-                <option value="" disabled>Select category</option>
+                <option value="">Select category (optional)</option>
                 {categories.map(cat => (
                   <option key={cat.id} value={cat.name}>{cat.name}</option>
                 ))}

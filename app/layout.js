@@ -1,4 +1,5 @@
 import { StoreProvider } from '@/context/StoreContext';
+import { AuthProvider } from '@/context/AuthContext';
 import "./globals.css";
 
 export const metadata = {
@@ -10,9 +11,11 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body>
-        <StoreProvider>
-          {children}
-        </StoreProvider>
+        <AuthProvider>
+          <StoreProvider>
+            {children}
+          </StoreProvider>
+        </AuthProvider>
       </body>
     </html>
   );

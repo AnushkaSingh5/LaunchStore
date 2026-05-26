@@ -1,6 +1,8 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useAdmin } from '@/context/AdminContext';
+import { useAuth } from '@/context/AuthContext';
 import StatCard from '@/components/Admin/StatCard';
 import AdminAnalytics from '@/components/Admin/AdminAnalytics';
 import ActivityFeed from '@/components/Admin/ActivityFeed';
@@ -15,9 +17,17 @@ import { useRouter } from 'next/navigation';
 
 export default function AdminOverview() {
   const { stores, products, orders, customers, analytics, activity, alerts, systemHealth, aiInsights, approveStore, loading } = useAdmin();
+  const { user, role, loading: authLoading } = useAuth();
   const router = useRouter();
 
-  if (loading) return <div style={{ padding: '40px' }}>Loading platform overview...</div>;
+  useEffect(() => {
+    if (!authLoading && (!user || role !== 'admin')) {
+      router.push('/admin/login');
+    }
+  }, [user, role, authLoading, router]);
+
+  if (authLoading || loading) return <div style={{ padding: '40px' }}>Loading platform overview...</div>;
+  if (!user || role !== 'admin') return null;
 
   const stats = [
     { 
@@ -98,7 +108,7 @@ export default function AdminOverview() {
       <div className="overview-header">
         <div className="header-text">
           <h2>Platform Overview</h2>
-          <p>Here's what's happening across your platform today.</p>
+          <p>Here&apos;s what&apos;s happening across your platform today.</p>
         </div>
         <div className="header-actions">
           <div className="date-picker">

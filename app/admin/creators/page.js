@@ -51,7 +51,7 @@ export default function AdminCreators() {
       <div className="page-header">
         <div className="header-text">
           <h2>Creator Management</h2>
-          <p>Monitor and support the platform's independent creators.</p>
+          <p>Monitor and support the platform&apos;s independent creators.</p>
         </div>
         <div className="header-actions">
           <Input 

@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { dashboardService } from '@/services/dashboardService';
+import { useAuth } from '@/context/AuthContext';
+import { storeService } from '@/services/storeService';
 
 export default function PaymentsPage() {
+  const { store, refreshStore } = useAuth();
   const [payments, setPayments] = useState({
     enableCard: true,
     enableUPI: false,
@@ -16,17 +18,49 @@ export default function PaymentsPage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    setLoading(false);
-  }, []);
+    if (store) {
+      setPayments({
+        enableCard: store.theme_settings?.enableCard ?? true,
+        enableUPI: store.theme_settings?.enableUPI ?? false,
+        enableCOD: store.theme_settings?.enableCOD ?? true,
+        shippingType: store.theme_settings?.shippingType ?? 'flat',
+        flatFee: store.theme_settings?.flatFee ?? 15,
+        shippingHandler: store.theme_settings?.shippingHandler ?? 'platform'
+      });
+      setLoading(false);
+    } else {
+      setLoading(false);
+    }
+  }, [store]);
 
   const handleChange = (field, value) => {
     setPayments(prev => ({ ...prev, [field]: value }));
   };
 
   const handleSave = async () => {
+    if (!store) return;
     setSaving(true);
-    await new Promise(r => setTimeout(r, 800));
-    setSaving(false);
+    try {
+      const existingSettings = store.theme_settings || {};
+      await storeService.updateStore(store.id, {
+        theme_settings: {
+          ...existingSettings,
+          enableCard: payments.enableCard,
+          enableUPI: payments.enableUPI,
+          enableCOD: payments.enableCOD,
+          shippingType: payments.shippingType,
+          flatFee: parseFloat(payments.flatFee) || 0,
+          shippingHandler: payments.shippingHandler
+        }
+      });
+      await refreshStore();
+      alert('Payments & Shipping configuration saved successfully!');
+    } catch (err) {
+      console.error(err);
+      alert('Failed to save configuration: ' + err.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading) return <div className="loading">Loading...</div>;
@@ -169,7 +203,7 @@ export default function PaymentsPage() {
               </select>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </div>
-            <span className="field-hint">We'll choose the best delivery partner automatically.</span>
+            <span className="field-hint">We&apos;ll choose the best delivery partner automatically.</span>
           </div>
         </div>
 

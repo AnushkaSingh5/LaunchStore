@@ -1,24 +1,34 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useStore } from '@/context/StoreContext';
 
 export default function ProductCard({ product }) {
   const { addToCart, toggleWishlist, isInWishlist } = useStore();
   const isWishlisted = isInWishlist(product.id);
   const router = useRouter();
+  const pathname = usePathname() || '';
+
+  // Extract store slug from the active URL path to scope navigation inside creator's store
+  const segments = pathname.split('/');
+  const storeSlug = segments[1] === 'store' ? segments[2] : null;
+  const productLink = storeSlug ? `/store/${storeSlug}/product/${product.id}` : `/product/${product.id}`;
 
   const handleBuyNow = (e) => {
     e.preventDefault();
     addToCart(product);
-    router.push('/cart');
+    if (storeSlug) {
+      router.push(`/store/${storeSlug}/cart`);
+    } else {
+      router.push('/cart');
+    }
   };
 
   return (
     <div className="product-card dashboard-card">
       <div className="product-visual-wrapper">
-        <Link href={`/product/${product.id}`} className="product-visual">
+        <Link href={productLink} className="product-visual">
           <img src={product.image} alt={product.name} />
           {product.trending && <span className="product-badge accent">Trending</span>}
           {product.featured && !product.trending && <span className="product-badge secondary">New</span>}
@@ -57,7 +67,7 @@ export default function ProductCard({ product }) {
             <span>4.8</span>
           </div>
         </div>
-        <Link href={`/product/${product.id}`}>
+        <Link href={productLink}>
           <h3 className="product-name">{product.name}</h3>
         </Link>
         <div className="product-footer">

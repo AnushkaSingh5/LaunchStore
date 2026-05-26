@@ -1,21 +1,20 @@
 import Link from 'next/link';
-import { storeData } from '@/data/mockData';
 
-export default function Footer() {
+export default function Footer({ storeName }) {
+  const displayTitle = storeName || 'Online Store';
+
   return (
     <footer className="footer">
       <div className="container">
         <div className="footer-card dashboard-card">
           <div className="footer-grid">
             <div className="footer-brand">
-              <h2 className="footer-logo">{storeData.name}</h2>
+              <h2 className="footer-logo">{displayTitle}</h2>
               <p className="footer-desc">Redefining modern living through minimalist design and premium craftsmanship.</p>
               <div className="social-pill">
-                {Object.entries(storeData.contact.socials).map(([name, url]) => (
-                  <a key={name} href={url} target="_blank" rel="noopener noreferrer" className="social-link">
-                    {name.charAt(0).toUpperCase()}
-                  </a>
-                ))}
+                <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="social-link">I</a>
+                <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="social-link">T</a>
+                <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="social-link">F</a>
               </div>
             </div>
 
@@ -48,7 +47,7 @@ export default function Footer() {
           </div>
           
           <div className="footer-bottom">
-            <p>&copy; {new Date().getFullYear()} {storeData.name}. Powered by Modern Commerce.</p>
+            <p>&copy; {new Date().getFullYear()} {displayTitle}. Powered by Modern Commerce.</p>
             <div className="legal-links">
               <Link href="#">Privacy</Link>
               <Link href="#">Terms</Link>

@@ -1,14 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { dashboardService } from '@/services/dashboardService';
 import Modal from '@/components/UI/Modal';
+import { useDashboard } from '@/context/DashboardContext';
+import { supabaseClient } from '@/lib/supabase';
 
 export default function CustomersPage() {
-  const [customers, setCustomers] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { customers: contextCustomers, orders, loading } = useDashboard();
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [orderItems, setOrderItems] = useState([]);
+  const [loadingOrderItems, setLoadingOrderItems] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   
@@ -22,55 +24,80 @@ export default function CustomersPage() {
     sortBy: 'newest'
   });
 
-  const mockCustomers = [
-    { id: 1, name: 'Alice Smith', email: 'alice@example.com', phone: '+1 234 567 8900', orders: 8, spent: 780, type: 'Returning Customers', activity: 'Active Recently (7 Days)', region: 'USA', date: '2023-10-20', lastOrder: '2 May 2026', color: '#f5f3ff', textColor: '#8b5cf6', initial: 'A' },
-    { id: 2, name: 'Bob Jones', email: 'bob@example.com', phone: '+1 234 567 8901', orders: 5, spent: 620, type: 'New Customers', activity: 'Active Recently (7 Days)', region: 'India', date: '2024-05-01', lastOrder: '5 May 2026', color: '#f0fdf4', textColor: '#22c55e', initial: 'B' },
-    { id: 3, name: 'Charlie Brown', email: 'charlie@example.com', phone: '+1 234 567 8902', orders: 12, spent: 1250, type: 'VIP Customers', activity: 'Active Recently (7 Days)', region: 'UK', date: '2022-12-15', lastOrder: '6 May 2026', color: '#fffbeb', textColor: '#f59e0b', initial: 'C' },
-    { id: 4, name: 'Diana Prince', email: 'diana@example.com', phone: '+1 234 567 8903', orders: 0, spent: 0, type: 'Guest Customers', activity: 'Never Purchased', region: 'Europe', date: '2024-05-07', lastOrder: '-', color: '#fef2f2', textColor: '#ef4444', initial: 'D' },
-    { id: 5, name: 'Ethan Hunt', email: 'ethan@impossible.com', phone: '+1 234 567 8904', orders: 2, spent: 150, type: 'Returning Customers', activity: 'Inactive (30+ Days)', region: 'Asia', date: '2023-01-10', lastOrder: '15 Mar 2026', color: '#eff6ff', textColor: '#3b82f6', initial: 'E' },
-    { id: 6, name: 'Fiona Gallagher', email: 'fiona@shameless.com', phone: '+1 234 567 8905', orders: 1, spent: 45, type: 'New Customers', activity: 'Active Recently (7 Days)', region: 'USA', date: '2024-04-28', lastOrder: '30 Apr 2026', color: '#f5f3ff', textColor: '#8b5cf6', initial: 'F' },
-  ];
+  const customers = (contextCustomers || []).map(cust => {
+    const custOrders = (orders || []).filter(o => o.customer_email === cust.email);
+    const spent = custOrders.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
+    return {
+      ...cust,
+      spent,
+      type: spent > 500 ? 'VIP Customers' : custOrders.length > 2 ? 'Returning Customers' : 'New Customers',
+      activity: 'Active Recently (7 Days)',
+      region: 'Local',
+      date: custOrders.length > 0 ? new Date(custOrders[custOrders.length - 1].created_at).toISOString().split('T')[0] : '-',
+      lastOrder: custOrders.length > 0 ? new Date(custOrders[0].created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : '-',
+      color: '#f5f3ff',
+      textColor: '#8b5cf6',
+      initial: cust.name ? cust.name.charAt(0).toUpperCase() : 'C'
+    };
+  });
 
-  useEffect(() => {
-    setCustomers(mockCustomers);
-    setLoading(false);
-  }, []);
+  const totalSpent = (orders || []).reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
 
   const stats = [
-    { label: 'Total Customers', value: '4', sub: 'All time customers', color: '#f5f3ff', iconColor: '#8b5cf6', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> },
-    { label: 'Total Orders', value: '9', sub: 'All orders placed', color: '#f0fdf4', iconColor: '#22c55e', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg> },
-    { label: 'Total Spent', value: '$1,634.00', sub: 'All time revenue', color: '#fff7ed', iconColor: '#ea580c', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg> },
-    { label: 'New Customers', value: '2', sub: 'This month', trend: '+ 25%', color: '#eff6ff', iconColor: '#3b82f6', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="19" y1="8" x2="19" y2="14"></line><line x1="22" y1="11" x2="16" y2="11"></line></svg> },
+    { label: 'Total Customers', value: String(customers.length), sub: 'All time customers', color: '#f5f3ff', iconColor: '#8b5cf6', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> },
+    { label: 'Total Orders', value: String(orders?.length || 0), sub: 'All orders placed', color: '#f0fdf4', iconColor: '#22c55e', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg> },
+    { label: 'Total Spent', value: `$${totalSpent.toLocaleString()}`, sub: 'All time revenue', color: '#fff7ed', iconColor: '#ea580c', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg> },
+    { label: 'New Customers', value: String(customers.filter(c => c.type === 'New Customers').length), sub: 'This month', trend: '+ 25%', color: '#eff6ff', iconColor: '#3b82f6', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="19" y1="8" x2="19" y2="14"></line><line x1="22" y1="11" x2="16" y2="11"></line></svg> },
   ];
 
-  const filteredCustomers = customers.filter(cust => {
-    const matchesSearch = cust.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                         cust.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         cust.phone.includes(searchQuery);
+  const filteredCustomers = (customers || []).filter(cust => {
+    if (!cust) return false;
+    const name = String(cust.name || '');
+    const email = String(cust.email || '');
+    const phone = String(cust.phone || '');
+    const type = String(cust.type || 'Regular');
+    const activity = String(cust.activity || 'Active');
+    const spent = parseFloat(cust.spent) || 0;
+    const ordersCount = parseInt(cust.orders) || 0;
+    const region = String(cust.region || '');
+
+    const matchesSearch = name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                         email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         phone.includes(searchQuery);
     
-    const matchesType = filters.type.length === 0 || filters.type.includes(cust.type);
-    const matchesActivity = filters.activity.length === 0 || filters.activity.includes(cust.activity);
+    const matchesType = filters.type.length === 0 || filters.type.includes(type);
+    const matchesActivity = filters.activity.length === 0 || filters.activity.includes(activity);
     
     let matchesSpent = true;
-    if (filters.spent === '$0 - $100') matchesSpent = cust.spent <= 100;
-    else if (filters.spent === '$100 - $500') matchesSpent = cust.spent > 100 && cust.spent <= 500;
-    else if (filters.spent === '$500+') matchesSpent = cust.spent > 500;
+    if (filters.spent === '$0 - $100') matchesSpent = spent <= 100;
+    else if (filters.spent === '$100 - $500') matchesSpent = spent > 100 && spent <= 500;
+    else if (filters.spent === '$500+') matchesSpent = spent > 500;
 
     let matchesOrders = true;
-    if (filters.orders === '0 Orders') matchesOrders = cust.orders === 0;
-    else if (filters.orders === '1 - 5 Orders') matchesOrders = cust.orders >= 1 && cust.orders <= 5;
-    else if (filters.orders === '5 - 10 Orders') matchesOrders = cust.orders > 5 && cust.orders <= 10;
-    else if (filters.orders === '10+ Orders') matchesOrders = cust.orders > 10;
+    if (filters.orders === '0 Orders') matchesOrders = ordersCount === 0;
+    else if (filters.orders === '1 - 5 Orders') matchesOrders = ordersCount >= 1 && ordersCount <= 5;
+    else if (filters.orders === '5 - 10 Orders') matchesOrders = ordersCount > 5 && ordersCount <= 10;
+    else if (filters.orders === '10+ Orders') matchesOrders = ordersCount > 10;
 
-    const matchesRegion = filters.region === 'All Regions' || cust.region === filters.region;
+    const matchesRegion = filters.region === 'All Regions' || region === filters.region;
 
     return matchesSearch && matchesType && matchesActivity && matchesSpent && matchesOrders && matchesRegion;
   }).sort((a, b) => {
-    if (filters.sortBy === 'spending') return b.spent - a.spent;
-    if (filters.sortBy === 'orders') return b.orders - a.orders;
-    if (filters.sortBy === 'newest') return new Date(b.date) - new Date(a.date);
-    if (filters.sortBy === 'oldest') return new Date(a.date) - new Date(b.date);
-    if (filters.sortBy === 'alpha') return a.name.localeCompare(b.name);
+    if (!a || !b) return 0;
+    const aSpent = parseFloat(a.spent) || 0;
+    const bSpent = parseFloat(b.spent) || 0;
+    const aOrders = parseInt(a.orders) || 0;
+    const bOrders = parseInt(b.orders) || 0;
+    const aName = String(a.name || '');
+    const bName = String(b.name || '');
+    const aDate = a.date ? new Date(a.date) : new Date(0);
+    const bDate = b.date ? new Date(b.date) : new Date(0);
+
+    if (filters.sortBy === 'spending') return bSpent - aSpent;
+    if (filters.sortBy === 'orders') return bOrders - aOrders;
+    if (filters.sortBy === 'newest') return bDate - aDate;
+    if (filters.sortBy === 'oldest') return aDate - bDate;
+    if (filters.sortBy === 'alpha') return aName.localeCompare(bName);
     return 0;
   });
 
@@ -129,6 +156,52 @@ export default function CustomersPage() {
     link.click();
     document.body.removeChild(link);
   };
+
+  useEffect(() => {
+    const fetchOrderItems = async () => {
+      if (!selectedOrder) {
+        setOrderItems([]);
+        return;
+      }
+      setLoadingOrderItems(true);
+      try {
+        if (!supabaseClient) {
+          setOrderItems([]);
+          return;
+        }
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+        const sessionData = await supabaseClient.auth.getSession();
+        const token = sessionData.data.session?.access_token || supabaseAnonKey;
+
+        // Fetch order items joined with product details
+        const url = `${supabaseUrl}/rest/v1/order_items?order_id=eq.${selectedOrder.id}&select=*,product:product_id(name,price)`;
+        const res = await fetch(url, {
+          headers: {
+            'apikey': supabaseAnonKey,
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        if (res.ok) {
+          const itemsData = await res.json();
+          setOrderItems(itemsData || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch order items:', err);
+      } finally {
+        setLoadingOrderItems(false);
+      }
+    };
+    fetchOrderItems();
+  }, [selectedOrder?.id]);
+
+  const selectedCustomerOrders = selectedCustomer
+    ? (orders || []).filter(o => o.customer_email === selectedCustomer.email)
+    : [];
+
+  const customerSinceDate = selectedCustomerOrders.length > 0 
+    ? new Date(selectedCustomerOrders[selectedCustomerOrders.length - 1].created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    : 'New';
 
   return (
     <div className="customers-page">
@@ -402,7 +475,9 @@ export default function CustomersPage() {
             <div className="modal-title-box">
               <div className="title-with-badge">
                 <h2>Customer History</h2>
-                <span className="since-badge">Customer since Oct 20, 2023</span>
+                <span className="since-badge">
+                  {customerSinceDate === 'New' ? 'New Customer' : `Customer since ${customerSinceDate}`}
+                </span>
               </div>
               <p>{selectedCustomer?.name}</p>
             </div>
@@ -428,7 +503,7 @@ export default function CustomersPage() {
                 </div>
                 <div className="ov-info">
                   <span className="ov-label">Total Orders</span>
-                  <strong>3</strong>
+                  <strong>{selectedCustomerOrders.length}</strong>
                 </div>
               </div>
               <div className="ov-card">
@@ -437,7 +512,7 @@ export default function CustomersPage() {
                 </div>
                 <div className="ov-info">
                   <span className="ov-label">Total Spent</span>
-                  <strong>$748.00</strong>
+                  <strong>${(selectedCustomer?.spent || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
                 </div>
               </div>
               <div className="ov-card">
@@ -446,7 +521,7 @@ export default function CustomersPage() {
                 </div>
                 <div className="ov-info">
                   <span className="ov-label">Last Order</span>
-                  <strong>May 05, 2026</strong>
+                  <strong>{selectedCustomer?.lastOrder || '-'}</strong>
                 </div>
               </div>
               <div className="ov-card">
@@ -465,7 +540,7 @@ export default function CustomersPage() {
               </div>
               <div className="ov-info">
                 <span className="ov-label">Phone</span>
-                <strong>{selectedCustomer?.phone}</strong>
+                <strong>{selectedCustomer?.phone || 'N/A'}</strong>
               </div>
             </div>
           </div>
@@ -481,35 +556,58 @@ export default function CustomersPage() {
                 <div className="h-col-items">Items</div>
                 <div className="h-col-actions">Actions</div>
               </div>
-              {[
-                { id: 'ORD-1001', date: 'May 05, 2026', time: '02:30 PM', status: 'Delivered', color: '#f0fdf4', textColor: '#15803d', total: '$450.00', items: '1 item' },
-                { id: 'ORD-0992', date: 'Apr 21, 2026', time: '11:15 AM', status: 'Pending', color: '#fffbeb', textColor: '#b45309', total: '$199.00', items: '2 items' },
-                { id: 'ORD-0981', date: 'Mar 10, 2026', time: '09:45 AM', status: 'Shipped', color: '#eff6ff', textColor: '#1d4ed8', total: '$99.00', items: '1 item' },
-              ].map(order => (
-                <div className="h-row" key={order.id}>
-                  <div className="h-col-id"><strong>{order.id}</strong></div>
-                  <div className="h-col-date">
-                    <div className="h-date-box">
-                      <strong>{order.date}</strong>
-                      <span>{order.time}</span>
+              {selectedCustomerOrders.length > 0 ? (
+                selectedCustomerOrders.map(order => {
+                  const orderDate = new Date(order.created_at);
+                  const formattedDate = orderDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                  const formattedTime = orderDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                  
+                  let statusBg = '#fffbeb';
+                  let statusColor = '#b45309';
+                  if (order.status === 'Completed' || order.status === 'Delivered') {
+                    statusBg = '#f0fdf4';
+                    statusColor = '#15803d';
+                  } else if (order.status === 'Cancelled') {
+                    statusBg = '#fef2f2';
+                    statusColor = '#b91c1c';
+                  } else if (order.status === 'Shipped') {
+                    statusBg = '#eff6ff';
+                    statusColor = '#1d4ed8';
+                  }
+
+                  return (
+                    <div className="h-row" key={order.id}>
+                      <div className="h-col-id"><strong>{order.id.slice(0, 8).toUpperCase()}</strong></div>
+                      <div className="h-col-date">
+                        <div className="h-date-box">
+                          <strong>{formattedDate}</strong>
+                          <span>{formattedTime}</span>
+                        </div>
+                      </div>
+                      <div className="h-col-status">
+                        <span className="h-status" style={{ background: statusBg, color: statusColor }}>
+                          <span className="h-dot" style={{ background: statusColor }}></span>
+                          {order.status}
+                        </span>
+                      </div>
+                      <div className="h-col-total">
+                        <strong>${parseFloat(order.total_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                      </div>
+                      <div className="h-col-items">1 item</div>
+                      <div className="h-col-actions">
+                        <button className="row-btn view" onClick={() => setSelectedOrder(order)}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                          View Details
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                  <div className="h-col-status">
-                    <span className="h-status" style={{ background: order.color, color: order.textColor }}>
-                      <span className="h-dot" style={{ background: order.textColor }}></span>
-                      {order.status}
-                    </span>
-                  </div>
-                  <div className="h-col-total"><strong>{order.total}</strong></div>
-                  <div className="h-col-items">{order.items}</div>
-                  <div className="h-col-actions">
-                    <button className="row-btn view" onClick={() => setSelectedOrder(order)}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                      View Details
-                    </button>
-                  </div>
+                  );
+                })
+              ) : (
+                <div style={{ padding: '24px', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>
+                  No order history found for this customer.
                 </div>
-              ))}
+              )}
             </div>
           </div>
 
@@ -541,7 +639,7 @@ export default function CustomersPage() {
             </div>
             <div className="modal-title-box">
               <div className="title-with-badge">
-                <h2>Order #{selectedOrder.id}</h2>
+                <h2>Order #{selectedOrder.id?.slice(0, 8).toUpperCase()}</h2>
                 <span className="order-badge">OFFICIAL RECEIPT</span>
               </div>
               <p>Review full order details and customer information.</p>
@@ -563,11 +661,14 @@ export default function CustomersPage() {
             <div className="details-grid">
               <div className="detail-item">
                 <span className="d-label">Status</span>
-                <span className="d-val status" style={{ background: selectedOrder.color, color: selectedOrder.textColor }}>{selectedOrder.status}</span>
+                <span className="d-val status" style={{
+                  background: selectedOrder.status === 'Completed' || selectedOrder.status === 'Delivered' ? '#f0fdf4' : selectedOrder.status === 'Cancelled' ? '#fef2f2' : '#fffbeb',
+                  color: selectedOrder.status === 'Completed' || selectedOrder.status === 'Delivered' ? '#15803d' : selectedOrder.status === 'Cancelled' ? '#b91c1c' : '#b45309'
+                }}>{selectedOrder.status}</span>
               </div>
               <div className="detail-item">
                 <span className="d-label">Total Amount</span>
-                <span className="d-val"><strong>{selectedOrder.total}</strong></span>
+                <span className="d-val"><strong>${parseFloat(selectedOrder.total_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
               </div>
               <div className="detail-item">
                 <span className="d-label">Payment</span>
@@ -575,7 +676,7 @@ export default function CustomersPage() {
               </div>
               <div className="detail-item">
                 <span className="d-label">Date</span>
-                <span className="d-val">{selectedOrder.date}</span>
+                <span className="d-val">{new Date(selectedOrder.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
               </div>
             </div>
             
@@ -588,19 +689,26 @@ export default function CustomersPage() {
                   <span>Price</span>
                   <span>Total</span>
                 </div>
-                <div className="i-row">
-                  <span>Premium Wireless Headphones</span>
-                  <span>1</span>
-                  <span>$299.00</span>
-                  <span>$299.00</span>
-                </div>
-                {selectedOrder.total === '$450.00' && (
-                  <div className="i-row">
-                    <span>Ergonomic Office Chair</span>
-                    <span>1</span>
-                    <span>$151.00</span>
-                    <span>$151.00</span>
-                  </div>
+                {loadingOrderItems ? (
+                  <div style={{ padding: '16px', textAlign: 'center', color: '#94a3b8' }}>Loading items...</div>
+                ) : orderItems.length > 0 ? (
+                  orderItems.map((item) => {
+                    const productName = item.product?.name || 'Product Details (Archived)';
+                    const itemPrice = parseFloat(item.price || item.product?.price || 0);
+                    const itemQty = parseInt(item.quantity || 1);
+                    const itemTotal = itemPrice * itemQty;
+
+                    return (
+                      <div className="i-row" key={item.id}>
+                        <span>{productName}</span>
+                        <span>{itemQty}</span>
+                        <span>${itemPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        <span>${itemTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div style={{ padding: '16px', textAlign: 'center', color: '#94a3b8' }}>No items found for this order.</div>
                 )}
               </div>
             </div>

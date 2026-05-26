@@ -1,0 +1,144 @@
+.section {
+  padding: 100px 0;
+  background-color: #ffffff;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.header {
+  text-align: center;
+  max-width: 600px;
+  margin-bottom: 70px;
+}
+
+.sub {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.title {
+  font-size: 38px;
+  font-weight: 800;
+  color: var(--primary);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  letter-spacing: -1px;
+}
+
+.description {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text-sub);
+}
+
+/* Steps Grid */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 40px;
+  width: 100%;
+  position: relative;
+}
+
+.stepCard {
+  background: #f8fafc;
+  border-radius: 24px;
+  padding: 40px 32px;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  position: relative;
+  transition: var(--transition-smooth);
+}
+
+.stepCard:hover {
+  background: var(--white);
+  box-shadow: var(--shadow-md), 0 20px 40px -10px rgba(0, 0, 0, 0.04);
+  border-color: rgba(37, 99, 235, 0.1);
+  transform: translateY(-2px);
+}
+
+.numBox {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 30px;
+}
+
+.numText {
+  font-size: 48px;
+  font-weight: 800;
+  color: var(--accent);
+  opacity: 0.15;
+  line-height: 1;
+}
+
+.stepCard:hover .numText {
+  opacity: 0.4;
+}
+
+.stepBadge {
+  padding: 4px 10px;
+  background: #eff6ff;
+  border: 1px solid #dbeafe;
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 20px;
+}
+
+.stepTitle {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 12px;
+}
+
+.stepDescription {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-sub);
+}
+
+.arrowIcon {
+  position: absolute;
+  top: 50%;
+  right: -28px;
+  transform: translateY(-50%);
+  font-size: 24px;
+  color: #cbd5e1;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+@media (max-width: 1024px) {
+  .grid {
+    gap: 20px;
+  }
+  .arrowIcon {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .section {
+    padding: 60px 0;
+  }
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .stepCard {
+    padding: 32px 24px;
+  }
+  .header {
+    margin-bottom: 40px;
+  }
+}

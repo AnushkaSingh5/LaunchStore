@@ -1,0 +1,480 @@
+.heroSection {
+  position: relative;
+  padding-top: 180px;
+  padding-bottom: 120px;
+  background-color: #ffffff;
+  overflow: hidden;
+}
+
+.glowBg {
+  position: absolute;
+  top: -10%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1000px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.08) 0%, rgba(99, 102, 241, 0.05) 50%, rgba(255, 255, 255, 0) 70%);
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.container {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 60px;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+}
+
+/* Left Side: Content */
+.contentBox {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: #eff6ff;
+  border: 1px solid #dbeafe;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 30px;
+  margin-bottom: 24px;
+}
+
+.badgePulse {
+  width: 6px;
+  height: 6px;
+  background: var(--accent);
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px rgba(37, 99, 235, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0);
+  }
+}
+
+.title {
+  font-size: 56px;
+  font-weight: 800;
+  line-height: 1.15;
+  color: var(--primary);
+  margin-bottom: 20px;
+  letter-spacing: -1.5px;
+}
+
+.gradientText {
+  background: linear-gradient(135deg, var(--accent) 0%, #4f46e5 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.description {
+  font-size: 18px;
+  line-height: 1.6;
+  color: var(--text-sub);
+  margin-bottom: 36px;
+  max-width: 540px;
+}
+
+.ctaGroup {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 48px;
+  width: 100%;
+}
+
+.primaryCta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--primary);
+  color: var(--white);
+  padding: 14px 28px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 15px;
+  box-shadow: 0 4px 14px rgba(18, 18, 18, 0.15);
+  transition: var(--transition-smooth);
+}
+
+.primaryCta:hover {
+  background: var(--accent);
+  box-shadow: 0 6px 24px rgba(37, 99, 235, 0.3);
+  transform: translateY(-1px);
+}
+
+.secondaryCta {
+  background: var(--white);
+  color: var(--text-main);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  padding: 14px 28px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 15px;
+  transition: var(--transition-smooth);
+}
+
+.secondaryCta:hover {
+  background: var(--secondary);
+  border-color: rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+}
+
+.metricsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  padding-top: 32px;
+  width: 100%;
+}
+
+.metricItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.metricVal {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.metricLabel {
+  font-size: 13px;
+  color: var(--text-sub);
+  font-weight: 500;
+}
+
+/* Right Side: Mockup */
+.mockupBox {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  width: 100%;
+}
+
+.mockupContainer {
+  width: 100%;
+  max-width: 480px;
+  height: 320px;
+  background: var(--white);
+  border-radius: 20px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-lg), 0 30px 60px -15px rgba(0, 0, 0, 0.1);
+  overflow: visible;
+  position: relative;
+}
+
+.mockupHeader {
+  display: flex;
+  align-items: center;
+  height: 40px;
+  padding: 0 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  gap: 16px;
+}
+
+.dots {
+  display: flex;
+  gap: 6px;
+}
+
+.dots span {
+  width: 8px;
+  height: 8px;
+  background: #cbd5e1;
+  border-radius: 50%;
+}
+
+.mockupSearch {
+  flex: 1;
+  height: 22px;
+  background: var(--secondary);
+  border-radius: 6px;
+  font-size: 10px;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+}
+
+.mockupBody {
+  display: grid;
+  grid-template-columns: 50px 1fr;
+  height: 278px;
+}
+
+.mockupSidebar {
+  background: #fafafa;
+  border-right: 1px solid rgba(0, 0, 0, 0.04);
+  padding: 16px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+
+.sideItemActive {
+  width: 24px;
+  height: 24px;
+  background: #eff6ff;
+  border-radius: 6px;
+  border: 1px solid #dbeafe;
+}
+
+.sideItem {
+  width: 24px;
+  height: 24px;
+  background: #f1f5f9;
+  border-radius: 6px;
+}
+
+.mockupContent {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.contentHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatar {
+  width: 28px;
+  height: 28px;
+  background: #e2e8f0;
+  border-radius: 50%;
+}
+
+.barLong {
+  width: 100px;
+  height: 10px;
+  background: #e2e8f0;
+  border-radius: 4px;
+}
+
+.chartBlock {
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  border-radius: 12px;
+  padding: 12px;
+  background: #fafafa;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.chartLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.barShort {
+  width: 40px;
+  height: 8px;
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.priceText {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.chartBars {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  height: 48px;
+  gap: 6px;
+  padding-top: 4px;
+}
+
+.chartBars span {
+  flex: 1;
+  background: linear-gradient(0deg, var(--accent) 0%, #60a5fa 100%);
+  border-radius: 2px;
+}
+
+.dashboardGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.gridCard {
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  border-radius: 10px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.barMedium {
+  width: 30px;
+  height: 6px;
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.cardValue {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+/* Floating Cards styling */
+.floatingCard {
+  position: absolute;
+  padding: 12px 18px;
+  border-radius: 16px;
+  box-shadow: var(--shadow-md), 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  animation: hoverFloat 6s ease-in-out infinite;
+}
+
+@keyframes hoverFloat {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+.float1 {
+  top: -24px;
+  right: -36px;
+  animation-delay: 0s;
+}
+
+.float2 {
+  bottom: 24px;
+  left: -48px;
+  animation-delay: 2s;
+}
+
+.float3 {
+  bottom: -32px;
+  right: -12px;
+  animation-delay: 4s;
+}
+
+.floatIcon {
+  font-size: 20px;
+}
+
+.floatIconIndicator {
+  width: 10px;
+  height: 10px;
+  background: #22c55e;
+  border-radius: 50%;
+  animation: pulse 1.5s infinite;
+}
+
+.floatText {
+  display: flex;
+  flex-direction: column;
+}
+
+.floatText strong {
+  font-size: 13px;
+  color: var(--primary);
+}
+
+.floatText span {
+  font-size: 11px;
+  color: var(--text-sub);
+}
+
+@media (max-width: 1024px) {
+  .container {
+    gap: 40px;
+  }
+  .title {
+    font-size: 44px;
+  }
+}
+
+@media (max-width: 768px) {
+  .heroSection {
+    padding-top: 140px;
+    padding-bottom: 80px;
+  }
+  .container {
+    grid-template-columns: 1fr;
+    gap: 60px;
+    text-align: center;
+  }
+  .contentBox {
+    align-items: center;
+    text-align: center;
+  }
+  .description {
+    margin: 0 auto 36px;
+  }
+  .ctaGroup {
+    justify-content: center;
+  }
+  .metricsGrid {
+    max-width: 480px;
+    margin: 0 auto;
+  }
+  .mockupBox {
+    margin-top: 20px;
+    padding: 0 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .title {
+    font-size: 36px;
+  }
+  .ctaGroup {
+    flex-direction: column;
+    width: 100%;
+  }
+  .primaryCta, .secondaryCta {
+    width: 100%;
+    justify-content: center;
+  }
+  .float1, .float2, .float3 {
+    display: none; /* Hide floating cards on very small mobile screens for cleaner viewport */
+  }
+}

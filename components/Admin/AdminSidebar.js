@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 import styles from './AdminLayout.module.css';
 
 const icons = {
@@ -20,6 +21,17 @@ const icons = {
 
 export default function AdminSidebar({ isOpen, onClose, isCollapsed, onToggle }) {
   const pathname = usePathname();
+  const { signOut } = useAuth();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+    } catch (e) {
+      console.error('Logout error:', e);
+    }
+    router.push('/');
+  };
 
   const menuItems = [
     { label: 'Overview', path: '/admin', icon: icons.Overview, color: '#8b5cf6' },
@@ -65,7 +77,7 @@ export default function AdminSidebar({ isOpen, onClose, isCollapsed, onToggle })
         </nav>
 
         <div className={styles.sidebarFooter}>
-          <button className={styles.logoutBtn}>
+          <button className={styles.logoutBtn} onClick={handleLogout}>
             <span className={styles.navIcon}>{icons.Logout}</span>
             <span className={styles.navLabel}>Logout</span>
           </button>

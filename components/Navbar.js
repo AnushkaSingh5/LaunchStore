@@ -4,13 +4,16 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useStore } from '@/context/StoreContext';
-import { storeData } from '@/data/mockData';
 
-export default function Navbar() {
+export default function Navbar({ storeName }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const { cartCount, searchQuery, setSearchQuery } = useStore();
   const router = useRouter();
   const pathname = usePathname();
+
+  const pathParts = pathname ? pathname.split('/') : [];
+  const isStorePage = pathParts[1] === 'store' && pathParts[2];
+  const storeSlug = isStorePage ? pathParts[2] : null;
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
@@ -23,8 +26,11 @@ export default function Navbar() {
     setSearchQuery(value);
     
     // If user starts typing and is not on home page, redirect to home
-    if (value.trim() !== '' && pathname !== '/') {
-      router.push('/');
+    if (value.trim() !== '') {
+      const homePath = storeSlug ? `/store/${storeSlug}` : '/';
+      if (pathname !== homePath) {
+        router.push(homePath);
+      }
     }
   };
 
@@ -32,8 +38,8 @@ export default function Navbar() {
     <header className={`navbar-wrapper ${isScrolled ? 'scrolled' : ''}`}>
       <nav className="container nav-container dashboard-card glass">
         <div className="nav-main">
-          <Link href="/" className="logo">
-            {storeData.name}
+          <Link href={storeSlug ? `/store/${storeSlug}` : "/"} className="logo">
+            {storeName || 'Online Store'}
           </Link>
 
           <form className="search-container desktop-search" onSubmit={(e) => e.preventDefault()}>
@@ -53,7 +59,7 @@ export default function Navbar() {
             <button className="action-btn user-btn">
               <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
             </button>
-            <Link href="/cart" className="action-btn cart-btn">
+            <Link href={storeSlug ? `/store/${storeSlug}/cart` : "/cart"} className="action-btn cart-btn">
               <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><path d="M3 6h18"></path><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
               {cartCount > 0 && <span className="badge">{cartCount}</span>}
             </Link>

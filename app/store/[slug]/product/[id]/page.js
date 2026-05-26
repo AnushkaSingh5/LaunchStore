@@ -4,44 +4,226 @@ import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/context/StoreContext';
 import { storeService } from '@/services/storeService';
+import { productService } from '@/services/productService';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
 
 export default function ProductDetails({ params }) {
-  const { id } = use(params);
+  const { id, slug } = use(params);
   const { addToCart } = useStore();
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [storeDetails, setStoreDetails] = useState(null);
   const router = useRouter();
 
   useEffect(() => {
     const fetchProduct = async () => {
+      console.log(`[LaunchCart - ProductDetails] Starting fetchProduct for product ID: "${id}" on store slug: "${slug}"`);
       setLoading(true);
-      const data = await storeService.getProductById(id);
-      if (data) {
-        setProduct(data);
-        const related = await storeService.getRelatedProducts(data.category, data.id);
-        setRelatedProducts(related);
+      try {
+        console.log(`[LaunchCart - ProductDetails] Calling storeService.getStoreBySlug("${slug}")...`);
+        const storeData = await storeService.getStoreBySlug(slug);
+        console.log(`[LaunchCart - ProductDetails] storeService.getStoreBySlug returned:`, storeData);
+        setStoreDetails(storeData);
+        
+        if (storeData && storeData.id) {
+          console.log(`[LaunchCart - ProductDetails] Store matched. Calling productService.getProductById("${id}")...`);
+          const prodData = await productService.getProductById(id);
+          console.log(`[LaunchCart - ProductDetails] productService.getProductById returned:`, prodData);
+          if (prodData) {
+            setProduct(prodData);
+            console.log(`[LaunchCart - ProductDetails] Fetching related products...`);
+            const related = await productService.getRelatedProducts(storeData.id, prodData.category, prodData.id);
+            console.log(`[LaunchCart - ProductDetails] Related products fetched count: ${related?.length}`);
+            setRelatedProducts(related);
+          } else {
+            console.warn(`[LaunchCart - ProductDetails] No product matches ID: "${id}"`);
+          }
+        } else {
+          console.warn(`[LaunchCart - ProductDetails] No store matches slug: "${slug}"`);
+        }
+      } catch (error) {
+        console.error("[LaunchCart - ProductDetails] Failed to fetch product details with error:", error);
+      } finally {
+        console.log("[LaunchCart - ProductDetails] Fetch product complete, setting loading to false.");
+        setLoading(false);
       }
-      setLoading(false);
     };
     fetchProduct();
-  }, [id]);
+  }, [id, slug]);
 
   const handleBuyNow = () => {
     addToCart(product, quantity);
-    router.push('/cart');
+    router.push(`/store/${slug}/cart`);
   };
 
-  if (loading) return <div className="loading-screen">Loading Product...</div>;
-  if (!product) return <div className="error-screen">Product not found.</div>;
+  if (loading) {
+    return (
+      <div className="store-loading-screen">
+        <div className="spinner"></div>
+        <p>Loading Product...</p>
+        <style jsx>{`
+          .store-loading-screen {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #0f172a;
+            color: #fff;
+            gap: 16px;
+            font-family: 'Outfit', sans-serif;
+          }
+          .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-left-color: #8b5cf6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+          }
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
+  if (!storeDetails) {
+    return (
+      <div className="store-not-found-screen">
+        <div className="glass-card">
+          <h2>Store Not Found 🔍</h2>
+          <p>We couldn't find an active store with the link <strong>/store/{slug}</strong>. Please check the spelling or contact the owner.</p>
+          <Link href="/" className="back-link">Return to Home</Link>
+        </div>
+        <style jsx>{`
+          .store-not-found-screen {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            padding: 20px;
+            font-family: 'Outfit', sans-serif;
+          }
+          .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 24px;
+            padding: 40px;
+            max-width: 480px;
+            text-align: center;
+            color: #fff;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+          }
+          .glass-card h2 {
+            font-size: 24px;
+            font-weight: 800;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #f43f5e, #fb7185);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+          }
+          .glass-card p {
+            font-size: 14px;
+            color: #94a3b8;
+            line-height: 1.6;
+            margin-bottom: 28px;
+          }
+          .back-link {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #e11d48;
+            color: #fff;
+            border-radius: 12px;
+            font-weight: 700;
+            text-decoration: none;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+          }
+          .back-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(225, 29, 72, 0.3);
+          }
+        `}</style>
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="store-not-found-screen">
+        <div className="glass-card">
+          <h2>Product Not Found 🔍</h2>
+          <p>We couldn't find the product details in this store. It might have been removed or set to draft.</p>
+          <Link href={`/store/${slug}`} className="back-link">Return to Store</Link>
+        </div>
+        <style jsx>{`
+          .store-not-found-screen {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            padding: 20px;
+            font-family: 'Outfit', sans-serif;
+          }
+          .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 24px;
+            padding: 40px;
+            max-width: 480px;
+            text-align: center;
+            color: #fff;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+          }
+          .glass-card h2 {
+            font-size: 24px;
+            font-weight: 800;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #f43f5e, #fb7185);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+          }
+          .glass-card p {
+            font-size: 14px;
+            color: #94a3b8;
+            line-height: 1.6;
+            margin-bottom: 28px;
+          }
+          .back-link {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #8b5cf6;
+            color: #fff;
+            border-radius: 12px;
+            font-weight: 700;
+            text-decoration: none;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+          }
+          .back-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+          }
+        `}</style>
+      </div>
+    );
+  }
 
   return (
     <div className="product-details-page">
-      <Navbar />
+      <Navbar storeName={storeDetails?.name} />
 
       <main className="container main-content">
         <div className="product-layout dashboard-card fade-in">
@@ -113,7 +295,7 @@ export default function ProductDetails({ params }) {
         )}
       </main>
 
-      <Footer />
+      <Footer storeName={storeDetails?.name} />
 
       <style jsx>{`
         .product-details-page {

@@ -1,19 +1,21 @@
-import { storeData } from '@/data/mockData';
+export default function Hero({ bannerUrl, storeName, description }) {
+  const displayBanner = bannerUrl || '/hero.png';
+  const displayTitle = storeName || 'Welcome to Our Store';
+  const displaySubtitle = description || 'Discover our curated premium collections.';
 
-export default function Hero() {
   return (
     <section className="hero-section">
       <div className="container">
         <div className="hero-card dashboard-card overflow-hidden fade-in">
           <div className="hero-background">
-            <img src="/hero.png" alt="Featured Space" />
+            <img src={displayBanner} alt={displayTitle} />
             <div className="overlay"></div>
           </div>
           
           <div className="hero-content">
             <span className="welcome-tag">Premium Collection</span>
-            <h1 className="hero-title">{storeData.description}</h1>
-            <p className="hero-subtitle">Discover high-end minimalist designs curated for modern living.</p>
+            <h1 className="hero-title">{displayTitle}</h1>
+            <p className="hero-subtitle">{displaySubtitle}</p>
             <div className="hero-actions">
               <button className="primary-btn">Explore Now</button>
               <button className="secondary-btn">New Arrivals</button>

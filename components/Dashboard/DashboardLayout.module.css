@@ -53,6 +53,11 @@
   border-bottom: 1px solid var(--secondary);
 }
 
+.viewStoreContainer {
+  padding: 16px 0 0 0;
+  display: block;
+}
+
 .logo h2 {
   font-size: 20px;
   font-weight: 800;
@@ -387,7 +392,7 @@
     backdrop-filter: blur(10px) !important;
   }
 
-  .logo, .sidebarFooter, .closeBtn, .desktopToggleBtn, .overlay {
+  .logo, .sidebarFooter, .closeBtn, .desktopToggleBtn, .overlay, .viewStoreContainer {
     display: none !important;
   }
 

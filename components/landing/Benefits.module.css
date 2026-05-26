@@ -1,0 +1,233 @@
+.section {
+  padding: 100px 0;
+  background-color: #fafbfd;
+  border-top: 1px solid rgba(0, 0, 0, 0.03);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+}
+
+.container {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 80px;
+  align-items: center;
+}
+
+.leftCol {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.sub {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.title {
+  font-size: 38px;
+  font-weight: 800;
+  color: var(--primary);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  letter-spacing: -1px;
+}
+
+.description {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text-sub);
+  margin-bottom: 40px;
+}
+
+/* Benefits list */
+.benefitsList {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  width: 100%;
+}
+
+.benefitItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.benefitIcon {
+  font-size: 20px;
+  width: 44px;
+  height: 44px;
+  background: var(--white);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.03);
+  flex-shrink: 0;
+}
+
+.benefitText h4 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 6px;
+}
+
+.benefitText p {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-sub);
+  max-width: 500px;
+}
+
+/* Right column visual card */
+.rightCol {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.visualCard {
+  width: 100%;
+  max-width: 380px;
+  background: var(--white);
+  border-radius: 24px;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  position: relative;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-sub);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.statusGlow {
+  width: 8px;
+  height: 8px;
+  background: #22c55e;
+  border-radius: 50%;
+  animation: glowPulse 2s infinite;
+}
+
+@keyframes glowPulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px rgba(34, 197, 94, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+  }
+}
+
+.speedMetric {
+  display: flex;
+  justify-content: center;
+  margin: 10px 0;
+}
+
+.speedCircle {
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  border: 8px solid #eff6ff;
+  border-top-color: #22c55e;
+  border-right-color: #22c55e;
+  border-left-color: #22c55e;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.speedNum {
+  font-size: 42px;
+  font-weight: 800;
+  color: #22c55e;
+  line-height: 1;
+}
+
+.speedLabel {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text-sub);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.metricTextRows {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.metricRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+  padding-bottom: 8px;
+}
+
+.metricRow:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.metricRow span {
+  color: var(--text-sub);
+  font-weight: 500;
+}
+
+.metricRow strong {
+  color: var(--primary);
+}
+
+.glowingFooter {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+  padding: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #16a54a;
+  text-align: center;
+}
+
+@media (max-width: 1024px) {
+  .container {
+    grid-template-columns: 1fr;
+    gap: 60px;
+  }
+}
+
+@media (max-width: 768px) {
+  .section {
+    padding: 60px 0;
+  }
+  .title {
+    font-size: 32px;
+  }
+}

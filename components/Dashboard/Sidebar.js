@@ -1,5 +1,10 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
+import { supabaseClient } from '@/lib/supabase';
 import styles from './DashboardLayout.module.css';
 
 const icons = {
@@ -14,6 +19,51 @@ const icons = {
 
 export default function Sidebar({ isOpen, onClose, isCollapsed, onToggle }) {
   const pathname = usePathname();
+  const { signOut, user, profile, store } = useAuth();
+  const router = useRouter();
+  const [storeSlug, setStoreSlug] = useState(store?.slug || 'luxe-modern');
+  const [avatarLetter, setAvatarLetter] = useState('C');
+
+  useEffect(() => {
+    if (profile?.name) {
+      setAvatarLetter(profile.name.charAt(0).toUpperCase());
+    } else if (user?.email) {
+      setAvatarLetter(user.email.charAt(0).toUpperCase());
+    } else {
+      setAvatarLetter('C');
+    }
+  }, [profile, user]);
+
+  useEffect(() => {
+    if (store?.slug) {
+      setStoreSlug(store.slug);
+    } else if (user && supabaseClient) {
+      const fetchUserStore = async () => {
+        try {
+          const { data, error } = await supabaseClient
+            .from('stores')
+            .select('slug')
+            .eq('creator_id', user.id)
+            .maybeSingle();
+          if (data && data.slug) {
+            setStoreSlug(data.slug);
+          }
+        } catch (e) {
+          console.error('Error fetching store slug:', e);
+        }
+      };
+      fetchUserStore();
+    }
+  }, [store?.slug, user?.id]);
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+    } catch (e) {
+      console.error('Logout error:', e);
+    }
+    router.push('/');
+  };
 
   const menuItems = [
     { label: 'Overview', path: '/dashboard', icon: icons.Overview, color: '#8b5cf6' },
@@ -45,10 +95,51 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggle }) {
           </button>
         </div>
 
+        <div className={styles.viewStoreContainer}>
+          <a 
+            href={`/store/${storeSlug}`} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              padding: '12px 16px',
+              background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+              color: '#fff',
+              borderRadius: '12px',
+              fontWeight: '700',
+              fontSize: '14px',
+              textDecoration: 'none',
+              boxShadow: '0 4px 12px rgba(139, 92, 246, 0.25)',
+              transition: 'all 0.2s ease',
+              width: 'calc(100% - 32px)',
+              margin: '0 auto 16px auto',
+              textAlign: 'center'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 6px 16px rgba(139, 92, 246, 0.35)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(139, 92, 246, 0.25)';
+            }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+              <polyline points="15 3 21 3 21 9"></polyline>
+              <line x1="10" y1="14" x2="21" y2="3"></line>
+            </svg>
+            View Store
+          </a>
+        </div>
+
         <nav className={styles.nav}>
           <ul>
             {menuItems.map((item) => {
-              const isActive = pathname === item.path;
+              const isActive = pathname === item.path || (item.path !== '/dashboard' && pathname?.startsWith(item.path));
               return (
                 <li key={item.path}>
                   <Link 
@@ -67,8 +158,8 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggle }) {
 
         <div className={styles.sidebarFooter}>
           <div className={styles.logoutWrapper}>
-            <div className={styles.avatar}>A</div>
-            <button className={styles.logoutBtn}>
+            <div className={styles.avatar}>{avatarLetter}</div>
+            <button className={styles.logoutBtn} onClick={handleLogout}>
               <span className={styles.icon}>
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
               </span>

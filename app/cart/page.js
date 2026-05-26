@@ -23,7 +23,7 @@ export default function CartPage() {
           <div className="empty-cart dashboard-card fade-in">
             <div className="empty-icon">🛍️</div>
             <h2>Your cart is empty</h2>
-            <p>Looks like you haven't added anything yet. Explore our collection to find something you love.</p>
+            <p>Looks like you haven&apos;t added anything yet. Explore our collection to find something you love.</p>
             <Link href="/" className="shop-btn">Continue Shopping</Link>
           </div>
         ) : (
@@ -97,7 +97,9 @@ export default function CartPage() {
                 <span>${total.toLocaleString()}</span>
               </div>
 
-              <button className="checkout-btn">Proceed to Checkout</button>
+              <Link href="/checkout" className="checkout-btn" style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}>
+                Proceed to Checkout
+              </Link>
               
               <div className="payment-icons">
                 <span>Secure payments via</span>

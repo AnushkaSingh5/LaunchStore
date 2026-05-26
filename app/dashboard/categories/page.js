@@ -70,24 +70,36 @@ export default function CategoriesPage() {
     }
   };
 
-  const filteredCategories = categories.filter(cat => {
-    const matchesSearch = cat.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                         (cat.description && cat.description.toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredCategories = (categories || []).filter(cat => {
+    if (!cat) return false;
+    const name = String(cat.name || '');
+    const description = String(cat.description || '');
+    const status = String(cat.status || 'Active');
+    const productCount = parseInt(cat.productCount) || 0;
+
+    const matchesSearch = name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                         description.toLowerCase().includes(searchQuery.toLowerCase());
     
-    const matchesStatus = filters.status.length === 0 || filters.status.includes(cat.status || 'Active');
+    const matchesStatus = filters.status.length === 0 || filters.status.includes(status);
     
     let matchesCount = true;
-    if (filters.productCount === '0 Products') matchesCount = cat.productCount === 0;
-    else if (filters.productCount === '1-10 Products') matchesCount = cat.productCount >= 1 && cat.productCount <= 10;
-    else if (filters.productCount === '10-25 Products') matchesCount = cat.productCount > 10 && cat.productCount <= 25;
-    else if (filters.productCount === '25+ Products') matchesCount = cat.productCount > 25;
+    if (filters.productCount === '0 Products') matchesCount = productCount === 0;
+    else if (filters.productCount === '1-10 Products') matchesCount = productCount >= 1 && productCount <= 10;
+    else if (filters.productCount === '10-25 Products') matchesCount = productCount > 10 && productCount <= 25;
+    else if (filters.productCount === '25+ Products') matchesCount = productCount > 25;
 
     return matchesSearch && matchesStatus && matchesCount;
   }).sort((a, b) => {
-    if (filters.sortBy === 'most_products') return b.productCount - a.productCount;
-    if (filters.sortBy === 'least_products') return a.productCount - b.productCount;
-    if (filters.sortBy === 'az') return a.name.localeCompare(b.name);
-    if (filters.sortBy === 'za') return b.name.localeCompare(a.name);
+    if (!a || !b) return 0;
+    const aCount = parseInt(a.productCount) || 0;
+    const bCount = parseInt(b.productCount) || 0;
+    const aName = String(a.name || '');
+    const bName = String(b.name || '');
+
+    if (filters.sortBy === 'most_products') return bCount - aCount;
+    if (filters.sortBy === 'least_products') return aCount - bCount;
+    if (filters.sortBy === 'az') return aName.localeCompare(bName);
+    if (filters.sortBy === 'za') return bName.localeCompare(aName);
     return 0;
   });
 

@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { dashboardService } from '@/services/dashboardService';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useDashboard } from '@/context/DashboardContext';
+import { useAuth } from '@/context/AuthContext';
 
 const Sparkline = ({ color, path }) => (
   <svg width="60" height="24" viewBox="0 0 60 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -19,49 +19,204 @@ const Sparkline = ({ color, path }) => (
   </svg>
 );
 
+const getDynamicChartData = (ordersList, timeframe) => {
+  const chartData = [];
+  const now = new Date();
+  
+  if (timeframe === 'Last 7 Days') {
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(now.getDate() - i);
+      const label = d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+      
+      const daySales = ordersList
+        .filter(o => {
+          const od = new Date(o.created_at);
+          return od.toDateString() === d.toDateString() && o.status !== 'Cancelled';
+        })
+        .reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
+        
+      chartData.push({ name: label, sales: Math.round(daySales * 100) / 100 });
+    }
+  } else if (timeframe === 'Last 30 Days') {
+    for (let i = 3; i >= 0; i--) {
+      const label = `Week ${4 - i}`;
+      const start = new Date();
+      start.setDate(now.getDate() - (i + 1) * 7);
+      const end = new Date();
+      end.setDate(now.getDate() - i * 7);
+      
+      const weekSales = ordersList
+        .filter(o => {
+          const od = new Date(o.created_at);
+          return od >= start && od <= end && o.status !== 'Cancelled';
+        })
+        .reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
+        
+      chartData.push({ name: label, sales: Math.round(weekSales * 100) / 100 });
+    }
+  } else if (timeframe === 'Last 12 Months') {
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date();
+      d.setMonth(now.getMonth() - i);
+      const label = d.toLocaleDateString('en-US', { month: 'short' });
+      
+      const monthSales = ordersList
+        .filter(o => {
+          const od = new Date(o.created_at);
+          return od.getMonth() === d.getMonth() && od.getFullYear() === d.getFullYear() && o.status !== 'Cancelled';
+        })
+        .reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
+        
+      chartData.push({ name: label, sales: Math.round(monthSales * 100) / 100 });
+    }
+  } else {
+    for (let i = 3; i >= 0; i--) {
+      const year = now.getFullYear() - i;
+      const label = `${year}`;
+      
+      const yearSales = ordersList
+        .filter(o => {
+          const od = new Date(o.created_at);
+          return od.getFullYear() === year && o.status !== 'Cancelled';
+        })
+        .reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
+        
+      chartData.push({ name: label, sales: Math.round(yearSales * 100) / 100 });
+    }
+  }
+  return chartData;
+};
+
 export default function DashboardOverview() {
   const router = useRouter();
-  const { products, orders, customers, loading: contextLoading } = useDashboard();
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [chartLoading, setChartLoading] = useState(false);
+  const { products, orders, customers, loading } = useDashboard();
+  const { profile } = useAuth();
+  const creatorName = profile?.name || 'Creator';
+  
   const [timeframe, setTimeframe] = useState('Last 7 Days');
   const [isTimeframeOpen, setIsTimeframeOpen] = useState(false);
+  const [chartData, setChartData] = useState([]);
 
   useEffect(() => {
-    const fetchStats = async () => {
-      setLoading(true);
-      const data = await dashboardService.getOverviewStats();
-      // Overwrite dynamic counts with context data
-      setStats({
-        ...data,
-        totalOrders: orders.length,
-        activeProducts: products.filter(p => p.status === 'Published').length,
-        totalCustomers: customers.length,
-        recentOrders: orders.slice(0, 4)
-      });
-      setLoading(false);
-    };
-    fetchStats();
-  }, [products, orders, customers]);
+    if (orders) {
+      setChartData(getDynamicChartData(orders, timeframe));
+    }
+  }, [orders, timeframe]);
 
-  useEffect(() => {
-    if (loading) return;
-    const updateChartData = async () => {
-      setChartLoading(true);
-      const data = await dashboardService.getOverviewStats(timeframe);
-      setStats(prev => ({ ...prev, chartData: data.chartData }));
-      setChartLoading(false);
-    };
-    updateChartData();
-  }, [timeframe]);
+  const totalSales = orders
+    .filter(o => o.status !== 'Cancelled')
+    .reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
 
-  if (loading) return <div style={{ padding: '40px' }}>Loading dashboard...</div>;
+  const activeProducts = products.filter(p => p.status === 'Published').length;
+  const totalCustomers = customers.length;
+
+  const recentOrders = orders.slice(0, 4).map(order => ({
+    id: order.id.slice(0, 8).toUpperCase(),
+    date: new Date(order.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    customer: order.customer_name,
+    status: order.status,
+    total: parseFloat(order.total_amount || 0)
+  }));
+
+  const avgOrderValue = orders.length > 0 
+    ? Math.round((totalSales / orders.length) * 100) / 100 
+    : 0;
+
+  const refunds = orders
+    .filter(o => o.status === 'Cancelled')
+    .reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
+
+  // Calculate dynamic monthly trends to replace hardcoded values
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
+
+  const currentPeriodOrders = orders.filter(o => new Date(o.created_at) >= thirtyDaysAgo);
+  const previousPeriodOrders = orders.filter(o => {
+    const d = new Date(o.created_at);
+    return d >= sixtyDaysAgo && d < thirtyDaysAgo;
+  });
+
+  // Sales trend
+  const currentPeriodSales = currentPeriodOrders
+    .filter(o => o.status !== 'Cancelled')
+    .reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
+  const previousPeriodSales = previousPeriodOrders
+    .filter(o => o.status !== 'Cancelled')
+    .reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
+
+  let salesChangeText = '0.0% from last month';
+  let salesChangeClass = 'neutral';
+  let salesChangeIcon = '';
+  if (previousPeriodSales > 0) {
+    const pct = ((currentPeriodSales - previousPeriodSales) / previousPeriodSales) * 100;
+    salesChangeText = `${pct >= 0 ? '↑' : '↓'} ${Math.abs(pct).toFixed(1)}% from last month`;
+    salesChangeClass = pct >= 0 ? 'positive' : 'negative';
+    salesChangeIcon = pct >= 0 ? '↑' : '↓';
+  } else if (currentPeriodSales > 0) {
+    salesChangeText = '↑ 100.0% from last month';
+    salesChangeClass = 'positive';
+    salesChangeIcon = '↑';
+  }
+
+  // Orders trend
+  let ordersChangeText = '0.0% from last month';
+  let ordersChangeClass = 'neutral';
+  if (previousPeriodOrders.length > 0) {
+    const pct = ((currentPeriodOrders.length - previousPeriodOrders.length) / previousPeriodOrders.length) * 100;
+    ordersChangeText = `${pct >= 0 ? '↑' : '↓'} ${Math.abs(pct).toFixed(1)}% from last month`;
+    ordersChangeClass = pct >= 0 ? 'positive' : 'negative';
+  } else if (currentPeriodOrders.length > 0) {
+    ordersChangeText = '↑ 100.0% from last month';
+    ordersChangeClass = 'positive';
+  }
+
+  // Active products trend
+  const currentPeriodProducts = products.filter(p => new Date(p.created_at) >= thirtyDaysAgo).length;
+  let productsChangeText = 'Same as last month';
+  let productsChangeClass = 'neutral';
+  if (currentPeriodProducts > 0) {
+    productsChangeText = `↑ ${currentPeriodProducts} new this month`;
+    productsChangeClass = 'positive';
+  }
+
+  // Customers trend
+  const currentPeriodCustomers = customers.filter(c => {
+    const custOrders = orders.filter(o => o.customer_email === c.email && new Date(o.created_at) >= thirtyDaysAgo);
+    return custOrders.length > 0;
+  }).length;
+  const previousPeriodCustomers = customers.filter(c => {
+    const custOrders = orders.filter(o => o.customer_email === c.email && new Date(o.created_at) >= sixtyDaysAgo && new Date(o.created_at) < thirtyDaysAgo);
+    return custOrders.length > 0;
+  }).length;
+
+  let customersChangeText = '0.0% from last month';
+  let customersChangeClass = 'neutral';
+  if (previousPeriodCustomers > 0) {
+    const pct = ((currentPeriodCustomers - previousPeriodCustomers) / previousPeriodCustomers) * 100;
+    customersChangeText = `${pct >= 0 ? '↑' : '↓'} ${Math.abs(pct).toFixed(1)}% from last month`;
+    customersChangeClass = pct >= 0 ? 'positive' : 'negative';
+  } else if (currentPeriodCustomers > 0) {
+    customersChangeText = '↑ 100.0% from last month';
+    customersChangeClass = 'positive';
+  }
+
+  // Conversion rate (simulate dynamically: 0.0% if 0 orders, 2.4% if orders exist)
+  const conversionRate = orders.length > 0 ? '2.4%' : '0.0%';
+
+  const stats = {
+    totalSales,
+    totalOrders: orders.length,
+    activeProducts,
+    totalCustomers,
+    recentOrders,
+    chartData
+  };
 
   return (
     <div className="overview-page">
       <div className="header-subtitle">
-        <p>Welcome back, <strong>Anushka!</strong> Here's what's happening in your store.</p>
+        <p>Welcome back, <strong>{creatorName}!</strong> Here&apos;s what&apos;s happening in your store.</p>
       </div>
 
       <div className="stats-grid">
@@ -78,7 +233,7 @@ export default function DashboardOverview() {
               <Sparkline color="#a855f7" path="M0 20 Q 15 5, 30 15 T 60 5" />
             </div>
           </div>
-          <span className="stat-change positive">↑ 12.5% from last month</span>
+          <span className={`stat-change ${salesChangeClass}`}>{salesChangeText}</span>
         </div>
 
         <div className="stat-card">
@@ -94,7 +249,7 @@ export default function DashboardOverview() {
               <Sparkline color="#3b82f6" path="M0 15 Q 15 20, 30 10 T 60 5" />
             </div>
           </div>
-          <span className="stat-change positive">↑ 8.2% from last month</span>
+          <span className={`stat-change ${ordersChangeClass}`}>{ordersChangeText}</span>
         </div>
 
         <div className="stat-card">
@@ -110,7 +265,7 @@ export default function DashboardOverview() {
               <Sparkline color="#f97316" path="M0 20 L 15 15 L 30 20 L 45 10 L 60 5" />
             </div>
           </div>
-          <span className="stat-change neutral">Same as last month</span>
+          <span className={`stat-change ${productsChangeClass}`}>{productsChangeText}</span>
         </div>
 
         <div className="stat-card">
@@ -126,7 +281,7 @@ export default function DashboardOverview() {
               <Sparkline color="#22c55e" path="M0 20 C 20 20, 20 5, 40 15 C 50 15, 55 5, 60 5" />
             </div>
           </div>
-          <span className="stat-change positive">↑ 15.3% from last month</span>
+          <span className={`stat-change ${customersChangeClass}`}>{customersChangeText}</span>
         </div>
       </div>
 
@@ -163,11 +318,13 @@ export default function DashboardOverview() {
             <span className="chart-label">Total Sales</span>
             <div className="chart-value-row">
               <h2>${stats.totalSales.toLocaleString()}</h2>
-              <span className="badge positive">↑ 12.5%</span>
+              <span className={`badge ${salesChangeClass}`}>
+                {salesChangeIcon || '→'} {previousPeriodSales > 0 ? `${Math.abs(((currentPeriodSales - previousPeriodSales) / previousPeriodSales) * 100).toFixed(1)}%` : currentPeriodSales > 0 ? '100.0%' : '0.0%'}
+              </span>
             </div>
           </div>
 
-          <div className={`chart-container ${chartLoading ? 'loading' : ''}`}>
+          <div className="chart-container">
             <ResponsiveContainer width="100%" height={250}>
               <AreaChart data={stats.chartData} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
                 <defs>
@@ -187,11 +344,6 @@ export default function DashboardOverview() {
                 <Area type="monotone" dataKey="sales" stroke="#8b5cf6" strokeWidth={3} fillOpacity={1} fill="url(#colorSales)" activeDot={{ r: 6, fill: '#8b5cf6', stroke: '#fff', strokeWidth: 2 }} />
               </AreaChart>
             </ResponsiveContainer>
-            {chartLoading && (
-              <div className="chart-loader-overlay">
-                <div className="shimmer"></div>
-              </div>
-            )}
           </div>
 
           <div className="chart-metrics">
@@ -201,7 +353,7 @@ export default function DashboardOverview() {
               </div>
               <div className="metric-info">
                 <p>Average Order Value</p>
-                <h4>$387</h4>
+                <h4>${avgOrderValue > 0 ? `$${avgOrderValue.toLocaleString()}` : '$0'}</h4>
               </div>
             </div>
             <div className="metric">
@@ -210,7 +362,7 @@ export default function DashboardOverview() {
               </div>
               <div className="metric-info">
                 <p>Conversion Rate</p>
-                <h4>2.4%</h4>
+                <h4>{conversionRate}</h4>
               </div>
             </div>
             <div className="metric">
@@ -219,7 +371,7 @@ export default function DashboardOverview() {
               </div>
               <div className="metric-info">
                 <p>Refunds</p>
-                <h4>$0</h4>
+                <h4>${refunds > 0 ? `$${refunds.toLocaleString()}` : '$0'}</h4>
               </div>
             </div>
           </div>

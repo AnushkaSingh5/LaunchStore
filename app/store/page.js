@@ -1,272 +1,317 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Navbar from '@/components/Navbar';
-import Hero from '@/components/Hero';
-import CategoryCard from '@/components/CategoryCard';
-import ProductCard from '@/components/ProductCard';
-import Footer from '@/components/Footer';
-import { useStore } from '@/context/StoreContext';
+import Link from 'next/link';
+import Navbar from '@/components/landing/Navbar';
+import Footer from '@/components/landing/Footer';
 import { storeService } from '@/services/storeService';
 
-export default function StorePage() {
-  const { selectedCategory, setSelectedCategory, searchQuery } = useStore();
-  const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
+export default function StoreDirectoryPage() {
+  const [stores, setStores] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchStores = async () => {
       setLoading(true);
       try {
-        const [prodData, catData] = await Promise.all([
-          storeService.getProducts(),
-          storeService.getCategories()
-        ]);
-        setProducts(prodData);
-        setCategories([{ id: 'all', title: 'All', image: 'https://images.unsplash.com/photo-1494438639946-1ebd1d20bf85?auto=format&fit=crop&q=80&w=800' }, ...catData]);
-      } catch (error) {
-        console.error("Failed to fetch data:", error);
+        const data = await storeService.getStores();
+        const formatted = data.map((s, idx) => {
+          const gradients = [
+            'linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%)',
+            'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
+            'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
+            'linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%)',
+            'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)'
+          ];
+          const accents = ['#e11d48', '#2563eb', '#16a34a', '#db2777', '#8b5cf6'];
+          const gradient = gradients[idx % gradients.length];
+          const accent = accents[idx % accents.length];
+          
+          return {
+            ...s,
+            name: s.name,
+            desc: s.description || 'Minimalist dynamic storefront curated for modern shopping.',
+            slug: s.slug,
+            image: s.banner_url || 'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&q=80&w=800',
+            logo: s.logo_url,
+            bgColor: gradient,
+            accentColor: accent,
+            type: s.status === 'approved' ? 'Official Store' : 'Active Store'
+          };
+        });
+        setStores(formatted);
+      } catch (err) {
+        console.error('Failed to fetch stores:', err);
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
+    fetchStores();
   }, []);
 
-  const filteredProducts = products.filter((product) => {
-    const q = (searchQuery || '').toLowerCase().trim();
-    const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
-    const matchesSearch = !q || 
-                          product.name.toLowerCase().includes(q) ||
-                          product.category.toLowerCase().includes(q);
-    return matchesCategory && matchesSearch;
-  });
-
-  const featuredProducts = products.filter(p => p.featured).slice(0, 4);
-
   return (
-    <main className="dashboard-store">
+    <div className="directory-page">
       <Navbar />
-      <Hero />
-      
-      <div className="container main-content">
-        {/* Categories Section */}
-        <section className="section-wrapper">
-          <div className="section-header">
-            <h2 className="section-title">Explore Categories</h2>
-            <p className="section-subtitle">Browse our curated selection of home essentials.</p>
+
+      <main className="container main-content fade-in">
+        <div className="header-row">
+          <h1>Explore Platform Stores</h1>
+          <p>Discover beautiful online storefronts built entirely using LaunchCart.</p>
+        </div>
+
+        {loading ? (
+          <div className="loading-state">
+            <div className="spinner"></div>
+            <p>Loading stores from database...</p>
           </div>
-          <div className="categories-grid scroll-mobile">
-            {categories.map(category => (
-              <CategoryCard key={category.id} category={category} />
+        ) : stores.length > 0 ? (
+          <div className="grid">
+            {stores.map((store, i) => (
+              <div key={i} className="store-card dashboard-card">
+                <div className="visual-header" style={{ background: store.bgColor }}>
+                  <img src={store.image} alt={store.name} className="store-img" />
+                  {store.logo ? (
+                    <img src={store.logo} alt={`${store.name} Logo`} className="store-logo-badge" />
+                  ) : (
+                    <span className="store-emoji">🏪</span>
+                  )}
+                  <span className="store-tag" style={{ color: store.accentColor, background: '#ffffffcc' }}>
+                    {store.type}
+                  </span>
+                </div>
+
+                <div className="content">
+                  <h3>{store.name}</h3>
+                  <p>{store.desc}</p>
+                  <div className="footer-row">
+                    <Link 
+                      href={`/store/${store.slug}`} 
+                      className="demo-link"
+                      style={{ '--accent-hover': store.accentColor }}
+                    >
+                      Explore Shop
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                        <polyline points="12 5 19 12 12 19"></polyline>
+                      </svg>
+                    </Link>
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
-        </section>
-
-        {/* Featured Products (Only show when no active filtering) */}
-        {!searchQuery && selectedCategory === 'All' && (
-          <section className="section-wrapper dashboard-card section-card">
-            <div className="section-header align-left">
-              <div className="title-box">
-                <h2 className="section-title">Featured Collections</h2>
-                <span className="live-badge">Live Now</span>
-              </div>
-              <p className="section-subtitle">Timeless pieces selected for modern enthusiasts.</p>
-            </div>
-            <div className="products-grid">
-              {featuredProducts.map(product => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Main Product Grid */}
-        <section className="section-wrapper dashboard-card section-card alt-bg">
-          <div className="section-header">
-            <h2 className="section-title">
-              {selectedCategory === 'All' ? 'Discover All' : `${selectedCategory} Collection`}
-              {searchQuery && ` - Results for "${searchQuery}"`}
-            </h2>
-            <p className="section-subtitle">
-              {filteredProducts.length} {filteredProducts.length === 1 ? 'item' : 'items'} found
-            </p>
+        ) : (
+          <div className="empty-state">
+            <h3>No stores launched yet</h3>
+            <p>Be the first to launch a store by signing up today!</p>
           </div>
-          
-          {loading ? (
-            <div className="loading-state">Loading products...</div>
-          ) : filteredProducts.length > 0 ? (
-            <div className="products-grid">
-              {filteredProducts.map(product => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
-          ) : (
-            <div className="empty-state">
-              <div className="empty-icon">🔍</div>
-              <h3>No products found</h3>
-              <p>Try adjusting your search or category filters.</p>
-              <button className="reset-btn" onClick={() => { setSelectedCategory('All'); window.location.reload(); }}>Reset Filters</button>
-            </div>
-          )}
-        </section>
-      </div>
+        )}
+      </main>
 
       <Footer />
 
       <style jsx>{`
-        .dashboard-store {
+        .directory-page {
           background: var(--bg-main);
           min-height: 100vh;
+          display: flex;
+          flex-direction: column;
         }
 
         .main-content {
+          padding-top: 140px;
+          padding-bottom: 80px;
+          flex: 1;
           display: flex;
           flex-direction: column;
           gap: 40px;
-          padding-bottom: 80px;
         }
 
-        .section-card {
-          padding: 60px;
-          background: var(--white);
-        }
-
-        .section-card.alt-bg {
-          background: linear-gradient(180deg, #ffffff 0%, #f0f4f8 100%);
-        }
-
-        .section-header {
-          margin-bottom: 40px;
+        .header-row {
           text-align: center;
         }
 
-        .section-header.align-left {
-          text-align: left;
-        }
-
-        .title-box {
-          display: flex;
-          align-items: center;
-          gap: 16px;
-          margin-bottom: 8px;
-        }
-
-        .live-badge {
-          padding: 4px 12px;
-          background: #dcfce7;
-          color: #166534;
-          font-size: 11px;
-          font-weight: 700;
-          border-radius: 20px;
-          text-transform: uppercase;
-        }
-
-        .section-title {
-          font-size: 32px;
-          font-weight: 700;
+        .header-row h1 {
+          font-size: 38px;
+          font-weight: 800;
           color: var(--primary);
+          margin-bottom: 12px;
           letter-spacing: -1px;
         }
 
-        .section-subtitle {
+        .header-row p {
           font-size: 16px;
           color: var(--text-sub);
           max-width: 500px;
           margin: 0 auto;
         }
 
-        .align-left .section-subtitle {
-          margin: 0;
+        .grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 32px;
+          width: 100%;
         }
 
-        .categories-grid {
-          display: grid;
-          grid-template-columns: repeat(5, 1fr);
-          gap: 24px;
+        .store-card {
+          background: var(--white);
+          border-radius: 24px;
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
         }
 
-        .products-grid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 24px;
+        .visual-header {
+          height: 220px;
+          position: relative;
+          overflow: hidden;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .store-img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          transition: var(--transition-smooth);
+        }
+
+        .store-card:hover .store-img {
+          transform: scale(1.05);
+        }
+
+        .store-emoji {
+          position: absolute;
+          top: 16px;
+          left: 16px;
+          width: 42px;
+          height: 42px;
+          background: rgba(255, 255, 255, 0.9);
+          backdrop-filter: blur(8px);
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 20px;
+          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .store-logo-badge {
+          position: absolute;
+          top: 16px;
+          left: 16px;
+          width: 42px;
+          height: 42px;
+          background: #ffffff;
+          border-radius: 12px;
+          padding: 4px;
+          object-fit: contain;
+          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+          border: 1px solid #f1f5f9;
+          z-index: 10;
         }
 
         .loading-state, .empty-state {
-          padding: 80px 0;
           text-align: center;
-        }
-
-        .empty-state {
+          padding: 80px 0;
           display: flex;
           flex-direction: column;
           align-items: center;
           gap: 16px;
+          width: 100%;
         }
 
-        .empty-icon {
-          font-size: 48px;
-        }
-
-        .empty-state h3 {
-          font-size: 24px;
-          font-weight: 700;
-        }
-
-        .empty-state p {
+        .loading-state p {
           color: var(--text-sub);
+          font-size: 15px;
         }
 
-        .reset-btn {
-          margin-top: 20px;
-          padding: 12px 24px;
-          background: var(--primary);
-          color: var(--white);
-          border-radius: 12px;
-          font-weight: 600;
+        .spinner {
+          width: 40px;
+          height: 40px;
+          border: 4px solid #e2e8f0;
+          border-top-color: var(--accent);
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
         }
 
-        @media (max-width: 1024px) {
-          .categories-grid {
-            grid-template-columns: repeat(3, 1fr);
-          }
-          .products-grid {
-            grid-template-columns: repeat(3, 1fr);
-          }
+        @keyframes spin {
+          to { transform: rotate(360deg); }
         }
 
-        @media (max-width: 768px) {
-          .scroll-mobile {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-            gap: 10px;
-          }
-          .scroll-mobile :global(.category-tile) {
-            height: 90px;
-            padding: 10px;
-          }
-          .scroll-mobile :global(.tile-title) {
-            font-size: 13px;
-          }
-          .scroll-mobile :global(.tile-link) {
-            display: none;
-          }
-          .products-grid {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 16px;
-          }
-          .section-card {
-            padding: 30px 20px;
-          }
+        .store-tag {
+          position: absolute;
+          bottom: 16px;
+          right: 16px;
+          padding: 6px 14px;
+          font-size: 12px;
+          font-weight: 700;
+          border-radius: 20px;
+          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
         }
 
-        @media (max-width: 480px) {
-          .products-grid {
+        .content {
+          padding: 28px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          flex: 1;
+        }
+
+        .content h3 {
+          font-size: 22px;
+          font-weight: 700;
+          color: var(--primary);
+          letter-spacing: -0.5px;
+        }
+
+        .content p {
+          font-size: 14px;
+          line-height: 1.6;
+          color: var(--text-sub);
+          flex: 1;
+        }
+
+        .footer-row {
+          display: flex;
+          align-items: center;
+          justify-content: flex-start;
+          margin-top: 12px;
+        }
+
+        .demo-link {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 14px;
+          font-weight: 700;
+          color: var(--text-main);
+          text-decoration: none;
+          transition: var(--transition-fast);
+        }
+
+        .demo-link:hover {
+          color: var(--accent-hover, var(--accent));
+          transform: translateX(4px);
+        }
+
+        @media (max-width: 900px) {
+          .grid {
             grid-template-columns: 1fr;
+            gap: 24px;
+          }
+        }
+
+        @media (max-width: 600px) {
+          .visual-header {
+            height: 180px;
+          }
+          .content {
+            padding: 20px;
           }
         }
       `}</style>
-    </main>
+    </div>
   );
 }

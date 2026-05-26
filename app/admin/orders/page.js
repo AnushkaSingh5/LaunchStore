@@ -15,9 +15,9 @@ export default function AdminOrders() {
   if (loading) return <div style={{ padding: '40px' }}>Loading platform orders...</div>;
 
   const filteredOrders = orders.filter(o => 
-    o.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    o.customer.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    o.store.toLowerCase().includes(searchQuery.toLowerCase())
+    String(o.id || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    String(o.customer || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    String(o.store || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const columns = [

@@ -1,14 +1,24 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { dashboardService } from '@/services/dashboardService';
+import { useAuth } from '@/context/AuthContext';
+import { storeService } from '@/services/storeService';
 import Input from '@/components/UI/Input';
 import Select from '@/components/UI/Select';
 import Toggle from '@/components/UI/Toggle';
 import Button from '@/components/UI/Button';
 
 export default function SettingsPage() {
-  const [settings, setSettings] = useState(null);
+  const { store, user, refreshStore } = useAuth();
+  const [settings, setSettings] = useState({
+    storeName: '',
+    description: '',
+    logo: '',
+    banner: '',
+    showCategories: true,
+    showFeatured: true,
+    defaultSort: 'newest'
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -16,34 +26,75 @@ export default function SettingsPage() {
   const bannerInputRef = useRef(null);
 
   useEffect(() => {
-    const fetchSettings = async () => {
-      const data = await dashboardService.getSettings();
-      setSettings(data);
-      setLoading(false);
-    };
-    fetchSettings();
-  }, []);
+    if (store) {
+      const timer = setTimeout(() => {
+        setSettings({
+          storeName: store.name || '',
+          description: store.description || '',
+          logo: store.logo_url || '',
+          banner: store.banner_url || '',
+          showCategories: store.theme_settings?.showCategories ?? true,
+          showFeatured: store.theme_settings?.showFeatured ?? true,
+          defaultSort: store.theme_settings?.defaultSort ?? 'newest'
+        });
+        setLoading(false);
+      }, 0);
+      return () => clearTimeout(timer);
+    } else {
+      const timer = setTimeout(() => {
+        setLoading(false);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [store]);
 
   const handleSave = async (e) => {
     e.preventDefault();
+    if (!store) return;
     setSaving(true);
-    await dashboardService.updateSettings(settings);
-    setSaving(false);
-    alert('Settings saved successfully!');
+    try {
+      await storeService.updateStore(store.id, {
+        name: settings.storeName,
+        description: settings.description,
+        logo_url: settings.logo,
+        banner_url: settings.banner,
+        theme_settings: {
+          showCategories: settings.showCategories,
+          showFeatured: settings.showFeatured,
+          defaultSort: settings.defaultSort
+        }
+      });
+      await refreshStore();
+      alert('Settings saved successfully!');
+    } catch (err) {
+      console.error(err);
+      alert('Error saving settings: ' + err.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleChange = (field, value) => {
     setSettings(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleFileUpload = (field, e) => {
+  const handleFileUpload = async (field, e) => {
     const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        handleChange(field, reader.result);
-      };
-      reader.readAsDataURL(file);
+    if (!file || !user) return;
+    setSaving(true);
+    try {
+      let url = '';
+      if (field === 'logo') {
+        url = await storeService.uploadLogo(file, user.id);
+      } else if (field === 'banner') {
+        url = await storeService.uploadBanner(file, user.id);
+      }
+      handleChange(field, url);
+    } catch (err) {
+      console.error(err);
+      alert('Upload failed: ' + err.message);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -56,7 +107,7 @@ export default function SettingsPage() {
       <div className="settings-title-row">
         <div className="title-left">
           <h1>Store Settings</h1>
-          <p>Manage your store's identity and basic configuration.</p>
+          <p>Manage your store&apos;s identity and basic configuration.</p>
         </div>
         <button className="save-btn" onClick={handleSave} disabled={saving}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>

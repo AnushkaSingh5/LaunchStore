@@ -1,17 +1,50 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { dashboardService } from '@/services/dashboardService';
 import Table from '@/components/UI/Table';
 import Button from '@/components/UI/Button';
 import Select from '@/components/UI/Select';
 import Modal from '@/components/UI/Modal';
+import { useDashboard } from '@/context/DashboardContext';
+import { orderService } from '@/services/orderService';
 
 export default function OrdersPage() {
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { orders: contextOrders, loading } = useDashboard();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [orderDetails, setOrderDetails] = useState(null);
+  const [loadingDetails, setLoadingDetails] = useState(false);
+
+  useEffect(() => {
+    if (!selectedOrder) {
+      setOrderDetails(null);
+      return;
+    }
+    const fetchDetails = async () => {
+      setLoadingDetails(true);
+      try {
+        const details = await orderService.getOrderDetails(selectedOrder.rawId);
+        setOrderDetails(details);
+      } catch (e) {
+        console.error('Failed to fetch order details:', e);
+      } finally {
+        setLoadingDetails(false);
+      }
+    };
+    fetchDetails();
+  }, [selectedOrder]);
+
+  const handleStatusChange = async (newStatus) => {
+    if (!selectedOrder) return;
+    try {
+      await orderService.updateOrderStatus(selectedOrder.rawId, newStatus);
+      alert(`Order status updated successfully to: ${newStatus}`);
+      window.location.reload();
+    } catch (e) {
+      console.error(e);
+      alert('Failed to update order status: ' + e.message);
+    }
+  };
   const [searchQuery, setSearchQuery] = useState('');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   
@@ -25,18 +58,22 @@ export default function OrdersPage() {
     sortBy: 'newest'
   });
 
-  useEffect(() => {
-    const fetchOrders = async () => {
-      const data = await dashboardService.getOrders();
-      setOrders(data);
-      setLoading(false);
-    };
-    fetchOrders();
-  }, []);
+  const orders = (contextOrders || []).map(o => ({
+    id: String(o.id || '').slice(0, 8).toUpperCase(),
+    rawId: o.id,
+    customer: o.customer_name,
+    email: o.customer_email,
+    phone: o.customer_phone || 'N/A',
+    date: o.created_at,
+    total: parseFloat(o.total_amount || 0),
+    status: o.status,
+    payment: 'Paid',
+    shipping_address: o.shipping_address,
+  }));
 
   const filteredOrders = orders.filter(order => {
-    const matchesSearch = order.id.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                         order.customer.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = String(order.id || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+                         String(order.customer || '').toLowerCase().includes(searchQuery.toLowerCase());
     
     const matchesStatus = filters.status.length === 0 || filters.status.includes(order.status);
     
@@ -124,6 +161,77 @@ export default function OrdersPage() {
     document.body.removeChild(link);
   };
 
+  // Calculate dynamic summary counts from context
+  const totalOrdersCount = orders.length;
+  const pendingOrdersCount = orders.filter(o => o.status === 'Pending' || o.status === 'Processing').length;
+  const shippedOrdersCount = orders.filter(o => o.status === 'Shipped').length;
+  const deliveredOrdersCount = orders.filter(o => o.status === 'Delivered').length;
+  const cancelledOrdersCount = orders.filter(o => o.status === 'Cancelled' || o.status === 'Refunded').length;
+
+  // Calculate dynamic monthly trends to replace hardcoded values
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
+
+  const currentPeriodOrders = orders.filter(o => new Date(o.date) >= thirtyDaysAgo);
+  const previousPeriodOrders = orders.filter(o => {
+    const d = new Date(o.date);
+    return d >= sixtyDaysAgo && d < thirtyDaysAgo;
+  });
+
+  const getGrowthText = (curr, prev) => {
+    if (prev > 0) {
+      const pct = ((curr - prev) / prev) * 100;
+      return `${pct >= 0 ? '↑' : '↓'} ${Math.abs(pct).toFixed(0)}% from last month`;
+    }
+    return curr > 0 ? '↑ 100% from last month' : '0% from last month';
+  };
+
+  const getGrowthClass = (curr, prev) => {
+    if (prev > 0) {
+      return ((curr - prev) / prev) >= 0 ? 'positive' : 'negative';
+    }
+    return curr > 0 ? 'positive' : 'neutral';
+  };
+
+  const totalGrowthText = getGrowthText(currentPeriodOrders.length, previousPeriodOrders.length);
+  const totalGrowthClass = getGrowthClass(currentPeriodOrders.length, previousPeriodOrders.length);
+
+  const pendingGrowthText = getGrowthText(
+    currentPeriodOrders.filter(o => o.status === 'Pending' || o.status === 'Processing').length,
+    previousPeriodOrders.filter(o => o.status === 'Pending' || o.status === 'Processing').length
+  );
+  const pendingGrowthClass = getGrowthClass(
+    currentPeriodOrders.filter(o => o.status === 'Pending' || o.status === 'Processing').length,
+    previousPeriodOrders.filter(o => o.status === 'Pending' || o.status === 'Processing').length
+  );
+
+  const shippedGrowthText = getGrowthText(
+    currentPeriodOrders.filter(o => o.status === 'Shipped').length,
+    previousPeriodOrders.filter(o => o.status === 'Shipped').length
+  );
+  const shippedGrowthClass = getGrowthClass(
+    currentPeriodOrders.filter(o => o.status === 'Shipped').length,
+    previousPeriodOrders.filter(o => o.status === 'Shipped').length
+  );
+
+  const deliveredGrowthText = getGrowthText(
+    currentPeriodOrders.filter(o => o.status === 'Delivered').length,
+    previousPeriodOrders.filter(o => o.status === 'Delivered').length
+  );
+  const deliveredGrowthClass = getGrowthClass(
+    currentPeriodOrders.filter(o => o.status === 'Delivered').length,
+    previousPeriodOrders.filter(o => o.status === 'Delivered').length
+  );
+
+  const cancelledGrowthText = getGrowthText(
+    currentPeriodOrders.filter(o => o.status === 'Cancelled' || o.status === 'Refunded').length,
+    previousPeriodOrders.filter(o => o.status === 'Cancelled' || o.status === 'Refunded').length
+  );
+  const cancelledGrowthClass = getGrowthClass(
+    currentPeriodOrders.filter(o => o.status === 'Cancelled' || o.status === 'Refunded').length,
+    previousPeriodOrders.filter(o => o.status === 'Cancelled' || o.status === 'Refunded').length
+  );
+
   return (
     <div className="orders-page">
       <div className="header-row">
@@ -146,11 +254,11 @@ export default function OrdersPage() {
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
             </div>
             <div className="card-info">
-              <span className="value">24</span>
+              <span className="value">{totalOrdersCount}</span>
               <span className="label">Total Orders</span>
             </div>
           </div>
-          <div className="trend positive">↑ 18% from last month</div>
+          <div className={`trend ${totalGrowthClass}`}>{totalGrowthText}</div>
         </div>
         <div className="summary-card">
           <div className="card-top">
@@ -158,11 +266,11 @@ export default function OrdersPage() {
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
             </div>
             <div className="card-info">
-              <span className="value">8</span>
+              <span className="value">{pendingOrdersCount}</span>
               <span className="label">Pending</span>
             </div>
           </div>
-          <div className="trend positive">↑ 12% from last month</div>
+          <div className={`trend ${pendingGrowthClass}`}>{pendingGrowthText}</div>
         </div>
         <div className="summary-card">
           <div className="card-top">
@@ -170,11 +278,11 @@ export default function OrdersPage() {
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
             </div>
             <div className="card-info">
-              <span className="value">10</span>
+              <span className="value">{shippedOrdersCount}</span>
               <span className="label">Shipped</span>
             </div>
           </div>
-          <div className="trend positive">↑ 25% from last month</div>
+          <div className={`trend ${shippedGrowthClass}`}>{shippedGrowthText}</div>
         </div>
         <div className="summary-card">
           <div className="card-top">
@@ -182,11 +290,11 @@ export default function OrdersPage() {
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
             </div>
             <div className="card-info">
-              <span className="value">6</span>
+              <span className="value">{deliveredOrdersCount}</span>
               <span className="label">Delivered</span>
             </div>
           </div>
-          <div className="trend positive">↑ 8% from last month</div>
+          <div className={`trend ${deliveredGrowthClass}`}>{deliveredGrowthText}</div>
         </div>
         <div className="summary-card">
           <div className="card-top">
@@ -194,11 +302,11 @@ export default function OrdersPage() {
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
             </div>
             <div className="card-info">
-              <span className="value">4</span>
+              <span className="value">{cancelledOrdersCount}</span>
               <span className="label">Cancelled</span>
             </div>
           </div>
-          <div className="trend negative">↓ 2% from last month</div>
+          <div className={`trend ${cancelledGrowthClass}`}>{cancelledGrowthText}</div>
         </div>
       </div>
 
@@ -289,8 +397,8 @@ export default function OrdersPage() {
                 <div className="col-id"><strong>{order.id}</strong></div>
                 <div className="col-customer">
                   <div className="cust-info">
-                    <strong>{order.customer}</strong>
-                    <span>{order.customer.toLowerCase().replace(' ', '.')}@email.com</span>
+                    <strong>{order.customer || 'Guest Customer'}</strong>
+                    <span>{order.email || 'no-email@example.com'}</span>
                   </div>
                 </div>
                 <div className="col-date">
@@ -1504,8 +1612,8 @@ export default function OrdersPage() {
               <div className="info-val-box">
                 <div className="val-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></div>
                 <div className="val-text">
-                  <strong>{selectedOrder?.customer}</strong>
-                  <span>{selectedOrder?.customer.toLowerCase().replace(' ', '.')}@email.com</span>
+                  <strong>{selectedOrder?.customer || 'Guest Customer'}</strong>
+                  <span>{selectedOrder?.email || 'no-email@example.com'}</span>
                 </div>
               </div>
             </div>
@@ -1534,13 +1642,25 @@ export default function OrdersPage() {
             <div className="info-item status">
               <span className="info-label">Update Status</span>
               <div className="val-select-wrapper">
-                <select defaultValue={selectedOrder?.status}>
+                <select value={selectedOrder?.status} onChange={(e) => handleStatusChange(e.target.value)}>
                   <option value="Pending">Pending</option>
                   <option value="Shipped">Shipped</option>
                   <option value="Delivered">Delivered</option>
                   <option value="Cancelled">Cancelled</option>
                 </select>
                 <div className="select-arrow"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
+              </div>
+            </div>
+          </div>
+
+          <div className="shipping-address-box" style={{ background: '#f8fafc', borderRadius: '16px', padding: '16px 20px', border: '1px solid #f1f5f9', marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <span className="info-label" style={{ fontSize: '10px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Shipping Address & Contact</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+              <div style={{ fontSize: '14px', color: '#334155', flex: '1', minWidth: '200px' }}>
+                <strong>Address:</strong> <span style={{ marginLeft: '4px' }}>{selectedOrder?.shipping_address || 'No shipping address provided'}</span>
+              </div>
+              <div style={{ fontSize: '14px', color: '#334155' }}>
+                <strong>Phone:</strong> <span style={{ marginLeft: '4px' }}>{selectedOrder?.phone || 'N/A'}</span>
               </div>
             </div>
           </div>
@@ -1554,20 +1674,27 @@ export default function OrdersPage() {
                 <div className="col-price">UNIT PRICE</div>
                 <div className="col-total">TOTAL</div>
               </div>
-              <div className="table-row">
-                <div className="col-prod">
-                  <div className="prod-item-box">
-                    <div className="prod-img"></div>
-                    <div className="prod-meta">
-                      <strong>Modern Coffee Table</strong>
-                      <span>SKU: MCT-001</span>
+              {loadingDetails ? (
+                <div style={{ padding: '20px', textAlign: 'center', fontSize: '14px', color: '#64748b' }}>Loading order items...</div>
+              ) : orderDetails?.items?.map((item) => (
+                <div key={item.id} className="table-row">
+                  <div className="col-prod">
+                    <div className="prod-item-box">
+                      <img 
+                        src={item.productImage || 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=300'} 
+                        alt="" 
+                        style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover', marginRight: '12px' }}
+                      />
+                      <div className="prod-meta">
+                        <strong>{item.productName}</strong>
+                      </div>
                     </div>
                   </div>
+                  <div className="col-qty">{item.quantity}</div>
+                  <div className="col-price">${parseFloat(item.price || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                  <div className="col-total"><strong>${(parseFloat(item.price || 0) * parseInt(item.quantity || 1)).toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong></div>
                 </div>
-                <div className="col-qty">1</div>
-                <div className="col-price">$450.00</div>
-                <div className="col-total"><strong>$450.00</strong></div>
-              </div>
+              ))}
             </div>
           </div>
 
