@@ -8,7 +8,7 @@ import DashboardLayout from '@/components/Dashboard/DashboardLayout';
 import { DashboardProvider } from '@/context/DashboardContext';
 
 function CreatorDashboardGuard({ children }) {
-  const { user, role, store, profile, loading, refreshStore } = useAuth();
+  const { user, role, store, profile, loading, refreshStore, authTimeoutError, retryAuth } = useAuth();
   const router = useRouter();
   
   // Store Setup Form State
@@ -95,6 +95,114 @@ function CreatorDashboardGuard({ children }) {
       setCreating(false);
     }
   };
+
+  if (authTimeoutError && loading === false && (!user || role !== 'creator')) {
+    return (
+      <div className="timeout-screen">
+        <div className="glow-bg"></div>
+        <div className="error-card fade-in">
+          <div className="error-icon">⚠️</div>
+          <h2>Creator Authorization Timeout</h2>
+          <p>We are experiencing unexpected delays communicating with the storefront platform database. This can be caused by local ad-blockers, network firewalls, or intermittent connectivity.</p>
+          <div className="btn-group">
+            <button className="retry-btn" onClick={retryAuth}>Retry Connection</button>
+            <button className="secondary-btn" onClick={() => router.push('/login')}>Return to Login</button>
+          </div>
+        </div>
+
+        <style jsx>{`
+          .timeout-screen {
+            height: 100vh;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8fafc;
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+            font-family: 'Outfit', sans-serif;
+          }
+          .glow-bg {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.05) 0%, rgba(255, 255, 255, 0) 70%);
+            top: -150px;
+            left: -150px;
+            z-index: 1;
+          }
+          .error-card {
+            width: 100%;
+            max-width: 460px;
+            background: #ffffff;
+            padding: 40px;
+            border-radius: 24px;
+            position: relative;
+            z-index: 2;
+            border: 1px solid rgba(0, 0, 0, 0.03);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.03);
+            text-align: center;
+          }
+          .error-icon {
+            font-size: 40px;
+            margin-bottom: 20px;
+          }
+          .error-card h2 {
+            font-size: 22px;
+            font-weight: 800;
+            color: #1e293b;
+            margin-bottom: 12px;
+            letter-spacing: -0.5px;
+          }
+          .error-card p {
+            font-size: 13px;
+            color: #64748b;
+            line-height: 1.6;
+            margin-bottom: 28px;
+          }
+          .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+          }
+          .retry-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: #fff;
+            font-weight: 700;
+            font-size: 14px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+          }
+          .retry-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.3);
+          }
+          .secondary-btn {
+            width: 100%;
+            padding: 14px;
+            background: transparent;
+            color: #64748b;
+            font-weight: 700;
+            font-size: 14px;
+            border-radius: 12px;
+            border: 1px solid #cbd5e1;
+            transition: all 0.2s;
+            cursor: pointer;
+          }
+          .secondary-btn:hover {
+            background: #f1f5f9;
+            color: #1e293b;
+          }
+        `}</style>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

@@ -1,5 +1,6 @@
 import AdminLayout from '@/components/Admin/AdminLayout';
 import { AdminProvider } from '@/context/AdminContext';
+import AdminGuard from '@/components/Admin/AdminGuard';
 
 export const metadata = {
   title: 'Platform Admin Dashboard | E-commerce Store',
@@ -8,8 +9,10 @@ export const metadata = {
 
 export default function Layout({ children }) {
   return (
-    <AdminProvider>
-      <AdminLayout>{children}</AdminLayout>
-    </AdminProvider>
+    <AdminGuard>
+      <AdminProvider>
+        <AdminLayout>{children}</AdminLayout>
+      </AdminProvider>
+    </AdminGuard>
   );
 }
