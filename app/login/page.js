@@ -19,7 +19,7 @@ export default function LoginPage() {
     try {
       const signInPromise = authService.signIn(email, password);
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Connection timed out. Please check your network or ad-blocker.')), 8000)
+        setTimeout(() => reject(new Error('Connection timed out. Please check your network or ad-blocker.')), 20000)
       );
 
       const result = await Promise.race([signInPromise, timeoutPromise]);

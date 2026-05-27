@@ -59,10 +59,11 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggle }) {
   const handleLogout = async () => {
     try {
       await signOut();
+      window.location.href = '/';
     } catch (e) {
       console.error('Logout error:', e);
+      window.location.href = '/';
     }
-    router.push('/');
   };
 
   const menuItems = [

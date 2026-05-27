@@ -14,7 +14,7 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(() => !supabaseClient ? false : true);
   const [authTimeoutError, setAuthTimeoutError] = useState(false);
 
-  const fetchWithTimeout = async (url, options = {}, timeoutMs = 4000) => {
+  const fetchWithTimeout = async (url, options = {}, timeoutMs = 15000) => {
     const controller = new AbortController();
     const id = setTimeout(() => controller.abort(), timeoutMs);
     try {
@@ -28,6 +28,9 @@ export function AuthProvider({ children }) {
   };
 
   const fetchRoleAndDetails = async (userId, email) => {
+    const startTime = performance.now();
+    console.log(`🔄 [LaunchCart - Auth]: Fetching profile & store details for: "${email}"`);
+
     try {
       if (email?.toLowerCase().includes('admin')) {
         setRole('admin');
@@ -43,62 +46,85 @@ export function AuthProvider({ children }) {
         const sessionData = await supabaseClient.auth.getSession();
         token = sessionData.data.session?.access_token || supabaseAnonKey;
       } catch (sessionErr) {
-        console.warn('[LaunchCart - Auth]: Failed to fetch active session token, falling back to anon key:', sessionErr);
+        console.warn('⚠️ [LaunchCart - Auth]: Failed to extract session token:', sessionErr.message);
       }
 
-      // Fetch profile and store in parallel with 3.5s timeout protection to prevent sequential bottlenecks
+      // Fetch profile and store in parallel with 15s timeout protection to prevent sequential bottlenecks
       const [profResResult, storeResResult] = await Promise.allSettled([
         fetchWithTimeout(`${supabaseUrl}/rest/v1/profiles?id=eq.${userId}&select=*`, {
           headers: {
             'apikey': supabaseAnonKey,
             'Authorization': `Bearer ${token}`
           }
-        }, 3500),
+        }, 15000),
         fetchWithTimeout(`${supabaseUrl}/rest/v1/stores?creator_id=eq.${userId}&select=*`, {
           headers: {
             'apikey': supabaseAnonKey,
             'Authorization': `Bearer ${token}`
           }
-        }, 3500)
+        }, 15000)
       ]);
 
       // Handle profile response
       let prof = null;
-      if (profResResult.status === 'fulfilled' && profResResult.value.ok) {
-        try {
-          const profs = await profResResult.value.json();
-          if (profs && profs.length > 0) prof = profs[0];
-        } catch (e) {
-          console.error('[LaunchCart - Auth]: Error parsing profile json:', e);
+      if (profResResult.status === 'fulfilled') {
+        const res = profResResult.value;
+        if (res.ok) {
+          try {
+            const profs = await res.json();
+            if (profs && profs.length > 0) prof = profs[0];
+          } catch (jsonErr) {
+            console.error('❌ [LaunchCart - Auth]: Profile JSON parsing failed:', jsonErr);
+          }
+        } else {
+          console.error(`❌ [LaunchCart - Auth]: Profile HTTP Error ${res.status}:`, res.statusText);
         }
-      } else if (profResResult.status === 'rejected') {
-        console.error('[LaunchCart - Auth]: Profile fetch rejected or timed out:', profResResult.reason);
+      } else {
+        const error = profResResult.reason;
+        if (error.name === 'AbortError') {
+          console.error('❌ [LaunchCart - Auth]: Profile request timed out (exceeded 15s limit). Network delay.');
+        } else {
+          console.error('❌ [LaunchCart - Auth]: Profile request network failure:', error.message);
+        }
       }
 
       if (prof) {
         setProfile(prof);
         setRole(prof.role);
       } else {
+        console.warn('⚠️ [LaunchCart - Auth]: No profile matched database. Using fallback creator role.');
         setProfile({ id: userId, email, role: 'creator', name: 'New Merchant' });
         setRole('creator');
       }
 
       // Handle store response
       let str = null;
-      if (storeResResult.status === 'fulfilled' && storeResResult.value.ok) {
-        try {
-          const strs = await storeResResult.value.json();
-          if (strs && strs.length > 0) str = strs[0];
-        } catch (e) {
-          console.error('[LaunchCart - Auth]: Error parsing store json:', e);
+      if (storeResResult.status === 'fulfilled') {
+        const res = storeResResult.value;
+        if (res.ok) {
+          try {
+            const strs = await res.json();
+            if (strs && strs.length > 0) str = strs[0];
+          } catch (jsonErr) {
+            console.error('❌ [LaunchCart - Auth]: Store JSON parsing failed:', jsonErr);
+          }
+        } else {
+          console.error(`❌ [LaunchCart - Auth]: Store HTTP Error ${res.status}:`, res.statusText);
         }
-      } else if (storeResResult.status === 'rejected') {
-        console.error('[LaunchCart - Auth]: Store fetch rejected or timed out:', storeResResult.reason);
+      } else {
+        const error = storeResResult.reason;
+        if (error.name === 'AbortError') {
+          console.error('❌ [LaunchCart - Auth]: Store request timed out (exceeded 15s limit). Network delay.');
+        } else {
+          console.error('❌ [LaunchCart - Auth]: Store request network failure:', error.message);
+        }
       }
 
       setStore(str);
+      const duration = (performance.now() - startTime).toFixed(1);
+      console.log(`✅ [LaunchCart - Auth]: Fetched details successfully in ${duration}ms.`);
     } catch (e) {
-      console.error('[LaunchCart - Auth]: General error in fetchRoleAndDetails:', e);
+      console.error('❌ [LaunchCart - Auth]: Exception in fetchRoleAndDetails:', e);
       setRole('creator');
     }
   };
@@ -116,7 +142,7 @@ export function AuthProvider({ children }) {
           'apikey': supabaseAnonKey,
           'Authorization': `Bearer ${token}`
         }
-      }, 4000);
+      }, 15000);
       if (response.ok) {
         const data = await response.json();
         setStore(data && data.length > 0 ? data[0] : null);
@@ -139,7 +165,7 @@ export function AuthProvider({ children }) {
           'apikey': supabaseAnonKey,
           'Authorization': `Bearer ${token}`
         }
-      }, 4000);
+      }, 15000);
       if (response.ok) {
         const data = await response.json();
         setProfile(data && data.length > 0 ? data[0] : null);
@@ -154,17 +180,29 @@ export function AuthProvider({ children }) {
     setLoading(true);
     
     const fallbackTimer = setTimeout(() => {
-      console.warn('[LaunchCart - Auth]: Retry exceeded 6s fallback. Clearing loading state.');
+      console.warn('⚠️ [LaunchCart - Auth]: Retry exceeded 20s fallback. Clearing loading state.');
       setAuthTimeoutError(true);
       setLoading(false);
-    }, 6000);
+    }, 20000);
 
     try {
       if (!supabaseClient) {
         setLoading(false);
         return;
       }
-      const { data: { session: activeSession } } = await supabaseClient.auth.getSession();
+      const { data: { session: activeSession }, error: sessionError } = await supabaseClient.auth.getSession();
+      
+      if (sessionError) {
+        console.warn('⚠️ [LaunchCart - Auth]: Session retry restoration warning:', sessionError.message);
+        if (sessionError.message?.toLowerCase().includes('refresh_token') || sessionError.message?.toLowerCase().includes('refresh token')) {
+          try {
+            await supabaseClient.auth.signOut();
+          } catch (signOutErr) {
+            console.warn('[LaunchCart - Auth]: Stale retry session cleanup skipped:', signOutErr.message);
+          }
+        }
+      }
+
       setSession(activeSession);
       const currentUser = activeSession?.user ?? null;
       setUser(currentUser);
@@ -185,43 +223,75 @@ export function AuthProvider({ children }) {
       return;
     }
 
-    // Check active session on mount with 6s fail-safe fallback
-    const checkSession = async () => {
+    let isSubscribed = true;
+    let subscription = null;
+
+    // Check active session on mount with 20s fail-safe fallback to support slow connections
+    const bootstrap = async () => {
+      const startTime = performance.now();
+      console.log('🔄 [LaunchCart - Auth]: Initializing production session restore...');
+
       const fallbackTimer = setTimeout(() => {
-        console.warn('[LaunchCart - Auth]: Mount checkSession exceeded 6s fallback. Force clearing loading state.');
-        setAuthTimeoutError(true);
-        setLoading(false);
-      }, 6000);
+        if (isSubscribed) {
+          console.warn('⚠️ [LaunchCart - Auth]: Production bootstrap exceeded 20s minimum timeout fallback. Forcing loading state cleanup.');
+          setAuthTimeoutError(true);
+          setLoading(false);
+        }
+      }, 20000);
 
       try {
-        const { data: { session: activeSession } } = await supabaseClient.auth.getSession();
+        const { data: { session: activeSession }, error: sessionError } = await supabaseClient.auth.getSession();
+        
+        if (sessionError) {
+          console.warn('⚠️ [LaunchCart - Auth]: Session restoration warning (normal for guest or expired session):', sessionError.message);
+          // Auto-clear stale storage to prevent persistent loop warnings in browser console
+          if (sessionError.message?.toLowerCase().includes('refresh_token') || sessionError.message?.toLowerCase().includes('refresh token')) {
+            try {
+              await supabaseClient.auth.signOut();
+            } catch (signOutErr) {
+              console.warn('[LaunchCart - Auth]: Stale session cleanup skipped:', signOutErr.message);
+            }
+          }
+        }
+
+        if (!isSubscribed) return;
+
         setSession(activeSession);
         const currentUser = activeSession?.user ?? null;
         setUser(currentUser);
+
+        const duration = (performance.now() - startTime).toFixed(1);
+        console.log(`✅ [LaunchCart - Auth]: Session restore complete in ${duration}ms. Active User:`, currentUser?.email || 'Guest');
+
         if (currentUser) {
           await fetchRoleAndDetails(currentUser.id, currentUser.email);
         }
       } catch (error) {
-        console.error('[LaunchCart - Auth]: Error checking active session:', error);
+        console.error('❌ [LaunchCart - Auth]: Error during bootstrap checkSession:', error);
       } finally {
         clearTimeout(fallbackTimer);
-        setLoading(false);
+        if (isSubscribed) {
+          setLoading(false);
+        }
       }
-    };
-    checkSession();
 
-    // Listen for session auth changes with 6s fail-safe fallback
-    const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(async (_event, activeSession) => {
-      const fallbackTimer = setTimeout(() => {
-        console.warn('[LaunchCart - Auth]: AuthStateChange handler exceeded 6s fallback. Clearing loading state.');
-        setAuthTimeoutError(true);
-        setLoading(false);
-      }, 6000);
+      // Set up listener AFTER initial session check is completed to avoid duplicate concurrent query loads
+      if (!isSubscribed) return;
 
-      try {
+      const { data } = supabaseClient.auth.onAuthStateChange(async (event, activeSession) => {
+        console.log(`🔔 [LaunchCart - Auth]: Auth state change event fired: "${event}"`);
+        
+        // Skip INITIAL_SESSION event since bootstrap getSession already handled it
+        if (event === 'INITIAL_SESSION') {
+          return;
+        }
+
+        if (!isSubscribed) return;
+
         setSession(activeSession);
         const currentUser = activeSession?.user ?? null;
         setUser(currentUser);
+
         if (currentUser) {
           await fetchRoleAndDetails(currentUser.id, currentUser.email);
         } else {
@@ -229,16 +299,19 @@ export function AuthProvider({ children }) {
           setStore(null);
           setRole('creator');
         }
-      } catch (error) {
-        console.error('[LaunchCart - Auth]: Error in onAuthStateChange:', error);
-      } finally {
-        clearTimeout(fallbackTimer);
         setLoading(false);
-      }
-    });
+      });
+
+      subscription = data.subscription;
+    };
+
+    bootstrap();
 
     return () => {
-      subscription?.unsubscribe();
+      isSubscribed = false;
+      if (subscription) {
+        subscription.unsubscribe();
+      }
     };
   }, []);
 

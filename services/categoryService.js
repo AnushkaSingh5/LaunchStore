@@ -1,6 +1,48 @@
 import { supabaseClient } from '@/lib/supabase';
 import { categories } from '@/data/mockData';
 
+const compressImage = (base64Str, maxWidth = 400, maxHeight = 400) => {
+  return new Promise((resolve) => {
+    if (typeof window === 'undefined' || !window.FileReader || !base64Str || !base64Str.startsWith('data:')) {
+      resolve(base64Str || '');
+      return;
+    }
+
+    const img = new window.Image();
+    img.src = base64Str;
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let width = img.width;
+      let height = img.height;
+
+      if (width > height) {
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+      } else {
+        if (height > maxHeight) {
+          width = Math.round((width * maxHeight) / height);
+          height = maxHeight;
+        }
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        resolve(base64Str);
+        return;
+      }
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', 0.7));
+    };
+    img.onerror = () => {
+      resolve(base64Str);
+    };
+  });
+};
+
 export const categoryService = {
   /**
    * Fetch all categories belonging to a store
@@ -8,22 +50,15 @@ export const categoryService = {
   getCategoriesByStore: async (storeId) => {
     if (!supabaseClient) return categories;
     try {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      const { data, error } = await supabaseClient
+        .from('categories')
+        .select('*')
+        .eq('store_id', storeId)
+        .order('created_at', { ascending: false });
 
-      const url = `${supabaseUrl}/rest/v1/categories?store_id=eq.${storeId}&select=*&order=created_at.desc`;
-      const response = await fetch(url, {
-        headers: {
-          'apikey': supabaseAnonKey,
-          'Authorization': `Bearer ${supabaseAnonKey}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      if (!response.ok) throw new Error('Failed to fetch categories');
-      const data = await response.json();
+      if (error) throw error;
 
-      // Map columns for frontend compatibility
-      return data.map(c => ({
+      return (data || []).map(c => ({
         ...c,
         title: c.name,
         image: c.image_url || 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&q=80&w=600'
@@ -39,34 +74,35 @@ export const categoryService = {
    */
   createCategory: async (categoryInput) => {
     if (!supabaseClient) throw new Error('Supabase client is not initialized.');
+
+    let rawImage = categoryInput.image || categoryInput.image_url || 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&q=80&w=600';
     
+    // Automatically compress huge Base64 strings to prevent DB Payload Limit violation
+    if (typeof rawImage === 'string' && rawImage.startsWith('data:')) {
+      rawImage = await compressImage(rawImage, 400, 400);
+    }
+
     const dbInput = {
       store_id: categoryInput.store_id,
       name: categoryInput.name,
-      slug: categoryInput.slug || categoryInput.name.toLowerCase().replace(/\s+/g, '-'),
-      image_url: categoryInput.image || categoryInput.image_url || 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&q=80&w=600',
+      slug: categoryInput.slug || categoryInput.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+      image_url: rawImage,
     };
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    const sessionData = await supabaseClient.auth.getSession();
-    const token = sessionData.data.session?.access_token || supabaseAnonKey;
+    const { data, error } = await supabaseClient
+      .from('categories')
+      .insert([dbInput])
+      .select();
 
-    const response = await fetch(`${supabaseUrl}/rest/v1/categories`, {
-      method: 'POST',
-      headers: {
-        'apikey': supabaseAnonKey,
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=representation'
-      },
-      body: JSON.stringify(dbInput)
-    });
-    if (!response.ok) {
-      const errData = await response.json();
-      throw new Error(errData.message || 'Failed to create category');
+    if (error) {
+      console.error('[LaunchCart - CategoryService] Error creating category:', error);
+      throw new Error(error.message || 'Failed to create category');
     }
-    const data = await response.json();
+
+    if (!data || data.length === 0) {
+      throw new Error('Failed to create category: No data returned.');
+    }
+
     const created = data[0];
     return {
       ...created,
@@ -80,36 +116,36 @@ export const categoryService = {
    */
   updateCategory: async (categoryId, updateInput) => {
     if (!supabaseClient) throw new Error('Supabase client is not initialized.');
-    
+
+    let rawImage = updateInput.image || updateInput.image_url;
+    if (typeof rawImage === 'string' && rawImage.startsWith('data:')) {
+      rawImage = await compressImage(rawImage, 400, 400);
+    }
+
     const dbInput = {
       name: updateInput.name,
-      slug: updateInput.slug || (updateInput.name ? updateInput.name.toLowerCase().replace(/\s+/g, '-') : undefined),
-      image_url: updateInput.image || updateInput.image_url,
+      slug: updateInput.slug || (updateInput.name ? updateInput.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') : undefined),
+      image_url: rawImage,
     };
 
     // Filter undefined keys
     Object.keys(dbInput).forEach(key => dbInput[key] === undefined && delete dbInput[key]);
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    const sessionData = await supabaseClient.auth.getSession();
-    const token = sessionData.data.session?.access_token || supabaseAnonKey;
+    const { data, error } = await supabaseClient
+      .from('categories')
+      .update(dbInput)
+      .eq('id', categoryId)
+      .select();
 
-    const response = await fetch(`${supabaseUrl}/rest/v1/categories?id=eq.${categoryId}`, {
-      method: 'PATCH',
-      headers: {
-        'apikey': supabaseAnonKey,
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=representation'
-      },
-      body: JSON.stringify(dbInput)
-    });
-    if (!response.ok) {
-      const errData = await response.json();
-      throw new Error(errData.message || 'Failed to update category');
+    if (error) {
+      console.error('[LaunchCart - CategoryService] Error updating category:', error);
+      throw new Error(error.message || 'Failed to update category');
     }
-    const data = await response.json();
+
+    if (!data || data.length === 0) {
+      throw new Error('Failed to update category: No data returned.');
+    }
+
     const updated = data[0];
     return {
       ...updated,
@@ -124,20 +160,14 @@ export const categoryService = {
   deleteCategory: async (categoryId) => {
     if (!supabaseClient) throw new Error('Supabase client is not initialized.');
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    const sessionData = await supabaseClient.auth.getSession();
-    const token = sessionData.data.session?.access_token || supabaseAnonKey;
+    const { error } = await supabaseClient
+      .from('categories')
+      .delete()
+      .eq('id', categoryId);
 
-    const response = await fetch(`${supabaseUrl}/rest/v1/categories?id=eq.${categoryId}`, {
-      method: 'DELETE',
-      headers: {
-        'apikey': supabaseAnonKey,
-        'Authorization': `Bearer ${token}`
-      }
-    });
-    if (!response.ok) {
-      throw new Error('Failed to delete category');
+    if (error) {
+      console.error('[LaunchCart - CategoryService] Error deleting category:', error);
+      throw new Error(error.message || 'Failed to delete category');
     }
     return true;
   }

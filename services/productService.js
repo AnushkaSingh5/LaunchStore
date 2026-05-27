@@ -33,17 +33,59 @@ const compressImage = (file, maxWidth = 800, maxHeight = 800) => {
         canvas.height = height;
         const ctx = canvas.getContext('2d');
         if (!ctx) {
-          resolve(event.target.result); // Fallback to raw base64 if canvas is unsupported
+          resolve(event.target.result);
           return;
         }
         ctx.drawImage(img, 0, 0, width, height);
         resolve(canvas.toDataURL('image/jpeg', 0.7)); // Compress as optimized JPEG at 70% quality
       };
       img.onerror = () => {
-        resolve(event.target.result); // Fallback to raw base64 if loading image fails
+        resolve(event.target.result);
       };
     };
     reader.onerror = () => resolve('');
+  });
+};
+
+const compressImageBase64 = (base64Str, maxWidth = 800, maxHeight = 800) => {
+  return new Promise((resolve) => {
+    if (typeof window === 'undefined' || !base64Str || !base64Str.startsWith('data:')) {
+      resolve(base64Str || '');
+      return;
+    }
+
+    const img = new window.Image();
+    img.src = base64Str;
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let width = img.width;
+      let height = img.height;
+
+      if (width > height) {
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+      } else {
+        if (height > maxHeight) {
+          width = Math.round((width * maxHeight) / height);
+          height = maxHeight;
+        }
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        resolve(base64Str);
+        return;
+      }
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', 0.7));
+    };
+    img.onerror = () => {
+      resolve(base64Str);
+    };
   });
 };
 
@@ -54,26 +96,20 @@ export const productService = {
   getProductsByStore: async (storeId, includeDraft = false) => {
     if (!supabaseClient) return products;
     try {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      let query = supabaseClient
+        .from('products')
+        .select('*')
+        .eq('store_id', storeId)
+        .order('created_at', { ascending: false });
 
-      let url = `${supabaseUrl}/rest/v1/products?store_id=eq.${storeId}&select=*&order=created_at.desc`;
       if (!includeDraft) {
-        url += `&status=eq.Published`;
+        query = query.eq('status', 'Published');
       }
 
-      const response = await fetch(url, {
-        headers: {
-          'apikey': supabaseAnonKey,
-          'Authorization': `Bearer ${supabaseAnonKey}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      if (!response.ok) throw new Error('Failed to fetch products');
-      const data = await response.json();
+      const { data, error } = await query;
+      if (error) throw error;
 
-      // Map schema columns to match dashboard frontend expected properties
-      return data.map(p => ({
+      return (data || []).map(p => ({
         ...p,
         image: p.image_url || 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=800',
         images: p.images || [p.image_url],
@@ -90,19 +126,12 @@ export const productService = {
   getProductById: async (productId) => {
     if (!supabaseClient) return products.find(p => p.id === parseInt(productId) || p.id === productId) || null;
     try {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      const { data, error } = await supabaseClient
+        .from('products')
+        .select('*, store:store_id(*), category:category_id(*)')
+        .eq('id', productId);
 
-      const url = `${supabaseUrl}/rest/v1/products?id=eq.${productId}&select=*,store:store_id(*),category:category_id(*)`;
-      const response = await fetch(url, {
-        headers: {
-          'apikey': supabaseAnonKey,
-          'Authorization': `Bearer ${supabaseAnonKey}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      if (!response.ok) throw new Error('Failed to fetch product');
-      const data = await response.json();
+      if (error) throw error;
       if (!data || data.length === 0) return null;
 
       const product = data[0];
@@ -119,22 +148,37 @@ export const productService = {
   },
 
   /**
-   * Create a new product record
+   * Create a new product
    */
   createProduct: async (productInput) => {
     if (!supabaseClient) throw new Error('Supabase client is not initialized.');
-    
+
     console.log('[LaunchCart - ProductService] createProduct input:', productInput);
-    
-    // Convert property names to match active schema columns
+
+    let mainImage = productInput.image || productInput.image_url || '';
+    if (typeof mainImage === 'string' && mainImage.startsWith('data:')) {
+      mainImage = await compressImageBase64(mainImage, 800, 800);
+    }
+
+    const compressedImages = [];
+    if (productInput.images && Array.isArray(productInput.images)) {
+      for (let img of productInput.images) {
+        if (typeof img === 'string' && img.startsWith('data:')) {
+          compressedImages.push(await compressImageBase64(img, 800, 800));
+        } else {
+          compressedImages.push(img);
+        }
+      }
+    }
+
     const dbInput = {
       store_id: productInput.store_id,
       category_id: productInput.category_id || null,
       name: productInput.name,
       description: productInput.description || '',
       price: parseFloat(productInput.price) || 0.00,
-      image_url: productInput.image || productInput.image_url || '',
-      images: productInput.images || [],
+      image_url: mainImage,
+      images: compressedImages,
       status: productInput.status || 'Published',
       stock: parseInt(productInput.stock) || 0,
       featured: !!productInput.featured,
@@ -142,44 +186,20 @@ export const productService = {
 
     console.log('[LaunchCart - ProductService] dbInput mapped:', dbInput);
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    const sessionData = await supabaseClient.auth.getSession();
-    const token = sessionData.data.session?.access_token || supabaseAnonKey;
+    const { data, error } = await supabaseClient
+      .from('products')
+      .insert([dbInput])
+      .select();
 
-    console.log('[LaunchCart - ProductService] session token found:', !!sessionData.data.session?.access_token);
-
-    const response = await fetch(`${supabaseUrl}/rest/v1/products`, {
-      method: 'POST',
-      headers: {
-        'apikey': supabaseAnonKey,
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=representation'
-      },
-      body: JSON.stringify(dbInput)
-    });
-    
-    console.log('[LaunchCart - ProductService] HTTP POST response status:', response.status);
-
-    if (!response.ok) {
-      let errMsg = 'Failed to create product';
-      try {
-        const errData = await response.json();
-        console.error('[LaunchCart - ProductService] Error JSON:', errData);
-        errMsg = errData.message || errData.hint || errMsg;
-      } catch (_) {
-        try {
-          const text = await response.text();
-          console.error('[LaunchCart - ProductService] Error Text:', text);
-          errMsg = text || errMsg;
-        } catch (_) {}
-      }
-      throw new Error(errMsg);
+    if (error) {
+      console.error('[LaunchCart - ProductService] Error creating product:', error);
+      throw new Error(error.message || 'Failed to create product');
     }
-    
-    const data = await response.json();
-    console.log('[LaunchCart - ProductService] Created response data:', data);
+
+    if (!data || data.length === 0) {
+      throw new Error('Failed to create product: No data returned.');
+    }
+
     const created = data[0];
     return {
       ...created,
@@ -193,19 +213,35 @@ export const productService = {
    */
   updateProduct: async (productId, updateInput) => {
     if (!supabaseClient) throw new Error('Supabase client is not initialized.');
-    
+
     console.log('[LaunchCart - ProductService] updateProduct input:', { productId, updateInput });
 
+    let mainImage = updateInput.image || updateInput.image_url;
+    if (typeof mainImage === 'string' && mainImage.startsWith('data:')) {
+      mainImage = await compressImageBase64(mainImage, 800, 800);
+    }
+
+    const compressedImages = [];
+    if (updateInput.images && Array.isArray(updateInput.images)) {
+      for (let img of updateInput.images) {
+        if (typeof img === 'string' && img.startsWith('data:')) {
+          compressedImages.push(await compressImageBase64(img, 800, 800));
+        } else {
+          compressedImages.push(img);
+        }
+      }
+    }
+
     const dbInput = {
-      category_id: updateInput.category_id || null,
+      category_id: updateInput.category_id !== undefined ? updateInput.category_id : undefined,
       name: updateInput.name,
       description: updateInput.description,
-      price: parseFloat(updateInput.price),
-      image_url: updateInput.image || updateInput.image_url,
-      images: updateInput.images,
+      price: updateInput.price !== undefined ? parseFloat(updateInput.price) : undefined,
+      image_url: mainImage,
+      images: updateInput.images !== undefined ? compressedImages : undefined,
       status: updateInput.status,
-      stock: parseInt(updateInput.stock),
-      featured: !!updateInput.featured,
+      stock: updateInput.stock !== undefined ? parseInt(updateInput.stock) : undefined,
+      featured: updateInput.featured !== undefined ? !!updateInput.featured : undefined,
     };
 
     // Filter undefined keys
@@ -213,42 +249,21 @@ export const productService = {
 
     console.log('[LaunchCart - ProductService] dbInput mapped:', dbInput);
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    const sessionData = await supabaseClient.auth.getSession();
-    const token = sessionData.data.session?.access_token || supabaseAnonKey;
+    const { data, error } = await supabaseClient
+      .from('products')
+      .update(dbInput)
+      .eq('id', productId)
+      .select();
 
-    const response = await fetch(`${supabaseUrl}/rest/v1/products?id=eq.${productId}`, {
-      method: 'PATCH',
-      headers: {
-        'apikey': supabaseAnonKey,
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=representation'
-      },
-      body: JSON.stringify(dbInput)
-    });
-    
-    console.log('[LaunchCart - ProductService] HTTP PATCH response status:', response.status);
-
-    if (!response.ok) {
-      let errMsg = 'Failed to update product';
-      try {
-        const errData = await response.json();
-        console.error('[LaunchCart - ProductService] Error JSON:', errData);
-        errMsg = errData.message || errData.hint || errMsg;
-      } catch (_) {
-        try {
-          const text = await response.text();
-          console.error('[LaunchCart - ProductService] Error Text:', text);
-          errMsg = text || errMsg;
-        } catch (_) {}
-      }
-      throw new Error(errMsg);
+    if (error) {
+      console.error('[LaunchCart - ProductService] Error updating product:', error);
+      throw new Error(error.message || 'Failed to update product');
     }
-    
-    const data = await response.json();
-    console.log('[LaunchCart - ProductService] Updated response data:', data);
+
+    if (!data || data.length === 0) {
+      throw new Error('Failed to update product: No data returned.');
+    }
+
     const updated = data[0];
     return {
       ...updated,
@@ -263,20 +278,14 @@ export const productService = {
   deleteProduct: async (productId) => {
     if (!supabaseClient) throw new Error('Supabase client is not initialized.');
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    const sessionData = await supabaseClient.auth.getSession();
-    const token = sessionData.data.session?.access_token || supabaseAnonKey;
+    const { error } = await supabaseClient
+      .from('products')
+      .delete()
+      .eq('id', productId);
 
-    const response = await fetch(`${supabaseUrl}/rest/v1/products?id=eq.${productId}`, {
-      method: 'DELETE',
-      headers: {
-        'apikey': supabaseAnonKey,
-        'Authorization': `Bearer ${token}`
-      }
-    });
-    if (!response.ok) {
-      throw new Error('Failed to delete product');
+    if (error) {
+      console.error('[LaunchCart - ProductService] Error deleting product:', error);
+      throw new Error(error.message || 'Failed to delete product');
     }
     return true;
   },
@@ -333,38 +342,38 @@ export const productService = {
   getRelatedProducts: async (storeId, categoryName, currentProductId) => {
     if (!supabaseClient) return [];
     try {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-      const headers = {
-        'apikey': supabaseAnonKey,
-        'Authorization': `Bearer ${supabaseAnonKey}`,
-        'Content-Type': 'application/json'
-      };
-
       // Find category first
       let categoryId = null;
       try {
-        const catUrl = `${supabaseUrl}/rest/v1/categories?store_id=eq.${storeId}&name=eq.${encodeURIComponent(categoryName)}&select=id`;
-        const catRes = await fetch(catUrl, { headers });
-        if (catRes.ok) {
-          const catData = await catRes.json();
-          if (catData && catData.length > 0) categoryId = catData[0].id;
+        const { data: catData, error: catError } = await supabaseClient
+          .from('categories')
+          .select('id')
+          .eq('store_id', storeId)
+          .eq('name', categoryName);
+
+        if (!catError && catData && catData.length > 0) {
+          categoryId = catData[0].id;
         }
       } catch (catErr) {
         console.error('Error matching category in related products:', catErr);
       }
 
-      let url = `${supabaseUrl}/rest/v1/products?store_id=eq.${storeId}&status=eq.Published&id=neq.${currentProductId}&limit=4&select=*`;
+      let query = supabaseClient
+        .from('products')
+        .select('*')
+        .eq('store_id', storeId)
+        .eq('status', 'Published')
+        .neq('id', currentProductId)
+        .limit(4);
+
       if (categoryId) {
-        url += `&category_id=eq.${categoryId}`;
+        query = query.eq('category_id', categoryId);
       }
 
-      const response = await fetch(url, { headers });
-      if (!response.ok) throw new Error('Failed to fetch related products');
-      const data = await response.json();
+      const { data, error } = await query;
+      if (error) throw error;
 
-      return data.map(p => ({
+      return (data || []).map(p => ({
         ...p,
         image: p.image_url,
         images: p.images

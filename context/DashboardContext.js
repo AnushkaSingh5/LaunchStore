@@ -140,7 +140,12 @@ export function DashboardProvider({ children }) {
         ...categoryData,
         store_id: store.id
       });
-      setCategories(prev => [newCat, ...prev]);
+      const enrichedCat = {
+        ...newCat,
+        productCount: 0,
+        status: 'Active'
+      };
+      setCategories(prev => [enrichedCat, ...prev]);
     } catch (e) {
       console.error('Error adding category:', e);
       alert('Error adding category: ' + e.message);
@@ -150,7 +155,7 @@ export function DashboardProvider({ children }) {
   const updateCategory = async (id, updatedData) => {
     try {
       const updatedCat = await categoryService.updateCategory(id, updatedData);
-      setCategories(prev => prev.map(c => c.id === id ? updatedCat : c));
+      setCategories(prev => prev.map(c => c.id === id ? { ...c, ...updatedCat } : c));
     } catch (e) {
       console.error('Error updating category:', e);
       alert('Error updating category: ' + e.message);
