@@ -17,8 +17,14 @@ export default function LoginPage() {
     setLoading(true);
     setErrorMsg('');
     try {
-      const { error } = await authService.signIn(email, password);
-      if (error) throw error;
+      const signInPromise = authService.signIn(email, password);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Connection timed out. Please check your network or ad-blocker.')), 8000)
+      );
+
+      const result = await Promise.race([signInPromise, timeoutPromise]);
+      if (result && result.error) throw result.error;
+      
       router.push('/dashboard');
     } catch (err) {
       console.error(err);

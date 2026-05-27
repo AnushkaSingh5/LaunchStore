@@ -20,8 +20,15 @@ export default function AdminLoginPage() {
     setLoading(true);
 
     try {
-      // 1. Authenticate with Supabase Auth
-      const { data: authData, error: authError } = await signIn(email, password);
+      // 1. Authenticate with Supabase Auth with 8s timeout protection
+      const signInPromise = signIn(email, password);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Connection timed out. Please check your network or ad-blocker.')), 8000)
+      );
+
+      const result = await Promise.race([signInPromise, timeoutPromise]);
+      const authData = result?.data;
+      const authError = result?.error;
       
       if (authError) {
         throw new Error(authError.message);

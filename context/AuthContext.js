@@ -46,22 +46,33 @@ export function AuthProvider({ children }) {
         console.warn('[LaunchCart - Auth]: Failed to fetch active session token, falling back to anon key:', sessionErr);
       }
 
-      // Fetch profile with 4s timeout protection
-      let prof = null;
-      try {
-        const profRes = await fetchWithTimeout(`${supabaseUrl}/rest/v1/profiles?id=eq.${userId}&select=*`, {
+      // Fetch profile and store in parallel with 3.5s timeout protection to prevent sequential bottlenecks
+      const [profResResult, storeResResult] = await Promise.allSettled([
+        fetchWithTimeout(`${supabaseUrl}/rest/v1/profiles?id=eq.${userId}&select=*`, {
           headers: {
             'apikey': supabaseAnonKey,
             'Authorization': `Bearer ${token}`
           }
-        }, 4000);
-        
-        if (profRes.ok) {
-          const profs = await profRes.json();
+        }, 3500),
+        fetchWithTimeout(`${supabaseUrl}/rest/v1/stores?creator_id=eq.${userId}&select=*`, {
+          headers: {
+            'apikey': supabaseAnonKey,
+            'Authorization': `Bearer ${token}`
+          }
+        }, 3500)
+      ]);
+
+      // Handle profile response
+      let prof = null;
+      if (profResResult.status === 'fulfilled' && profResResult.value.ok) {
+        try {
+          const profs = await profResResult.value.json();
           if (profs && profs.length > 0) prof = profs[0];
+        } catch (e) {
+          console.error('[LaunchCart - Auth]: Error parsing profile json:', e);
         }
-      } catch (profErr) {
-        console.error('[LaunchCart - Auth]: Profile fetch error/timeout:', profErr);
+      } else if (profResResult.status === 'rejected') {
+        console.error('[LaunchCart - Auth]: Profile fetch rejected or timed out:', profResResult.reason);
       }
 
       if (prof) {
@@ -72,22 +83,17 @@ export function AuthProvider({ children }) {
         setRole('creator');
       }
 
-      // Fetch store with 4s timeout protection
+      // Handle store response
       let str = null;
-      try {
-        const storeRes = await fetchWithTimeout(`${supabaseUrl}/rest/v1/stores?creator_id=eq.${userId}&select=*`, {
-          headers: {
-            'apikey': supabaseAnonKey,
-            'Authorization': `Bearer ${token}`
-          }
-        }, 4000);
-        
-        if (storeRes.ok) {
-          const strs = await storeRes.json();
+      if (storeResResult.status === 'fulfilled' && storeResResult.value.ok) {
+        try {
+          const strs = await storeResResult.value.json();
           if (strs && strs.length > 0) str = strs[0];
+        } catch (e) {
+          console.error('[LaunchCart - Auth]: Error parsing store json:', e);
         }
-      } catch (storeErr) {
-        console.error('[LaunchCart - Auth]: Store fetch error/timeout:', storeErr);
+      } else if (storeResResult.status === 'rejected') {
+        console.error('[LaunchCart - Auth]: Store fetch rejected or timed out:', storeResResult.reason);
       }
 
       setStore(str);
