@@ -74,6 +74,13 @@ export const storeService = {
         return null;
       }
       const store = data[0];
+      
+      // Public storefront strictly requires the store to be approved by admin moderators
+      if (store.status !== 'approved') {
+        console.warn(`[LaunchCart] Public storefront access denied. Store status: "${store.status}".`);
+        return null;
+      }
+
       return {
         ...store,
         name: store.name,
@@ -95,6 +102,7 @@ export const storeService = {
       const { data, error } = await supabaseClient
         .from('stores')
         .select('*')
+        .eq('status', 'approved')
         .order('name', { ascending: true });
       if (error) throw error;
       return data || [];

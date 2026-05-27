@@ -21,7 +21,11 @@ export default function AdminOrders() {
   );
 
   const columns = [
-    { field: 'id', label: 'Order ID', render: (row) => <span style={{ fontWeight: 700 }}>{row.id}</span> },
+    { field: 'id', label: 'Order ID', render: (row) => (
+      <span style={{ fontWeight: 700, fontFamily: 'monospace' }} title={row.id}>
+        {row.id ? `${row.id.substring(0, 8)}...` : 'N/A'}
+      </span>
+    )},
     { field: 'customer', label: 'Customer' },
     { field: 'store', label: 'Store' },
     { field: 'total', label: 'Total Amount', render: (row) => `$${row.total.toLocaleString()}` },

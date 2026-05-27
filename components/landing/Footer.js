@@ -49,7 +49,7 @@ export default function Footer() {
           <h4 className={styles.colTitle}>Portals</h4>
           <nav className={styles.linkList}>
             <Link href="/dashboard" className={styles.link}>Creator Dashboard</Link>
-            <Link href="/admin" className={styles.link}>Admin Portal</Link>
+            <Link href="/admin/login" className={styles.link}>Admin Access</Link>
             <Link href="/login" className={styles.link}>Merchant Login</Link>
             <Link href="/signup" className={styles.link}>Merchant Register</Link>
           </nav>

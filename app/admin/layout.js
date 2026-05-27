@@ -1,5 +1,4 @@
-import AdminLayout from '@/components/Admin/AdminLayout';
-import { AdminProvider } from '@/context/AdminContext';
+import { AdminAuthProvider } from '@/context/AdminAuthContext';
 import AdminGuard from '@/components/Admin/AdminGuard';
 
 export const metadata = {
@@ -9,10 +8,10 @@ export const metadata = {
 
 export default function Layout({ children }) {
   return (
-    <AdminGuard>
-      <AdminProvider>
-        <AdminLayout>{children}</AdminLayout>
-      </AdminProvider>
-    </AdminGuard>
+    <AdminAuthProvider>
+      <AdminGuard>
+        {children}
+      </AdminGuard>
+    </AdminAuthProvider>
   );
 }

@@ -1,65 +1,428 @@
-import { mockAdminData } from '@/data/mockAdminData';
+import { supabaseClient } from '@/lib/supabase';
 
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+const getAdminEmail = () => {
+  try {
+    if (typeof window !== 'undefined') {
+      const session = localStorage.getItem('admin_session');
+      if (session) {
+        return JSON.parse(session).email;
+      }
+    }
+  } catch (e) {
+    console.error('Error getting admin email:', e);
+  }
+  return 'admin@launchcart.com'; // Safe seeded fallback
+};
+
+const toLocalDateString = (isoString) => {
+  if (!isoString) return 'N/A';
+  const d = new Date(isoString);
+  if (isNaN(d.getTime())) return 'N/A';
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
 export const adminService = {
+  /**
+   * Fetch all platform stores with owner profile details
+   */
   getStores: async () => {
-    await delay(500);
-    return [...mockAdminData.stores];
+    if (!supabaseClient) return [];
+    try {
+      const email = getAdminEmail();
+      
+      // 1. Try secure admin RPC first
+      try {
+        const { data: storesData, error: storesError } = await supabaseClient
+          .rpc('admin_get_stores', { p_admin_email: email });
+
+        if (!storesError && storesData) {
+          // Fetch products and orders via RPCs to populate counts
+          const [prodRes, ordRes] = await Promise.all([
+            supabaseClient.rpc('admin_get_products', { p_admin_email: email }),
+            supabaseClient.rpc('admin_get_orders', { p_admin_email: email })
+          ]);
+
+          const productsList = prodRes.data || [];
+          const ordersList = ordRes.data || [];
+
+          return storesData.map(store => {
+            const storeProds = productsList.filter(p => p.store_id === store.id);
+            const storeOrds = ordersList.filter(o => o.store_id === store.id);
+            const totalRevenue = storeOrds.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
+
+            let uiStatus = 'Pending';
+            if (store.status === 'approved') uiStatus = 'Active';
+            else if (store.status === 'rejected') uiStatus = 'Rejected';
+            else if (store.status === 'disabled') uiStatus = 'Disabled';
+
+            return {
+              id: store.id,
+              name: store.name,
+              ownerName: store.creator_name || 'Unknown Creator',
+              email: store.creator_email || 'N/A',
+              status: uiStatus,
+              createdDate: toLocalDateString(store.created_at),
+              productsCount: storeProds.length,
+              ordersCount: storeOrds.length,
+              revenue: totalRevenue,
+              growth: 0
+            };
+          });
+        }
+      } catch (rpcErr) {
+        console.warn('⚠️ [LaunchCart - AdminService]: admin_get_stores RPC failed, trying select fallback:', rpcErr.message);
+      }
+
+      // 2. Direct fallback (original direct query for local testing/bootstrap)
+      const { data: storesData, error: storesError } = await supabaseClient
+        .from('stores')
+        .select('*, creator:creator_id(name, email)')
+        .order('created_at', { ascending: false });
+
+      if (storesError) throw storesError;
+
+      const [prodRes, ordRes] = await Promise.all([
+        supabaseClient.from('products').select('id, store_id'),
+        supabaseClient.from('orders').select('id, store_id, total_amount')
+      ]);
+
+      const productsList = prodRes.data || [];
+      const ordersList = ordRes.data || [];
+
+      return (storesData || []).map(store => {
+        const storeProds = productsList.filter(p => p.store_id === store.id);
+        const storeOrds = ordersList.filter(o => o.store_id === store.id);
+        const totalRevenue = storeOrds.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
+
+        let uiStatus = 'Pending';
+        if (store.status === 'approved') uiStatus = 'Active';
+        else if (store.status === 'rejected') uiStatus = 'Rejected';
+        else if (store.status === 'disabled') uiStatus = 'Disabled';
+
+        return {
+          id: store.id,
+          name: store.name,
+          ownerName: store.creator?.name || 'Unknown Creator',
+          email: store.creator?.email || 'N/A',
+          status: uiStatus,
+          createdDate: toLocalDateString(store.created_at),
+          productsCount: storeProds.length,
+          ordersCount: storeOrds.length,
+          revenue: totalRevenue,
+          growth: 0
+        };
+      });
+    } catch (e) {
+      console.error('[LaunchCart - AdminService] Error fetching stores:', e);
+      return [];
+    }
   },
   
+  /**
+   * Approve a store (change status to 'approved')
+   */
   approveStore: async (id) => {
-    await delay(300);
-    const index = mockAdminData.stores.findIndex(s => s.id === id);
-    if (index !== -1) {
-      mockAdminData.stores[index].status = 'Active';
+    if (!supabaseClient) throw new Error('Supabase client is not initialized.');
+    try {
+      const email = getAdminEmail();
+
+      // 1. Try secure admin RPC first
+      try {
+        const { data, error: rpcError } = await supabaseClient
+          .rpc('admin_approve_store', { p_admin_email: email, p_store_id: id });
+
+        if (!rpcError) {
+          return { success: true };
+        }
+      } catch (rpcErr) {
+        console.warn('⚠️ [LaunchCart - AdminService]: admin_approve_store RPC failed, trying update fallback:', rpcErr.message);
+      }
+
+      // 2. Direct fallback
+      const { error } = await supabaseClient
+        .from('stores')
+        .update({ status: 'approved' })
+        .eq('id', id);
+
+      if (error) throw error;
       return { success: true };
+    } catch (e) {
+      console.error('[LaunchCart - AdminService] Error approving store:', e);
+      return { success: false, error: e.message };
     }
-    return { success: false };
   },
 
+  /**
+   * Reject a store (change status to 'rejected')
+   */
   rejectStore: async (id) => {
-    await delay(300);
-    const index = mockAdminData.stores.findIndex(s => s.id === id);
-    if (index !== -1) {
-      mockAdminData.stores.splice(index, 1);
+    if (!supabaseClient) throw new Error('Supabase client is not initialized.');
+    try {
+      const email = getAdminEmail();
+
+      // 1. Try secure admin RPC first
+      try {
+        const { data, error: rpcError } = await supabaseClient
+          .rpc('admin_reject_store', { p_admin_email: email, p_store_id: id });
+
+        if (!rpcError) {
+          return { success: true };
+        }
+      } catch (rpcErr) {
+        console.warn('⚠️ [LaunchCart - AdminService]: admin_reject_store RPC failed, trying update fallback:', rpcErr.message);
+      }
+
+      // 2. Direct fallback
+      const { error } = await supabaseClient
+        .from('stores')
+        .update({ status: 'rejected' })
+        .eq('id', id);
+
+      if (error) throw error;
       return { success: true };
+    } catch (e) {
+      console.error('[LaunchCart - AdminService] Error rejecting store:', e);
+      return { success: false, error: e.message };
     }
-    return { success: false };
   },
 
+  /**
+   * Disable a store (change status to 'disabled')
+   */
   disableStore: async (id) => {
-    await delay(300);
-    const index = mockAdminData.stores.findIndex(s => s.id === id);
-    if (index !== -1) {
-      mockAdminData.stores[index].status = 'Disabled';
+    if (!supabaseClient) throw new Error('Supabase client is not initialized.');
+    try {
+      const email = getAdminEmail();
+
+      // 1. Try secure admin RPC first
+      try {
+        const { data, error: rpcError } = await supabaseClient
+          .rpc('admin_disable_store', { p_admin_email: email, p_store_id: id });
+
+        if (!rpcError) {
+          return { success: true };
+        }
+      } catch (rpcErr) {
+        console.warn('⚠️ [LaunchCart - AdminService]: admin_disable_store RPC failed, trying update fallback:', rpcErr.message);
+      }
+
+      // 2. Direct fallback
+      const { error } = await supabaseClient
+        .from('stores')
+        .update({ status: 'disabled' })
+        .eq('id', id);
+
+      if (error) throw error;
       return { success: true };
+    } catch (e) {
+      console.error('[LaunchCart - AdminService] Error disabling store:', e);
+      return { success: false, error: e.message };
     }
-    return { success: false };
   },
 
+  /**
+   * Fetch all platform products with their store and category details
+   */
   getProducts: async () => {
-    await delay(400);
-    return [...mockAdminData.products];
-  },
+    if (!supabaseClient) return [];
+    try {
+      const email = getAdminEmail();
 
-  removeProduct: async (id) => {
-    await delay(300);
-    const index = mockAdminData.products.findIndex(p => p.id === id);
-    if (index !== -1) {
-      mockAdminData.products.splice(index, 1);
-      return { success: true };
+      // 1. Try secure admin RPC first
+      try {
+        const { data, error: rpcError } = await supabaseClient
+          .rpc('admin_get_products', { p_admin_email: email });
+
+        if (!rpcError && data) {
+          return data.map(p => ({
+            id: p.id,
+            name: p.name,
+            store: p.store_name || 'Unknown Store',
+            category: p.category_name || 'Uncategorized',
+            price: parseFloat(p.price || 0),
+            status: p.status || 'Published',
+            image: p.image_url || 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=800'
+          }));
+        }
+      } catch (rpcErr) {
+        console.warn('⚠️ [LaunchCart - AdminService]: admin_get_products RPC failed, trying select fallback:', rpcErr.message);
+      }
+
+      // 2. Direct fallback
+      const { data, error } = await supabaseClient
+        .from('products')
+        .select('*, store:store_id(name), category:category_id(name)')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      return (data || []).map(p => ({
+        id: p.id,
+        name: p.name,
+        store: p.store?.name || 'Unknown Store',
+        category: p.category?.name || 'Uncategorized',
+        price: parseFloat(p.price || 0),
+        status: p.status || 'Published',
+        image: p.image_url || 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=800'
+      }));
+    } catch (e) {
+      console.error('[LaunchCart - AdminService] Error fetching products:', e);
+      return [];
     }
-    return { success: false };
   },
 
+  /**
+   * Remove/Delete a product from the platform
+   */
+  removeProduct: async (id) => {
+    if (!supabaseClient) throw new Error('Supabase client is not initialized.');
+    try {
+      const email = getAdminEmail();
+
+      // 1. Try secure admin RPC first
+      try {
+        const { data, error: rpcError } = await supabaseClient
+          .rpc('admin_remove_product', { p_admin_email: email, p_product_id: id });
+
+        if (!rpcError) {
+          return { success: true };
+        }
+      } catch (rpcErr) {
+        console.warn('⚠️ [LaunchCart - AdminService]: admin_remove_product RPC failed, trying delete fallback:', rpcErr.message);
+      }
+
+      // 2. Direct fallback
+      const { error } = await supabaseClient
+        .from('products')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      return { success: true };
+    } catch (e) {
+      console.error('[LaunchCart - AdminService] Error removing product:', e);
+      return { success: false, error: e.message };
+    }
+  },
+
+  /**
+   * Fetch all platform orders with store details
+   */
   getOrders: async () => {
-    await delay(500);
-    return [...mockAdminData.orders];
+    if (!supabaseClient) return [];
+    try {
+      const email = getAdminEmail();
+
+      // 1. Try secure admin RPC first
+      try {
+        const { data, error: rpcError } = await supabaseClient
+          .rpc('admin_get_orders', { p_admin_email: email });
+
+        if (!rpcError && data) {
+          return data.map(o => ({
+            id: o.id,
+            customer: o.customer_name,
+            email: o.customer_email,
+            store: o.store_name || 'Unknown Store',
+            total: parseFloat(o.total_amount || 0),
+            paymentMethod: 'Credit Card',
+            status: o.status || 'Pending',
+            date: toLocalDateString(o.created_at),
+            time: o.created_at ? new Date(o.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A',
+            address: o.shipping_address || 'Standard Shipping'
+          }));
+        }
+      } catch (rpcErr) {
+        console.warn('⚠️ [LaunchCart - AdminService]: admin_get_orders RPC failed, trying select fallback:', rpcErr.message);
+      }
+
+      // 2. Direct fallback
+      const { data, error } = await supabaseClient
+        .from('orders')
+        .select('*, store:store_id(name)')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      return (data || []).map(o => ({
+        id: o.id,
+        customer: o.customer_name,
+        email: o.customer_email,
+        store: o.store?.name || 'Unknown Store',
+        total: parseFloat(o.total_amount || 0),
+        paymentMethod: 'Credit Card',
+        status: o.status || 'Pending',
+        date: toLocalDateString(o.created_at),
+        time: o.created_at ? new Date(o.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A',
+        address: o.shipping_address || 'Standard Shipping'
+      }));
+    } catch (e) {
+      console.error('[LaunchCart - AdminService] Error fetching orders:', e);
+      return [];
+    }
   },
 
+  /**
+   * Derive and fetch all platform customers from sales transactions
+   */
   getCustomers: async () => {
-    await delay(400);
-    return [...mockAdminData.customers];
+    if (!supabaseClient) return [];
+    try {
+      const email = getAdminEmail();
+      let ordersData = [];
+
+      // 1. Try secure admin RPC first
+      try {
+        const { data, error: rpcError } = await supabaseClient
+          .rpc('admin_get_orders', { p_admin_email: email });
+
+        if (!rpcError && data) {
+          ordersData = data;
+        }
+      } catch (rpcErr) {
+        console.warn('⚠️ [LaunchCart - AdminService]: admin_get_orders RPC failed inside getCustomers, trying select fallback:', rpcErr.message);
+      }
+
+      // 2. Direct fallback
+      if (ordersData.length === 0) {
+        const { data: selectData, error: ordersError } = await supabaseClient
+          .from('orders')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (!ordersError && selectData) {
+          ordersData = selectData;
+        }
+      }
+
+      const customerMap = {};
+      ordersData.forEach(o => {
+        if (!o.customer_email) return;
+        const cEmail = o.customer_email;
+        if (!customerMap[cEmail]) {
+          customerMap[cEmail] = {
+            id: `cust-${cEmail}`,
+            name: o.customer_name || 'Anonymous',
+            email: cEmail,
+            phone: o.customer_phone || 'N/A',
+            totalOrders: 0,
+            totalSpent: 0,
+            joinedDate: o.created_at ? o.created_at.split('T')[0] : '2026'
+          };
+        }
+        customerMap[cEmail].totalOrders += 1;
+        customerMap[cEmail].totalSpent += parseFloat(o.total_amount || 0);
+      });
+
+      return Object.values(customerMap);
+    } catch (e) {
+      console.error('[LaunchCart - AdminService] Error generating customer list:', e);
+      return [];
+    }
   }
 };
+
+export default adminService;

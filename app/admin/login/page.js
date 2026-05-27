@@ -3,8 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/context/AuthContext';
-import { supabaseClient } from '@/lib/supabase';
+import { useAdminAuth } from '@/context/AdminAuthContext';
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState('');
@@ -12,7 +11,7 @@ export default function AdminLoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const { signIn, signOut } = useAuth();
+  const { adminSignIn } = useAdminAuth();
 
   const handleAdminLogin = async (e) => {
     e.preventDefault();
@@ -20,53 +19,19 @@ export default function AdminLoginPage() {
     setLoading(true);
 
     try {
-      // 1. Authenticate with Supabase Auth with 8s timeout protection
-      const signInPromise = signIn(email, password);
+      // Authenticate with isolated Admin Session verification
+      const signInPromise = adminSignIn(email, password);
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Connection timed out. Please check your network or ad-blocker.')), 20000)
+        setTimeout(() => reject(new Error('Connection timed out. Please check your network.')), 20000)
       );
 
       const result = await Promise.race([signInPromise, timeoutPromise]);
-      const authData = result?.data;
-      const authError = result?.error;
       
-      if (authError) {
-        throw new Error(authError.message);
+      if (!result?.success) {
+        throw new Error(result?.error || 'Authentication failed. Please verify credentials.');
       }
 
-      // 2. Fetch User Profile role
-      const userId = authData?.user?.id;
-      if (!userId) {
-        throw new Error('Authentication returned an empty user session.');
-      }
-
-      // If Supabase client exists, query the database, otherwise bypass with simulated mock admin login
-      if (supabaseClient) {
-        const { data: profile, error: dbError } = await supabaseClient
-          .from('profiles')
-          .select('role')
-          .eq('id', userId)
-          .single();
-
-        if (dbError) {
-          console.error('[LaunchCart - Admin]: DB Error fetching profile:', dbError);
-          // If profiles table is empty or SQL fails locally (mock mode), check for simulated admin email
-          if (email.toLowerCase().includes('admin')) {
-            router.push('/admin');
-            return;
-          }
-          await signOut();
-          throw new Error('Could not fetch user profile details.');
-        }
-
-        // 3. Verify Admin Authorization role
-        if (profile?.role !== 'admin') {
-          await signOut();
-          throw new Error('Access denied: Admin role authorization required.');
-        }
-      }
-
-      // 4. Authorized success -> Redirect to Admin Overview Portal
+      // Authorized success -> Redirect to Admin Overview Portal
       router.push('/admin');
     } catch (err) {
       setError(err.message);

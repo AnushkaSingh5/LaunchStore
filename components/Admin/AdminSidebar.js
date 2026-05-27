@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useAuth } from '@/context/AuthContext';
+import { useAdminAuth } from '@/context/AdminAuthContext';
 import styles from './AdminLayout.module.css';
 
 const icons = {
@@ -21,12 +21,12 @@ const icons = {
 
 export default function AdminSidebar({ isOpen, onClose, isCollapsed, onToggle }) {
   const pathname = usePathname();
-  const { signOut } = useAuth();
+  const { adminSignOut } = useAdminAuth();
   const router = useRouter();
 
   const handleLogout = async () => {
     try {
-      await signOut();
+      await adminSignOut();
       window.location.href = '/admin/login';
     } catch (e) {
       console.error('Logout error:', e);

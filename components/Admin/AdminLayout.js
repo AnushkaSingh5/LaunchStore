@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { usePathname } from 'next/navigation';
 import AdminSidebar from './AdminSidebar';
 import AdminNavbar from './AdminNavbar';
 import styles from './AdminLayout.module.css';
@@ -9,7 +8,6 @@ import styles from './AdminLayout.module.css';
 export default function AdminLayout({ children }) {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [isDesktopCollapsed, setDesktopCollapsed] = useState(false);
-  const pathname = usePathname();
 
   const toggleSidebar = () => {
     if (typeof window !== 'undefined' && window.innerWidth <= 1024) {

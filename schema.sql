@@ -191,3 +191,247 @@ CREATE POLICY "Allow creators to view own order items" ON public.order_items FOR
     WHERE o.id = order_id AND s.creator_id = auth.uid()
   )
 );
+
+
+-- ==========================================
+-- ADMIN SECURITY-DEFINER FUNCTION & POLICIES
+-- ==========================================
+
+-- Helper function to check if the authenticated user is an administrator
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS boolean AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND role = 'admin'
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+
+-- A. ADMIN PROFILES POLICIES
+CREATE POLICY "Allow admin updates of all profiles" ON public.profiles FOR UPDATE USING (public.is_admin());
+CREATE POLICY "Allow admin deletes of all profiles" ON public.profiles FOR DELETE USING (public.is_admin());
+
+-- B. ADMIN STORES POLICIES
+CREATE POLICY "Allow admin inserts of stores" ON public.stores FOR INSERT WITH CHECK (public.is_admin());
+CREATE POLICY "Allow admin updates of all stores" ON public.stores FOR UPDATE USING (public.is_admin());
+CREATE POLICY "Allow admin deletes of all stores" ON public.stores FOR DELETE USING (public.is_admin());
+
+-- C. ADMIN CATEGORIES POLICIES
+CREATE POLICY "Allow admin inserts of categories" ON public.categories FOR INSERT WITH CHECK (public.is_admin());
+CREATE POLICY "Allow admin updates of all categories" ON public.categories FOR UPDATE USING (public.is_admin());
+CREATE POLICY "Allow admin deletes of all categories" ON public.categories FOR DELETE USING (public.is_admin());
+
+-- D. ADMIN PRODUCTS POLICIES
+CREATE POLICY "Allow admin inserts of products" ON public.products FOR INSERT WITH CHECK (public.is_admin());
+CREATE POLICY "Allow admin updates of all products" ON public.products FOR UPDATE USING (public.is_admin());
+CREATE POLICY "Allow admin deletes of all products" ON public.products FOR DELETE USING (public.is_admin());
+
+-- E. ADMIN ORDERS POLICIES
+CREATE POLICY "Allow admin to view all orders" ON public.orders FOR SELECT USING (public.is_admin());
+CREATE POLICY "Allow admin to update all orders" ON public.orders FOR UPDATE USING (public.is_admin());
+CREATE POLICY "Allow admin to delete any order" ON public.orders FOR DELETE USING (public.is_admin());
+
+-- F. ADMIN ORDER ITEMS POLICIES
+CREATE POLICY "Allow admin to view all order items" ON public.order_items FOR SELECT USING (public.is_admin());
+CREATE POLICY "Allow admin to update all order items" ON public.order_items FOR UPDATE USING (public.is_admin());
+CREATE POLICY "Allow admin to delete any order item" ON public.order_items FOR DELETE USING (public.is_admin());
+
+
+-- ==========================================
+-- G. DEDICATED ADMIN AUTHENTICATION
+-- ==========================================
+
+-- Create dedicated table for company internal admins (completely isolated from creators)
+CREATE TABLE IF NOT EXISTS public.admin_users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email TEXT UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  full_name TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Enable RLS for admin_users (do not allow direct public access)
+ALTER TABLE public.admin_users ENABLE ROW LEVEL SECURITY;
+
+-- Manually seed a default company administrator with secure bcrypt password ('admin123')
+INSERT INTO public.admin_users (email, password_hash, full_name)
+VALUES (
+  'admin@launchcart.com', 
+  crypt('admin123', gen_salt('bf')), 
+  'System Administrator'
+)
+ON CONFLICT (email) DO NOTHING;
+
+
+-- ==========================================
+-- H. SECURE DEFINER DATABASE ADMIN RPCs
+-- ==========================================
+
+-- RPC Security definer function for secure, isolated admin password verification
+CREATE OR REPLACE FUNCTION public.verify_admin_credentials(p_email TEXT, p_password TEXT)
+RETURNS TABLE (
+  id UUID,
+  email TEXT,
+  full_name TEXT
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT a.id, a.email, a.full_name
+  FROM public.admin_users a
+  WHERE lower(a.email) = lower(p_email)
+    AND a.password_hash = crypt(p_password, a.password_hash);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Admin approve store action (SECURITY DEFINER to bypass RLS securely for validated admins)
+CREATE OR REPLACE FUNCTION public.admin_approve_store(p_admin_email TEXT, p_store_id UUID)
+RETURNS boolean AS $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM public.admin_users WHERE lower(email) = lower(p_admin_email)) THEN
+    RAISE EXCEPTION 'Unauthorized admin access.';
+  END IF;
+
+  UPDATE public.stores
+  SET status = 'approved'
+  WHERE id = p_store_id;
+  
+  RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Admin reject store action
+CREATE OR REPLACE FUNCTION public.admin_reject_store(p_admin_email TEXT, p_store_id UUID)
+RETURNS boolean AS $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM public.admin_users WHERE lower(email) = lower(p_admin_email)) THEN
+    RAISE EXCEPTION 'Unauthorized admin access.';
+  END IF;
+
+  UPDATE public.stores
+  SET status = 'rejected'
+  WHERE id = p_store_id;
+  
+  RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Admin disable store action
+CREATE OR REPLACE FUNCTION public.admin_disable_store(p_admin_email TEXT, p_store_id UUID)
+RETURNS boolean AS $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM public.admin_users WHERE lower(email) = lower(p_admin_email)) THEN
+    RAISE EXCEPTION 'Unauthorized admin access.';
+  END IF;
+
+  UPDATE public.stores
+  SET status = 'disabled'
+  WHERE id = p_store_id;
+  
+  RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Admin remove product action
+CREATE OR REPLACE FUNCTION public.admin_remove_product(p_admin_email TEXT, p_product_id UUID)
+RETURNS boolean AS $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM public.admin_users WHERE lower(email) = lower(p_admin_email)) THEN
+    RAISE EXCEPTION 'Unauthorized admin access.';
+  END IF;
+
+  DELETE FROM public.products
+  WHERE id = p_product_id;
+  
+  RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Admin secure view of all orders (SECURITY DEFINER to bypass RLS securely)
+CREATE OR REPLACE FUNCTION public.admin_get_orders(p_admin_email TEXT)
+RETURNS TABLE (
+  id UUID,
+  store_id UUID,
+  store_name TEXT,
+  customer_name TEXT,
+  customer_email TEXT,
+  customer_phone TEXT,
+  total_amount NUMERIC(10, 2),
+  status TEXT,
+  shipping_address TEXT,
+  created_at TIMESTAMP WITH TIME ZONE
+) AS $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM public.admin_users WHERE lower(email) = lower(p_admin_email)) THEN
+    RAISE EXCEPTION 'Unauthorized admin access.';
+  END IF;
+
+  RETURN QUERY
+  SELECT o.id, o.store_id, s.name as store_name, o.customer_name, o.customer_email, o.customer_phone, o.total_amount, o.status, o.shipping_address, o.created_at
+  FROM public.orders o
+  LEFT JOIN public.stores s ON o.store_id = s.id
+  ORDER BY o.created_at DESC;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Admin secure view of all stores with creator details
+CREATE OR REPLACE FUNCTION public.admin_get_stores(p_admin_email TEXT)
+RETURNS TABLE (
+  id UUID,
+  creator_id UUID,
+  creator_name TEXT,
+  creator_email TEXT,
+  name TEXT,
+  slug TEXT,
+  description TEXT,
+  logo_url TEXT,
+  banner_url TEXT,
+  status TEXT,
+  created_at TIMESTAMP WITH TIME ZONE
+) AS $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM public.admin_users WHERE lower(email) = lower(p_admin_email)) THEN
+    RAISE EXCEPTION 'Unauthorized admin access.';
+  END IF;
+
+  RETURN QUERY
+  SELECT s.id, s.creator_id, p.name as creator_name, p.email as creator_email, s.name, s.slug, s.description, s.logo_url, s.banner_url, s.status, s.created_at
+  FROM public.stores s
+  LEFT JOIN public.profiles p ON s.creator_id = p.id
+  ORDER BY s.created_at DESC;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Admin secure view of all products with store/category details
+CREATE OR REPLACE FUNCTION public.admin_get_products(p_admin_email TEXT)
+RETURNS TABLE (
+  id UUID,
+  store_id UUID,
+  store_name TEXT,
+  category_id UUID,
+  category_name TEXT,
+  name TEXT,
+  description TEXT,
+  price NUMERIC(10, 2),
+  image_url TEXT,
+  status TEXT,
+  stock INTEGER,
+  featured BOOLEAN,
+  created_at TIMESTAMP WITH TIME ZONE
+) AS $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM public.admin_users WHERE lower(email) = lower(p_admin_email)) THEN
+    RAISE EXCEPTION 'Unauthorized admin access.';
+  END IF;
+
+  RETURN QUERY
+  SELECT p.id, p.store_id, s.name as store_name, p.category_id, c.name as category_name, p.name, p.description, p.price, p.image_url, p.status, p.stock, p.featured, p.created_at
+  FROM public.products p
+  LEFT JOIN public.stores s ON p.store_id = s.id
+  LEFT JOIN public.categories c ON p.category_id = c.id
+  ORDER BY p.created_at DESC;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+
