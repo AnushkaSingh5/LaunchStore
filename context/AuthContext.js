@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect } from 'react';
-import { supabaseClient, isSupabaseMockMode } from '@/lib/supabase';
+import { supabaseClient } from '@/lib/supabase';
 
 const AuthContext = createContext();
 
@@ -153,12 +153,6 @@ export function AuthProvider({ children }) {
     setAuthTimeoutError(false);
     setLoading(true);
     
-    if (isSupabaseMockMode()) {
-      console.log('[LaunchCart - Auth]: Bypassing retryAuth for mock mode.');
-      setLoading(false);
-      return;
-    }
-    
     const fallbackTimer = setTimeout(() => {
       console.warn('[LaunchCart - Auth]: Retry exceeded 6s fallback. Clearing loading state.');
       setAuthTimeoutError(true);
@@ -186,42 +180,8 @@ export function AuthProvider({ children }) {
   };
 
   useEffect(() => {
-    if (!supabaseClient || isSupabaseMockMode()) {
-      // Mock session setup for high availability demo flow
-      const loadMockSession = () => {
-        console.log('[LaunchCart - Auth]: Supabase is in mock/placeholder mode. Instantly resolving mock creator session.');
-        const mockUser = {
-          id: 'mock-user-id',
-          email: 'anushka.2327cse1234@kiet.edu',
-          user_metadata: { name: 'Anushka Singh' }
-        };
-        setUser(mockUser);
-        setSession({ user: mockUser, access_token: 'mock-token' });
-        setProfile({ id: 'mock-user-id', name: 'Anushka Singh', role: 'creator' });
-        setRole('creator');
-        
-        const savedStore = typeof window !== 'undefined' ? localStorage.getItem('launchcart_store') : null;
-        if (savedStore) {
-          setStore(JSON.parse(savedStore));
-        } else {
-          const defaultStore = {
-            id: 'mock-store-id',
-            creator_id: 'mock-user-id',
-            name: 'Luxe Modern',
-            slug: 'luxe-modern',
-            description: 'Experience custom curated minimalist designs',
-            banner_url: 'https://images.unsplash.com/photo-1494438639946-1ebd1d20bf85?auto=format&fit=crop&q=80&w=800',
-            status: 'active'
-          };
-          setStore(defaultStore);
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('launchcart_store', JSON.stringify(defaultStore));
-          }
-        }
-        setLoading(false);
-      };
-
-      loadMockSession();
+    if (!supabaseClient) {
+      setLoading(false);
       return;
     }
 
@@ -251,12 +211,7 @@ export function AuthProvider({ children }) {
     checkSession();
 
     // Listen for session auth changes with 6s fail-safe fallback
-    const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(async (event, activeSession) => {
-      // Ignore INITIAL_SESSION in state change listener since checkSession handles it on mount
-      if (event === 'INITIAL_SESSION') {
-        return;
-      }
-
+    const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(async (_event, activeSession) => {
       const fallbackTimer = setTimeout(() => {
         console.warn('[LaunchCart - Auth]: AuthStateChange handler exceeded 6s fallback. Clearing loading state.');
         setAuthTimeoutError(true);
@@ -289,9 +244,6 @@ export function AuthProvider({ children }) {
 
   // Future authentication wrappers
   const signUp = async (email, password, options = {}) => {
-    if (isSupabaseMockMode()) {
-      return { data: { user: { id: 'mock-user-id', email } }, error: null };
-    }
     if (!supabaseClient) throw new Error('Supabase client is not initialized.');
     return await supabaseClient.auth.signUp({
       email,
@@ -301,49 +253,6 @@ export function AuthProvider({ children }) {
   };
 
   const signIn = async (email, password) => {
-    if (isSupabaseMockMode()) {
-      console.log('[LaunchCart - Auth]: Bypassing signIn for mock mode.');
-      const mockUser = {
-        id: 'mock-user-id',
-        email: email,
-        user_metadata: { name: 'Demo User' }
-      };
-      setUser(mockUser);
-      setSession({ user: mockUser, access_token: 'mock-token' });
-      
-      const is_admin = email.toLowerCase().includes('admin');
-      const defaultRole = is_admin ? 'admin' : 'creator';
-      setRole(defaultRole);
-      
-      const mockProfile = { id: 'mock-user-id', name: is_admin ? 'Admin User' : 'Demo User', role: defaultRole };
-      setProfile(mockProfile);
-      
-      if (!is_admin) {
-        const savedStore = typeof window !== 'undefined' ? localStorage.getItem('launchcart_store') : null;
-        if (savedStore) {
-          setStore(JSON.parse(savedStore));
-        } else {
-          const defaultStore = {
-            id: 'mock-store-id',
-            creator_id: 'mock-user-id',
-            name: 'Luxe Modern',
-            slug: 'luxe-modern',
-            description: 'Experience custom curated minimalist designs',
-            banner_url: 'https://images.unsplash.com/photo-1494438639946-1ebd1d20bf85?auto=format&fit=crop&q=80&w=800',
-            status: 'active'
-          };
-          setStore(defaultStore);
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('launchcart_store', JSON.stringify(defaultStore));
-          }
-        }
-      } else {
-        setStore(null);
-      }
-      
-      return { data: { user: mockUser, session: { user: mockUser } }, error: null };
-    }
-
     if (!supabaseClient) throw new Error('Supabase client is not initialized.');
     return await supabaseClient.auth.signInWithPassword({
       email,
@@ -352,14 +261,6 @@ export function AuthProvider({ children }) {
   };
 
   const signOut = async () => {
-    if (isSupabaseMockMode()) {
-      setUser(null);
-      setSession(null);
-      setProfile(null);
-      setStore(null);
-      setRole('creator');
-      return { error: null };
-    }
     if (!supabaseClient) throw new Error('Supabase client is not initialized.');
     return await supabaseClient.auth.signOut();
   };
