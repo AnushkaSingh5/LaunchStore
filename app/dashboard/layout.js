@@ -96,7 +96,7 @@ function CreatorDashboardGuard({ children }) {
     }
   };
 
-  if (authTimeoutError && loading === false && (!user || role !== 'creator')) {
+  if (authTimeoutError && loading === false && (!user || !store)) {
     return (
       <div className="timeout-screen">
         <div className="glow-bg"></div>

@@ -211,7 +211,12 @@ export function AuthProvider({ children }) {
     checkSession();
 
     // Listen for session auth changes with 6s fail-safe fallback
-    const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(async (_event, activeSession) => {
+    const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(async (event, activeSession) => {
+      // Ignore INITIAL_SESSION in state change listener since checkSession handles it on mount
+      if (event === 'INITIAL_SESSION') {
+        return;
+      }
+
       const fallbackTimer = setTimeout(() => {
         console.warn('[LaunchCart - Auth]: AuthStateChange handler exceeded 6s fallback. Clearing loading state.');
         setAuthTimeoutError(true);
