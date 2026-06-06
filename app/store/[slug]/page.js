@@ -11,10 +11,13 @@ import { useStore } from '@/context/StoreContext';
 import { storeService } from '@/services/storeService';
 import { productService } from '@/services/productService';
 import { categoryService } from '@/services/categoryService';
+import { useLoading } from '@/components/TopLoader';
+import PageLoader from '@/components/PageLoader';
 
 export default function StorePage({ params }) {
   const { slug } = use(params);
   const { selectedCategory, setSelectedCategory, searchQuery } = useStore();
+  const { startLoading, completeLoading } = useLoading();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [storeDetails, setStoreDetails] = useState(null);
@@ -24,6 +27,7 @@ export default function StorePage({ params }) {
     const fetchData = async () => {
       console.log(`[LaunchCart - StorePage] Starting fetchData for slug: "${slug}"`);
       setLoading(true);
+      startLoading();
       try {
         console.log(`[LaunchCart - StorePage] Calling storeService.getStoreBySlug("${slug}")...`);
         const storeData = await storeService.getStoreBySlug(slug);
@@ -61,45 +65,17 @@ export default function StorePage({ params }) {
       } finally {
         console.log("[LaunchCart - StorePage] Fetch data complete, setting loading to false.");
         setLoading(false);
+        completeLoading();
       }
     };
     fetchData();
   }, [slug]);
 
-  if (loading) {
-    return (
-      <div className="store-loading-screen">
-        <div className="spinner"></div>
-        <p>Loading storefront...</p>
-        <style jsx>{`
-          .store-loading-screen {
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background: #0f172a;
-            color: #fff;
-            gap: 16px;
-            font-family: 'Outfit', sans-serif;
-          }
-          .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid rgba(255, 255, 255, 0.1);
-            border-left-color: #8b5cf6;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-          }
-          @keyframes spin {
-            to { transform: rotate(360deg); }
-          }
-        `}</style>
-      </div>
-    );
+  if (loading && !storeDetails) {
+    return <PageLoader />;
   }
 
-  if (!storeDetails) {
+  if (!loading && !storeDetails) {
     return (
       <div className="store-not-found-screen">
         <div className="glass-card">
@@ -163,7 +139,7 @@ export default function StorePage({ params }) {
     );
   }
 
-  if (storeDetails.status && ['rejected', 'disabled'].includes(storeDetails.status)) {
+  if (!loading && storeDetails && storeDetails.status && ['rejected', 'disabled'].includes(storeDetails.status)) {
     return (
       <div className="pending-store-screen">
         <div className="glass-card">
@@ -254,14 +230,23 @@ export default function StorePage({ params }) {
             <p className="section-subtitle">Curated collections for your home.</p>
           </div>
           <div className="categories-grid">
-            {categories.map(category => (
-              <CategoryCard key={category.id} category={category} />
-            ))}
+            {loading ? (
+              [...Array(5)].map((_, i) => (
+                <div className="skeleton-category-card" key={i}>
+                  <div className="skeleton-image shim"></div>
+                  <div className="skeleton-title shim"></div>
+                </div>
+              ))
+            ) : (
+              categories.map(category => (
+                <CategoryCard key={category.id} category={category} />
+              ))
+            )}
           </div>
         </section>
 
         {/* Featured Products (Only show when no active filtering) */}
-        {!searchQuery && selectedCategory === 'All' && (
+        {!searchQuery && selectedCategory === 'All' && !loading && (
           <section className="section-wrapper dashboard-card section-card">
             <div className="section-header align-left">
               <div className="title-box">
@@ -286,12 +271,21 @@ export default function StorePage({ params }) {
               {searchQuery && ` - Results for "${searchQuery}"`}
             </h2>
             <p className="section-subtitle">
-              {filteredProducts.length} {filteredProducts.length === 1 ? 'item' : 'items'} found
+              {loading ? 'Searching catalog...' : `${filteredProducts.length} ${filteredProducts.length === 1 ? 'item' : 'items'} found`}
             </p>
           </div>
 
           {loading ? (
-            <div className="loading-state">Loading products...</div>
+            <div className="products-grid">
+              {[...Array(4)].map((_, i) => (
+                <div className="skeleton-product-card" key={i}>
+                  <div className="skeleton-product-image shim"></div>
+                  <div className="skeleton-product-cat shim"></div>
+                  <div className="skeleton-product-name shim"></div>
+                  <div className="skeleton-product-price shim"></div>
+                </div>
+              ))}
+            </div>
           ) : filteredProducts.length > 0 ? (
             <div className="products-grid">
               {filteredProducts.map(product => (
@@ -479,6 +473,90 @@ export default function StorePage({ params }) {
         @media (max-width: 480px) {
           .categories-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+        }
+
+        /* Skeleton Shimmer Styles */
+        .skeleton-category-card {
+          background: rgba(255, 255, 255, 0.6);
+          border-radius: 16px;
+          padding: 16px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 12px;
+          border: 1px solid rgba(0, 0, 0, 0.03);
+        }
+        .skeleton-category-card .skeleton-image {
+          width: 80px;
+          height: 80px;
+          border-radius: 50%;
+          background: #e2e8f0;
+        }
+        .skeleton-category-card .skeleton-title {
+          width: 60px;
+          height: 14px;
+          border-radius: 4px;
+          background: #e2e8f0;
+        }
+        .skeleton-product-card {
+          background: #fff;
+          border-radius: 16px;
+          padding: 12px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          border: 1px solid rgba(0, 0, 0, 0.03);
+        }
+        .skeleton-product-card .skeleton-product-image {
+          width: 100%;
+          aspect-ratio: 1/1;
+          border-radius: 12px;
+          background: #e2e8f0;
+        }
+        .skeleton-product-card .skeleton-product-cat {
+          width: 40%;
+          height: 10px;
+          border-radius: 4px;
+          background: #e2e8f0;
+        }
+        .skeleton-product-card .skeleton-product-name {
+          width: 80%;
+          height: 16px;
+          border-radius: 4px;
+          background: #e2e8f0;
+        }
+        .skeleton-product-card .skeleton-product-price {
+          width: 30%;
+          height: 14px;
+          border-radius: 4px;
+          background: #e2e8f0;
+        }
+        
+        .shim {
+          position: relative;
+          overflow: hidden;
+        }
+        .shim::after {
+          position: absolute;
+          top: 0;
+          right: 0;
+          bottom: 0;
+          left: 0;
+          transform: translateX(-100%);
+          background-image: linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 255, 255, 0.4) 20%,
+            rgba(255, 255, 255, 0.6) 60%,
+            rgba(255, 255, 255, 0) 100%
+          );
+          animation: shimmer 1.5s infinite;
+          content: '';
+        }
+        @keyframes shimmer {
+          100% {
+            transform: translateX(100%);
           }
         }
       `}</style>

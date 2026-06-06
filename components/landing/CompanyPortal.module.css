@@ -1,0 +1,178 @@
+.section {
+  position: relative;
+  padding: 80px 0;
+  background-color: #fafbfd;
+  overflow: hidden;
+  border-top: 1px solid rgba(0, 0, 0, 0.03);
+}
+
+.glowBg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 800px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.04) 0%, rgba(99, 102, 241, 0.02) 50%, rgba(255, 255, 255, 0) 70%);
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.container {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+}
+
+.portalCard {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 56px 40px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-md);
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  max-width: 800px; /* Desktop: centered card, max-width around 700-900px */
+  text-align: center;
+  transition: var(--transition-smooth);
+}
+
+.portalCard:hover {
+  box-shadow: var(--shadow-lg), 0 20px 40px -10px rgba(0, 0, 0, 0.05);
+  transform: translateY(-4px);
+  border-color: rgba(37, 99, 235, 0.15);
+}
+
+.glowOverlay {
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.02) 0%, rgba(255, 255, 255, 0) 60%);
+  pointer-events: none;
+}
+
+.content {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  background: rgba(37, 99, 235, 0.08);
+  padding: 6px 14px;
+  border-radius: 100px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  display: inline-block;
+}
+
+.iconContainer {
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  background: rgba(37, 99, 235, 0.04);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+  border: 1px solid rgba(37, 99, 235, 0.08);
+  transition: var(--transition-smooth);
+}
+
+.portalCard:hover .iconContainer {
+  transform: scale(1.05) rotate(5deg);
+  background: rgba(37, 99, 235, 0.08);
+  color: var(--accent);
+}
+
+.shieldIcon {
+  stroke-width: 1.8px;
+}
+
+.title {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--primary);
+  letter-spacing: -0.8px;
+  line-height: 1.2;
+}
+
+.description {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-sub);
+  margin-bottom: 12px;
+}
+
+.buttonGroup {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.adminBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--primary);
+  color: var(--white);
+  padding: 14px 36px;
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  font-size: 15px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: var(--transition-smooth);
+}
+
+.adminBtn svg {
+  transition: transform 0.2s ease;
+}
+
+.adminBtn:hover {
+  background: var(--accent);
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.3);
+  transform: translateY(-2px);
+}
+
+.adminBtn:hover svg {
+  transform: translateX(3px);
+}
+
+@media (max-width: 768px) {
+  .section {
+    padding: 60px 0;
+  }
+  
+  .portalCard {
+    padding: 40px 24px;
+    border-radius: var(--radius-md);
+    max-width: 100%; /* Mobile: full width card */
+  }
+
+  .title {
+    font-size: 26px;
+  }
+
+  .description {
+    font-size: 14px;
+  }
+  
+  .adminBtn {
+    width: 100%;
+    justify-content: center;
+  }
+}

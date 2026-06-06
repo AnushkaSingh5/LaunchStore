@@ -13,6 +13,8 @@ export default function DashboardShowcase() {
     { id: 'theme', label: 'Theme Customizer', emoji: '🎨' }
   ];
 
+  console.log('[DashboardShowcase] Rendered. activeTab:', activeTab);
+
   return (
     <section className={styles.section}>
       <div className={`${styles.container} container`}>
@@ -30,8 +32,12 @@ export default function DashboardShowcase() {
           {tabs.map((tab) => (
             <button
               key={tab.id}
+              type="button"
               className={`${styles.tabBtn} ${activeTab === tab.id ? styles.activeTab : ''}`}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => {
+                console.log('[DashboardShowcase] Tab clicked:', tab.id);
+                setActiveTab(tab.id);
+              }}
             >
               <span className={styles.tabEmoji}>{tab.emoji}</span>
               <span className={styles.tabLabel}>{tab.label}</span>

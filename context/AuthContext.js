@@ -2,10 +2,12 @@
 
 import { createContext, useContext, useState, useEffect } from 'react';
 import { supabaseClient } from '@/lib/supabase';
+import { useLoading } from '@/components/TopLoader';
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
+  const { startLoading, completeLoading } = useLoading();
   const [user, setUser] = useState(null);
   const [session, setSession] = useState(null);
   const [role, setRole] = useState('creator');
@@ -27,7 +29,7 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const fetchRoleAndDetails = async (userId, email) => {
+  const fetchRoleAndDetails = async (userId, email, token = null) => {
     const startTime = performance.now();
     console.log(`🔄 [LaunchCart - Auth]: Fetching profile & store details for: "${email}"`);
 
@@ -41,26 +43,20 @@ export function AuthProvider({ children }) {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
       
-      let token = supabaseAnonKey;
-      try {
-        const sessionData = await supabaseClient.auth.getSession();
-        token = sessionData.data.session?.access_token || supabaseAnonKey;
-      } catch (sessionErr) {
-        console.warn('⚠️ [LaunchCart - Auth]: Failed to extract session token:', sessionErr.message);
-      }
+      const activeToken = token || supabaseAnonKey;
 
-      // Fetch profile and store in parallel with 15s timeout protection to prevent sequential bottlenecks
+      // Fetch profile and store in parallel with 15s timeout protection
       const [profResResult, storeResResult] = await Promise.allSettled([
         fetchWithTimeout(`${supabaseUrl}/rest/v1/profiles?id=eq.${userId}&select=*`, {
           headers: {
             'apikey': supabaseAnonKey,
-            'Authorization': `Bearer ${token}`
+            'Authorization': `Bearer ${activeToken}`
           }
         }, 15000),
         fetchWithTimeout(`${supabaseUrl}/rest/v1/stores?creator_id=eq.${userId}&select=*`, {
           headers: {
             'apikey': supabaseAnonKey,
-            'Authorization': `Bearer ${token}`
+            'Authorization': `Bearer ${activeToken}`
           }
         }, 15000)
       ]);
@@ -178,13 +174,8 @@ export function AuthProvider({ children }) {
   const retryAuth = async () => {
     setAuthTimeoutError(false);
     setLoading(true);
+    startLoading();
     
-    const fallbackTimer = setTimeout(() => {
-      console.warn('⚠️ [LaunchCart - Auth]: Retry exceeded 20s fallback. Clearing loading state.');
-      setAuthTimeoutError(true);
-      setLoading(false);
-    }, 20000);
-
     try {
       if (!supabaseClient) {
         setLoading(false);
@@ -194,26 +185,19 @@ export function AuthProvider({ children }) {
       
       if (sessionError) {
         console.warn('⚠️ [LaunchCart - Auth]: Session retry restoration warning:', sessionError.message);
-        if (sessionError.message?.toLowerCase().includes('refresh_token') || sessionError.message?.toLowerCase().includes('refresh token')) {
-          try {
-            await supabaseClient.auth.signOut();
-          } catch (signOutErr) {
-            console.warn('[LaunchCart - Auth]: Stale retry session cleanup skipped:', signOutErr.message);
-          }
-        }
       }
 
       setSession(activeSession);
       const currentUser = activeSession?.user ?? null;
       setUser(currentUser);
       if (currentUser) {
-        await fetchRoleAndDetails(currentUser.id, currentUser.email);
+        await fetchRoleAndDetails(currentUser.id, currentUser.email, activeSession?.access_token);
       }
     } catch (error) {
       console.error('[LaunchCart - Auth]: Error in retryAuth:', error);
     } finally {
-      clearTimeout(fallbackTimer);
       setLoading(false);
+      completeLoading();
     }
   };
 
@@ -224,90 +208,86 @@ export function AuthProvider({ children }) {
     }
 
     let isSubscribed = true;
-    let subscription = null;
+    console.log('🔄 [LaunchCart - Auth]: session restore start');
 
-    // Check active session on mount with 20s fail-safe fallback to support slow connections
-    const bootstrap = async () => {
-      const startTime = performance.now();
-      console.log('🔄 [LaunchCart - Auth]: Initializing production session restore...');
-
-      const fallbackTimer = setTimeout(() => {
-        if (isSubscribed) {
-          console.warn('⚠️ [LaunchCart - Auth]: Production bootstrap exceeded 20s minimum timeout fallback. Forcing loading state cleanup.');
-          setAuthTimeoutError(true);
-          setLoading(false);
-        }
-      }, 20000);
+    // 1. Fetch initial session asynchronously with safety timeout
+    const loadInitialSession = async () => {
+      startLoading();
+      const getSessionTimeout = new Promise((resolve) => {
+        setTimeout(() => {
+          console.warn('⚠️ [LaunchCart - Auth]: Initial getSession check timed out after 10s.');
+          resolve({ data: { session: null } });
+        }, 10000);
+      });
 
       try {
-        const { data: { session: activeSession }, error: sessionError } = await supabaseClient.auth.getSession();
-        
-        if (sessionError) {
-          console.warn('⚠️ [LaunchCart - Auth]: Session restoration warning (normal for guest or expired session):', sessionError.message);
-          // Auto-clear stale storage to prevent persistent loop warnings in browser console
-          if (sessionError.message?.toLowerCase().includes('refresh_token') || sessionError.message?.toLowerCase().includes('refresh token')) {
-            try {
-              await supabaseClient.auth.signOut();
-            } catch (signOutErr) {
-              console.warn('[LaunchCart - Auth]: Stale session cleanup skipped:', signOutErr.message);
-            }
-          }
-        }
+        const { data: { session: activeSession } } = await Promise.race([
+          supabaseClient.auth.getSession(),
+          getSessionTimeout
+        ]);
 
         if (!isSubscribed) return;
 
-        setSession(activeSession);
-        const currentUser = activeSession?.user ?? null;
-        setUser(currentUser);
+        console.log('🔄 [LaunchCart - Auth]: Initial session check complete. Active Session:', activeSession ? 'Yes' : 'No');
 
-        const duration = (performance.now() - startTime).toFixed(1);
-        console.log(`✅ [LaunchCart - Auth]: Session restore complete in ${duration}ms. Active User:`, currentUser?.email || 'Guest');
-
-        if (currentUser) {
-          await fetchRoleAndDetails(currentUser.id, currentUser.email);
+        if (activeSession) {
+          setSession(activeSession);
+          setUser(activeSession.user);
+          await fetchRoleAndDetails(activeSession.user.id, activeSession.user.email, activeSession.access_token);
+        } else {
+          setSession(null);
+          setUser(null);
         }
-      } catch (error) {
-        console.error('❌ [LaunchCart - Auth]: Error during bootstrap checkSession:', error);
+      } catch (err) {
+        console.error('❌ [LaunchCart - Auth]: Error during initial session restore:', err);
       } finally {
-        clearTimeout(fallbackTimer);
         if (isSubscribed) {
           setLoading(false);
+          console.log('✅ [LaunchCart - Auth]: session restore finish');
         }
+        completeLoading();
+      }
+    };
+
+    loadInitialSession();
+
+    // 2. Set up auth state change listener synchronously for reliable cleanup
+    const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(async (event, activeSession) => {
+      console.log(`🔔 [LaunchCart - Auth]: auth state changes: event="${event}"`);
+
+      if (event === 'INITIAL_SESSION') {
+        // Skip since loadInitialSession is handling it
+        return;
       }
 
-      // Set up listener AFTER initial session check is completed to avoid duplicate concurrent query loads
       if (!isSubscribed) return;
 
-      const { data } = supabaseClient.auth.onAuthStateChange(async (event, activeSession) => {
-        console.log(`🔔 [LaunchCart - Auth]: Auth state change event fired: "${event}"`);
-        
-        // Skip INITIAL_SESSION event since bootstrap getSession already handled it
-        if (event === 'INITIAL_SESSION') {
-          return;
-        }
-
-        if (!isSubscribed) return;
-
+      try {
+        setLoading(true);
+        startLoading();
         setSession(activeSession);
         const currentUser = activeSession?.user ?? null;
         setUser(currentUser);
 
         if (currentUser) {
-          await fetchRoleAndDetails(currentUser.id, currentUser.email);
+          await fetchRoleAndDetails(currentUser.id, currentUser.email, activeSession?.access_token);
         } else {
           setProfile(null);
           setStore(null);
           setRole('creator');
         }
-        setLoading(false);
-      });
-
-      subscription = data.subscription;
-    };
-
-    bootstrap();
+      } catch (err) {
+        console.error('❌ [LaunchCart - Auth]: Error handling onAuthStateChange:', err);
+      } finally {
+        if (isSubscribed) {
+          setLoading(false);
+        }
+        completeLoading();
+      }
+    });
 
     return () => {
+      console.log('🧹 [LaunchCart - Auth]: Cleaning up auth listeners...');
       isSubscribed = false;
       if (subscription) {
         subscription.unsubscribe();
@@ -315,27 +295,64 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
-  // Future authentication wrappers
   const signUp = async (email, password, options = {}) => {
     if (!supabaseClient) throw new Error('Supabase client is not initialized.');
-    return await supabaseClient.auth.signUp({
-      email,
-      password,
-      options,
-    });
+    console.log('🔄 [LaunchCart - Auth]: signUp start for:', email);
+    startLoading();
+    try {
+      const res = await supabaseClient.auth.signUp({
+        email,
+        password,
+        options,
+      });
+      console.log('✅ [LaunchCart - Auth]: signUp complete.');
+      return res;
+    } catch (err) {
+      console.error('❌ [LaunchCart - Auth]: signUp error:', err);
+      throw err;
+    } finally {
+      completeLoading();
+    }
   };
 
   const signIn = async (email, password) => {
     if (!supabaseClient) throw new Error('Supabase client is not initialized.');
-    return await supabaseClient.auth.signInWithPassword({
-      email,
-      password,
-    });
+    console.log('🔄 [LaunchCart - Auth]: signIn start for:', email);
+    startLoading();
+    try {
+      const res = await supabaseClient.auth.signInWithPassword({
+        email,
+        password,
+      });
+      console.log('✅ [LaunchCart - Auth]: signIn success.');
+      return res;
+    } catch (err) {
+      console.error('❌ [LaunchCart - Auth]: signIn error:', err);
+      throw err;
+    } finally {
+      completeLoading();
+    }
   };
 
   const signOut = async () => {
     if (!supabaseClient) throw new Error('Supabase client is not initialized.');
-    return await supabaseClient.auth.signOut();
+    console.log('🔄 [LaunchCart - Auth]: Logging out active session...');
+    setLoading(true);
+    startLoading();
+    try {
+      await supabaseClient.auth.signOut();
+      setUser(null);
+      setSession(null);
+      setProfile(null);
+      setStore(null);
+      setRole('creator');
+      console.log('✅ [LaunchCart - Auth]: Logout complete. Cleared all local state.');
+    } catch (err) {
+      console.error('❌ [LaunchCart - Auth]: Error during signOut:', err);
+    } finally {
+      setLoading(false);
+      completeLoading();
+    }
   };
 
   const value = {

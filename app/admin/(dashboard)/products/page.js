@@ -8,13 +8,11 @@ import Modal from '@/components/UI/Modal';
 import { useState } from 'react';
 
 export default function AdminProducts() {
-  const { products, deleteProduct, loading } = useAdmin();
+  const { products = [], deleteProduct, loading } = useAdmin();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProduct, setSelectedProduct] = useState(null);
 
-  if (loading) return <div style={{ padding: '40px' }}>Loading platform products...</div>;
-
-  const filteredProducts = products.filter(p => 
+  const filteredProducts = loading ? [] : products.filter(p => 
     p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     p.store.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -57,7 +55,7 @@ export default function AdminProducts() {
       </div>
 
       <div className="card" style={{ background: '#fff', borderRadius: '20px', padding: '24px', boxShadow: '0 2px 12px rgba(0,0,0,0.02)', border: '1px solid #f1f5f9' }}>
-        <Table columns={columns} data={filteredProducts} actions={actions} />
+        <Table columns={columns} data={filteredProducts} actions={actions} loading={loading} />
       </div>
 
       <Modal 

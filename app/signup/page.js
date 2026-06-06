@@ -4,8 +4,10 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { authService } from '@/services/authService';
+import { useLoading } from '@/components/TopLoader';
 
 export default function SignupPage() {
+  const { startLoading, completeLoading } = useLoading();
   const [storeName, setStoreName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -19,6 +21,7 @@ export default function SignupPage() {
     setLoading(true);
     setErrorMsg('');
     setSuccessMsg('');
+    startLoading();
     try {
       const { error } = await authService.signUp(email, password, storeName);
       if (error) throw error;
@@ -31,6 +34,7 @@ export default function SignupPage() {
       setErrorMsg(err.message || 'Error signing up. Please try again.');
     } finally {
       setLoading(false);
+      completeLoading();
     }
   };
 

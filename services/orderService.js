@@ -6,6 +6,7 @@ export const orderService = {
    */
   createOrder: async ({
     store_id,
+    customer_id,
     customer_name,
     customer_email,
     customer_phone,
@@ -24,6 +25,7 @@ export const orderService = {
         .from('orders')
         .insert([{
           store_id,
+          customer_id,
           customer_name,
           customer_email,
           customer_phone,
@@ -189,14 +191,20 @@ export const orderService = {
   /**
    * Fetch all historical purchases made by a customer's email
    */
-  getCustomerOrders: async (customerEmail) => {
+  getCustomerOrders: async (customerEmail, customerId = null) => {
     if (!supabaseClient) return [];
     try {
-      const { data, error } = await supabaseClient
+      let query = supabaseClient
         .from('orders')
-        .select('*, store:store_id(name, slug)')
-        .eq('customer_email', customerEmail)
-        .order('created_at', { ascending: false });
+        .select('*, store:store_id(name, slug)');
+      
+      if (customerId) {
+        query = query.eq('customer_id', customerId);
+      } else {
+        query = query.eq('customer_email', customerEmail);
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
       return data || [];

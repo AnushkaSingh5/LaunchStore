@@ -8,13 +8,11 @@ import Modal from '@/components/UI/Modal';
 import { useState } from 'react';
 
 export default function AdminOrders() {
-  const { orders, loading } = useAdmin();
+  const { orders = [], loading } = useAdmin();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedOrder, setSelectedOrder] = useState(null);
 
-  if (loading) return <div style={{ padding: '40px' }}>Loading platform orders...</div>;
-
-  const filteredOrders = orders.filter(o => 
+  const filteredOrders = loading ? [] : orders.filter(o => 
     String(o.id || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
     String(o.customer || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
     String(o.store || '').toLowerCase().includes(searchQuery.toLowerCase())
@@ -57,7 +55,7 @@ export default function AdminOrders() {
       </div>
 
       <div className="card" style={{ background: '#fff', borderRadius: '20px', padding: '24px', boxShadow: '0 2px 12px rgba(0,0,0,0.02)', border: '1px solid #f1f5f9' }}>
-        <Table columns={columns} data={filteredOrders} actions={actions} />
+        <Table columns={columns} data={filteredOrders} actions={actions} loading={loading} />
       </div>
 
       <Modal 

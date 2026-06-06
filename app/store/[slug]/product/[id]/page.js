@@ -8,6 +8,7 @@ import { productService } from '@/services/productService';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
+import PageLoader from '@/components/PageLoader';
 
 export default function ProductDetails({ params }) {
   const { id, slug } = use(params);
@@ -60,38 +61,10 @@ export default function ProductDetails({ params }) {
     router.push(`/store/${slug}/cart`);
   };
 
-  if (loading) {
-    return (
-      <div className="store-loading-screen">
-        <div className="spinner"></div>
-        <p>Loading Product...</p>
-        <style jsx>{`
-          .store-loading-screen {
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background: #0f172a;
-            color: #fff;
-            gap: 16px;
-            font-family: 'Outfit', sans-serif;
-          }
-          .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid rgba(255, 255, 255, 0.1);
-            border-left-color: #8b5cf6;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-          }
-          @keyframes spin {
-            to { transform: rotate(360deg); }
-          }
-        `}</style>
-      </div>
-    );
+  if (loading && !product) {
+    return <PageLoader />;
   }
+
 
   if (!storeDetails) {
     return (

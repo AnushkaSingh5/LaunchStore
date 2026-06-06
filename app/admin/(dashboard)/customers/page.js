@@ -8,13 +8,11 @@ import Modal from '@/components/UI/Modal';
 import { useState } from 'react';
 
 export default function AdminCustomers() {
-  const { customers, loading } = useAdmin();
+  const { customers = [], loading } = useAdmin();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState(null);
 
-  if (loading) return <div style={{ padding: '40px' }}>Loading customer database...</div>;
-
-  const filteredCustomers = customers.filter(c => 
+  const filteredCustomers = loading ? [] : customers.filter(c => 
     c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     c.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -52,7 +50,7 @@ export default function AdminCustomers() {
       </div>
 
       <div className="card" style={{ background: '#fff', borderRadius: '20px', padding: '24px', boxShadow: '0 2px 12px rgba(0,0,0,0.02)', border: '1px solid #f1f5f9' }}>
-        <Table columns={columns} data={filteredCustomers} actions={actions} />
+        <Table columns={columns} data={filteredCustomers} actions={actions} loading={loading} />
       </div>
 
       <Modal 

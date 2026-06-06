@@ -8,20 +8,18 @@ import Modal from '@/components/UI/Modal';
 import { useState } from 'react';
 
 export default function AdminCreators() {
-  const { stores, loading } = useAdmin();
+  const { stores = [], loading } = useAdmin();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCreator, setSelectedCreator] = useState(null);
 
-  if (loading) return <div style={{ padding: '40px' }}>Loading platform creators...</div>;
-
   // Derive creators from stores (in this mock setup, each store has an owner)
-  const creators = stores.map(store => ({
+  const creators = loading ? [] : stores.map(store => ({
     id: store.id,
-    name: store.ownerName,
-    email: store.email,
-    storeName: store.name,
-    status: store.status,
-    joinedDate: store.createdDate,
+    name: store.ownerName || '',
+    email: store.email || '',
+    storeName: store.name || '',
+    status: store.status || '',
+    joinedDate: store.createdDate || '',
     revenue: store.revenue || 0,
     growth: store.growth || 0
   })).filter(c => 
@@ -63,7 +61,7 @@ export default function AdminCreators() {
       </div>
 
       <div className="creators-card">
-        <Table columns={columns} data={creators} actions={actions} />
+        <Table columns={columns} data={creators} actions={actions} loading={loading} />
       </div>
 
       <Modal 

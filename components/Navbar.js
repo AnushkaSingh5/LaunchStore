@@ -4,10 +4,16 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useStore } from '@/context/StoreContext';
+import { useCustomerAuth } from '@/context/CustomerAuthContext';
 
 export default function Navbar({ storeName }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const { cartCount, searchQuery, setSearchQuery } = useStore();
+  const { customer, customerProfile, logout } = useCustomerAuth();
+  const user = customer;
+  const profile = customerProfile;
+  const signOut = logout;
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -20,6 +26,22 @@ export default function Navbar({ storeName }) {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    if (storeSlug) {
+      localStorage.setItem('last_visited_store', storeSlug);
+    }
+  }, [storeSlug]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (isDropdownOpen && !event.target.closest('.user-dropdown-container')) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [isDropdownOpen]);
 
   const handleSearchChange = (e) => {
     const value = e.target.value;
@@ -56,9 +78,64 @@ export default function Navbar({ storeName }) {
           </form>
 
           <div className="nav-actions">
-            <button className="action-btn user-btn">
-              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-            </button>
+            <div className="user-dropdown-container">
+              <button 
+                className="action-btn user-btn"
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                aria-label="User profile menu"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+              </button>
+              {isDropdownOpen && (
+                <div className="dropdown-menu glass">
+                  {user ? (
+                    <>
+                      <div className="dropdown-header">
+                        <div className="dropdown-name">{profile?.full_name || 'Customer'}</div>
+                        <div className="dropdown-email">{user.email}</div>
+                      </div>
+                      <div className="dropdown-divider"></div>
+                      <Link href={storeSlug ? `/customer/profile?store=${storeSlug}` : "/customer/profile"} className="dropdown-item" onClick={() => setIsDropdownOpen(false)}>
+                        My Profile
+                      </Link>
+                      <Link href={storeSlug ? `/customer/orders?store=${storeSlug}` : "/customer/orders"} className="dropdown-item" onClick={() => setIsDropdownOpen(false)}>
+                        My Orders
+                      </Link>
+                      <Link href={storeSlug ? `/customer/addresses?store=${storeSlug}` : "/customer/addresses"} className="dropdown-item" onClick={() => setIsDropdownOpen(false)}>
+                        My Addresses
+                      </Link>
+                      <div className="dropdown-divider"></div>
+                      <button 
+                        className="dropdown-item logout-btn" 
+                        onClick={() => {
+                          signOut();
+                          setIsDropdownOpen(false);
+                        }}
+                      >
+                        Logout
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <Link 
+                        href={storeSlug ? `/customer/login?redirect=/store/${storeSlug}` : "/customer/login"} 
+                        className="dropdown-item" 
+                        onClick={() => setIsDropdownOpen(false)}
+                      >
+                        Login
+                      </Link>
+                      <Link 
+                        href={storeSlug ? `/customer/signup?redirect=/store/${storeSlug}` : "/customer/signup"} 
+                        className="dropdown-item" 
+                        onClick={() => setIsDropdownOpen(false)}
+                      >
+                        Sign Up
+                      </Link>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
             <Link href={storeSlug ? `/store/${storeSlug}/cart` : "/cart"} className="action-btn cart-btn">
               <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><path d="M3 6h18"></path><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
               {cartCount > 0 && <span className="badge">{cartCount}</span>}
@@ -164,6 +241,96 @@ export default function Navbar({ storeName }) {
           display: flex;
           align-items: center;
           gap: 12px;
+        }
+
+        .user-dropdown-container {
+          position: relative;
+        }
+
+        .dropdown-menu {
+          position: absolute;
+          top: calc(100% + 12px);
+          right: 0;
+          width: 220px;
+          border-radius: var(--radius-md);
+          background: rgba(255, 255, 255, 0.9);
+          backdrop-filter: blur(16px);
+          border: 1px solid rgba(0, 0, 0, 0.08);
+          box-shadow: var(--shadow-lg);
+          padding: 8px;
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          z-index: 1100;
+          animation: dropdownFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes dropdownFadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(-8px) scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        .dropdown-header {
+          padding: 8px 12px 10px;
+        }
+
+        .dropdown-name {
+          font-size: 14px;
+          font-weight: 600;
+          color: var(--text-main);
+          margin-bottom: 2px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .dropdown-email {
+          font-size: 11px;
+          color: var(--text-sub);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .dropdown-divider {
+          height: 1px;
+          background: rgba(0, 0, 0, 0.06);
+          margin: 6px 0;
+        }
+
+        .dropdown-item {
+          display: block;
+          width: 100%;
+          text-align: left;
+          padding: 8px 12px;
+          font-size: 13px;
+          font-weight: 500;
+          color: var(--text-main);
+          border-radius: var(--radius-sm);
+          transition: var(--transition-fast);
+          background: transparent;
+          border: none;
+          cursor: pointer;
+        }
+
+        .dropdown-item:hover {
+          background: rgba(0, 0, 0, 0.04);
+          color: var(--accent);
+        }
+
+        .logout-btn {
+          color: #dc2626;
+        }
+
+        .logout-btn:hover {
+          background: rgba(220, 38, 38, 0.08);
+          color: #dc2626;
         }
 
         .action-btn {

@@ -4,8 +4,10 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { authService } from '@/services/authService';
+import { useLoading } from '@/components/TopLoader';
 
 export default function LoginPage() {
+  const { startLoading, completeLoading } = useLoading();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -16,21 +18,20 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setErrorMsg('');
+    startLoading();
     try {
-      const signInPromise = authService.signIn(email, password);
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Connection timed out. Please check your network or ad-blocker.')), 20000)
-      );
-
-      const result = await Promise.race([signInPromise, timeoutPromise]);
+      console.log('🔄 [LaunchCart - LoginPage]: Triggering signIn for creator:', email);
+      const result = await authService.signIn(email, password);
       if (result && result.error) throw result.error;
       
+      console.log('✅ [LaunchCart - LoginPage]: SignIn response success, redirecting...');
       router.push('/dashboard');
     } catch (err) {
-      console.error(err);
+      console.error('❌ [LaunchCart - LoginPage]: Login error:', err);
       setErrorMsg(err.message || 'Failed to authenticate. Check email/password.');
     } finally {
       setLoading(false);
+      completeLoading();
     }
   };
 

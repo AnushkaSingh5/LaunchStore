@@ -77,6 +77,7 @@ export const checkoutService = {
 
       const orderData = {
         store_id: storeId === 'unknown' ? null : storeId,
+        customer_id: customerInfo.id || null,
         customer_name: customerInfo.name,
         customer_email: customerInfo.email,
         customer_phone: customerInfo.phone,

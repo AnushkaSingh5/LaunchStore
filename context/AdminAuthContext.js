@@ -39,12 +39,23 @@ export function AdminAuthProvider({ children }) {
         throw new Error('Supabase client is not initialized.');
       }
 
+      // Helper function to wrap promises in a timeout
+      const withTimeout = (promise, ms) => {
+        return Promise.race([
+          promise,
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Database query timed out')), ms))
+        ]);
+      };
+
       // 1. Try secure RPC verification first
       try {
-        const { data, error: rpcError } = await supabaseClient.rpc('verify_admin_credentials', {
-          p_email: email,
-          p_password: password
-        });
+        const { data, error: rpcError } = await withTimeout(
+          supabaseClient.rpc('verify_admin_credentials', {
+            p_email: email,
+            p_password: password
+          }),
+          5000
+        );
 
         if (!rpcError && data && data.length > 0) {
           const authenticatedAdmin = data[0];
@@ -62,10 +73,13 @@ export function AdminAuthProvider({ children }) {
 
       // 2. Select fallback: direct query from admin_users table (runs if RPC doesn't exist or failed)
       try {
-        const { data: users, error: dbError } = await supabaseClient
-          .from('admin_users')
-          .select('*')
-          .eq('email', email);
+        const { data: users, error: dbError } = await withTimeout(
+          supabaseClient
+            .from('admin_users')
+            .select('*')
+            .eq('email', email),
+          5000
+        );
 
         if (!dbError && users && users.length > 0) {
           const user = users[0];

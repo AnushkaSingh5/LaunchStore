@@ -65,16 +65,20 @@ export default function CustomerOrdersHistoryPage() {
     }
   };
 
-  if (authLoading) {
-    return <div className="loading-screen">Loading Account Details...</div>;
-  }
-
   return (
     <div className="history-page">
       <Navbar />
 
       <main className="container main-content">
-        {!user ? (
+        {authLoading ? (
+          <div className="dashboard-layout">
+            <div className="sidebar-section dashboard-card shim" style={{ height: '300px', background: '#fff' }}></div>
+            <div className="orders-section">
+              <div className="skeleton-box shim" style={{ height: '40px', width: '250px', marginBottom: '20px', background: '#fff', borderRadius: '8px' }}></div>
+              <div className="skeleton-box shim" style={{ height: '140px', borderRadius: '16px', background: '#fff' }}></div>
+            </div>
+          </div>
+        ) : !user ? (
           <div className="auth-prompt dashboard-card fade-in">
             <div className="prompt-icon">🔒</div>
             <h2>Access Denied</h2>
@@ -586,6 +590,30 @@ export default function CustomerOrdersHistoryPage() {
             grid-template-columns: 1fr;
             gap: 20px;
           }
+        }
+        .skeleton-box {
+          border: 1px solid var(--secondary);
+        }
+        .shim {
+          position: relative;
+          overflow: hidden;
+        }
+        .shim::after {
+          position: absolute;
+          top: 0; right: 0; bottom: 0; left: 0;
+          transform: translateX(-100%);
+          background-image: linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 255, 255, 0.4) 20%,
+            rgba(255, 255, 255, 0.6) 60%,
+            rgba(255, 255, 255, 0) 100%
+          );
+          animation: shimmer 1.5s infinite;
+          content: '';
+        }
+        @keyframes shimmer {
+          100% { transform: translateX(100%); }
         }
       `}</style>
     </div>

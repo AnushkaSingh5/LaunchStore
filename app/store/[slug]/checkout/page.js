@@ -2,15 +2,21 @@
 
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useStore } from '@/context/StoreContext';
+import { useCustomerAuth } from '@/context/CustomerAuthContext';
 import { storeService } from '@/services/storeService';
 import { checkoutService } from '@/services/checkoutService';
+import { customerService } from '@/services/customerService';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 
 export default function StoreCheckoutPage({ params }) {
   const { slug } = use(params);
-  const { cart: globalCart, setCart } = useStore();
+  const { cart: globalCart, setCart, clearCart } = useStore();
+  const { customer: user, customerProfile: profile, loading: authLoading } = useCustomerAuth();
+  const router = useRouter();
+
   const [storeDetails, setStoreDetails] = useState(null);
   const [form, setForm] = useState({
     name: '',
@@ -28,6 +34,94 @@ export default function StoreCheckoutPage({ params }) {
   const [placedOrder, setPlacedOrder] = useState(null);
   const [loadingDetails, setLoadingDetails] = useState(true);
 
+  const [savedAddresses, setSavedAddresses] = useState([]);
+  const [selectedAddressId, setSelectedAddressId] = useState('');
+
+  // Authenticate customer role and pre-fill details
+  useEffect(() => {
+    if (authLoading) return;
+
+    if (!user) {
+      router.push(`/customer/login?redirect=/store/${slug}/checkout`);
+      return;
+    }
+
+    setForm(prev => ({
+      ...prev,
+      name: prev.name || profile?.full_name || '',
+      email: prev.email || user.email || '',
+      phone: prev.phone || profile?.phone || '',
+    }));
+
+    const loadCustomerAddresses = async () => {
+      try {
+        if (profile?.id) {
+          const addresses = await customerService.getAddresses(profile.id);
+          setSavedAddresses(addresses);
+          
+          const defaultAddr = addresses.find(a => a.is_default);
+          if (defaultAddr) {
+            setSelectedAddressId(defaultAddr.id);
+            setForm(prev => ({
+              ...prev,
+              name: defaultAddr.full_name || prev.name || '',
+              phone: defaultAddr.phone || prev.phone || '',
+              address: defaultAddr.address_line_1 + (defaultAddr.address_line_2 ? `, ${defaultAddr.address_line_2}` : ''),
+              city: defaultAddr.city,
+              state: defaultAddr.state,
+              pincode: defaultAddr.postal_code,
+            }));
+          } else if (addresses.length > 0) {
+            setSelectedAddressId(addresses[0].id);
+            setForm(prev => ({
+              ...prev,
+              name: addresses[0].full_name || prev.name || '',
+              phone: addresses[0].phone || prev.phone || '',
+              address: addresses[0].address_line_1 + (addresses[0].address_line_2 ? `, ${addresses[0].address_line_2}` : ''),
+              city: addresses[0].city,
+              state: addresses[0].state,
+              pincode: addresses[0].postal_code,
+            }));
+          } else {
+            setSelectedAddressId('new');
+          }
+        }
+      } catch (err) {
+        console.warn('⚠️ [Checkout] Failed to load shipping addresses:', err);
+      }
+    };
+
+    loadCustomerAddresses();
+  }, [user, profile, authLoading, slug, router]);
+
+  const handleSelectSavedAddress = (addr) => {
+    setSelectedAddressId(addr.id);
+    setForm(prev => ({
+      ...prev,
+      name: addr.full_name || '',
+      phone: addr.phone || '',
+      address: addr.address_line_1 + (addr.address_line_2 ? `, ${addr.address_line_2}` : ''),
+      city: addr.city || '',
+      state: addr.state || '',
+      pincode: addr.postal_code || '',
+    }));
+    setErrors({});
+  };
+
+  const handleSelectNewAddress = () => {
+    setSelectedAddressId('new');
+    setForm(prev => ({
+      ...prev,
+      name: profile?.full_name || '',
+      phone: profile?.phone || '',
+      address: '',
+      city: '',
+      state: '',
+      pincode: '',
+    }));
+    setErrors({});
+  };
+
   useEffect(() => {
     const fetchStore = async () => {
       setLoadingDetails(true);
@@ -35,7 +129,7 @@ export default function StoreCheckoutPage({ params }) {
         const data = await storeService.getStoreBySlug(slug);
         setStoreDetails(data);
       } catch (e) {
-        console.error('Failed to fetch store details in checkout:', e);
+        console.warn('⚠️ [Checkout] Failed to fetch store details in checkout:', e);
       } finally {
         setLoadingDetails(false);
       }
@@ -43,7 +137,15 @@ export default function StoreCheckoutPage({ params }) {
     fetchStore();
   }, [slug]);
 
-  if (loadingDetails) {
+  console.log('🛒 [Checkout] Render state:', { 
+    slug, 
+    loadingDetails, 
+    authLoading, 
+    userEmail: user?.email, 
+    profileName: profile?.full_name 
+  });
+
+  if (loadingDetails || authLoading) {
     return (
       <div className="store-loading-screen">
         <div className="spinner"></div>
@@ -155,6 +257,9 @@ export default function StoreCheckoutPage({ params }) {
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: null }));
     }
+    if (['name', 'phone', 'address', 'city', 'state', 'pincode'].includes(name) && selectedAddressId !== 'new') {
+      setSelectedAddressId('new');
+    }
   };
 
   const handleFormSubmit = async (e) => {
@@ -170,18 +275,53 @@ export default function StoreCheckoutPage({ params }) {
     }
 
     try {
-      const response = await checkoutService.processCheckout(cart, form);
+      const response = await checkoutService.processCheckout(cart, {
+        ...form,
+        id: profile?.id
+      });
       if (response.success && response.orders?.length > 0) {
         setPlacedOrder(response.orders[0]);
+
+        // Auto-save the address to the customer's address book if it is new
+        try {
+          if (profile?.id) {
+            const existingAddresses = await customerService.getAddresses(profile.id);
+            const addressExists = existingAddresses.some(addr => 
+              (addr.full_name || '').toLowerCase().trim() === (form.name || '').toLowerCase().trim() &&
+              (addr.phone || '').trim() === (form.phone || '').trim() &&
+              (addr.address_line_1 || '').toLowerCase().trim() === (form.address || '').toLowerCase().trim() &&
+              (addr.city || '').toLowerCase().trim() === (form.city || '').toLowerCase().trim() &&
+              (addr.state || '').toLowerCase().trim() === (form.state || '').toLowerCase().trim() &&
+              (addr.postal_code || '').trim() === (form.pincode || '').trim()
+            );
+
+            if (!addressExists) {
+              console.log('🔄 [Checkout]: Address not in address book. Auto-saving to database...');
+              await customerService.createAddress({
+                customer_id: profile.id,
+                name: existingAddresses.length === 0 ? 'Home (Default)' : `Saved Address ${existingAddresses.length + 1}`,
+                full_name: form.name,
+                phone: form.phone,
+                address_line_1: form.address,
+                address_line_2: null,
+                city: form.city,
+                state: form.state,
+                country: 'US',
+                postal_code: form.pincode,
+                is_default: existingAddresses.length === 0
+              });
+              console.log('✅ [Checkout]: Auto-save complete.');
+            }
+          }
+        } catch (addrErr) {
+          console.warn('⚠️ [Checkout] Failed to auto-save address to address book:', addrErr?.message || addrErr);
+        }
+
+        await clearCart();
         setSuccess(true);
-        
-        // Clear only this store's items from the global cart
-        setCart(prev => prev.filter(
-          item => item.store_id !== storeDetails?.id && item.store_slug !== slug
-        ));
       }
     } catch (err) {
-      console.error(err);
+      console.warn('⚠️ [Checkout] Failed to process checkout:', err);
       alert('Failed to place order: ' + err.message);
     } finally {
       setLoading(false);
@@ -216,7 +356,7 @@ export default function StoreCheckoutPage({ params }) {
 
             <div className="action-row">
               <Link href={`/store/${slug}`} className="primary-btn">Back to Shop</Link>
-              <Link href="/account/orders" className="secondary-btn">Track Order History</Link>
+              <Link href={slug ? `/customer/orders?store=${slug}` : "/customer/orders"} className="secondary-btn">Track Order History</Link>
             </div>
           </div>
         </main>
@@ -350,6 +490,41 @@ export default function StoreCheckoutPage({ params }) {
           <div className="checkout-layout">
             <form onSubmit={handleFormSubmit} className="checkout-form dashboard-card fade-in">
               <h2 className="section-title">Shipping & Contact Details</h2>
+
+              {savedAddresses.length > 0 && (
+                <div className="address-selector">
+                  <h3 className="address-selector-title">Select Shipping Address</h3>
+                  <div className="address-cards-grid">
+                    {savedAddresses.map(addr => (
+                      <div 
+                        key={addr.id} 
+                        className={`address-card-option ${selectedAddressId === addr.id ? 'selected' : ''}`}
+                        onClick={() => handleSelectSavedAddress(addr)}
+                      >
+                        <div className="address-card-header">
+                          <span className="address-badge">{addr.name || 'Address'}</span>
+                          {addr.is_default && <span className="default-indicator-dot"></span>}
+                        </div>
+                        <div className="address-card-body">
+                          <h4>{addr.full_name}</h4>
+                          <p>{addr.address_line_1}</p>
+                          {addr.address_line_2 && <p>{addr.address_line_2}</p>}
+                          <p>{addr.city}, {addr.state} - {addr.postal_code}</p>
+                          <p className="addr-phone-text">📞 {addr.phone}</p>
+                        </div>
+                      </div>
+                    ))}
+                    
+                    <div 
+                      className={`address-card-option new-address-card-option ${selectedAddressId === 'new' ? 'selected' : ''}`}
+                      onClick={handleSelectNewAddress}
+                    >
+                      <span className="plus-icon">+</span>
+                      <p>Use New Address</p>
+                    </div>
+                  </div>
+                </div>
+              )}
               
               <div className="form-group">
                 <label>Full Name</label>
@@ -493,6 +668,120 @@ export default function StoreCheckoutPage({ params }) {
       <Footer storeName={storeDetails?.name} />
 
       <style jsx>{`
+        /* Address Selector Styling */
+        .address-selector {
+          margin-bottom: 20px;
+          border-bottom: 1px solid var(--secondary);
+          padding-bottom: 24px;
+        }
+        .address-selector-title {
+          font-size: 14px;
+          font-weight: 700;
+          color: var(--text-main);
+          margin-bottom: 14px;
+          letter-spacing: -0.2px;
+        }
+        .address-cards-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+          gap: 16px;
+        }
+        .address-card-option {
+          border: 1.5px solid var(--secondary);
+          border-radius: 14px;
+          padding: 16px;
+          background: var(--bg-main);
+          cursor: pointer;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          position: relative;
+          min-height: 140px;
+        }
+        .address-card-option:hover {
+          border-color: var(--text-sub);
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+        }
+        .address-card-option.selected {
+          border-color: var(--primary);
+          background: var(--white);
+          box-shadow: 0 0 0 1px var(--primary), 0 8px 20px rgba(139, 92, 246, 0.05);
+        }
+        .address-card-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        .address-badge {
+          font-size: 10px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          background: rgba(0, 0, 0, 0.04);
+          color: var(--text-sub);
+          padding: 3px 8px;
+          border-radius: 6px;
+        }
+        .address-card-option.selected .address-badge {
+          background: var(--primary);
+          color: var(--white);
+        }
+        .default-indicator-dot {
+          width: 8px;
+          height: 8px;
+          background: #10b981;
+          border-radius: 50%;
+          box-shadow: 0 0 8px #10b981;
+        }
+        .address-card-body {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+        .address-card-body h4 {
+          font-size: 14px;
+          font-weight: 700;
+          color: var(--text-main);
+          margin-bottom: 2px;
+        }
+        .address-card-body p {
+          font-size: 12px;
+          color: var(--text-sub);
+          line-height: 1.4;
+          margin: 0;
+        }
+        .addr-phone-text {
+          margin-top: 4px !important;
+          font-weight: 600;
+          color: var(--text-main) !important;
+        }
+        .new-address-card-option {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          border: 1.5px dashed var(--text-sub);
+          background: transparent;
+        }
+        .new-address-card-option .plus-icon {
+          font-size: 24px;
+          color: var(--text-sub);
+          font-weight: 300;
+        }
+        .new-address-card-option p {
+          font-size: 13px;
+          font-weight: 700;
+          color: var(--text-main);
+          margin: 0;
+        }
+        .new-address-card-option.selected {
+          border-style: solid;
+          background: var(--white);
+        }
+
         .checkout-page {
           background: var(--bg-main);
           min-height: 100vh;

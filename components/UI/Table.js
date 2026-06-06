@@ -1,6 +1,6 @@
 import styles from './Table.module.css';
 
-export default function Table({ columns, data, keyField = 'id', actions }) {
+export default function Table({ columns, data = [], keyField = 'id', actions, loading }) {
   return (
     <div className={styles.tableContainer}>
       <table className={styles.table}>
@@ -13,7 +13,22 @@ export default function Table({ columns, data, keyField = 'id', actions }) {
           </tr>
         </thead>
         <tbody>
-          {data.length === 0 ? (
+          {loading ? (
+            [...Array(5)].map((_, rowIndex) => (
+              <tr key={rowIndex} className={styles.tr}>
+                {columns.map((col, colIndex) => (
+                  <td key={colIndex} className={styles.td}>
+                    <div className={`${styles.skeletonBar} ${styles.shim}`}></div>
+                  </td>
+                ))}
+                {actions && (
+                  <td className={styles.td}>
+                    <div className={`${styles.skeletonBar} ${styles.shim}`} style={{ width: '80px' }}></div>
+                  </td>
+                )}
+              </tr>
+            ))
+          ) : data.length === 0 ? (
             <tr>
               <td colSpan={columns.length + (actions ? 1 : 0)} className={styles.emptyCell}>
                 No data available

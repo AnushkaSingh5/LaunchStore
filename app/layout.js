@@ -1,5 +1,7 @@
 import { StoreProvider } from '@/context/StoreContext';
 import { AuthProvider } from '@/context/AuthContext';
+import { CustomerAuthProvider } from '@/context/CustomerAuthContext';
+import { LoadingBarProvider } from '@/components/TopLoader';
 import "./globals.css";
 
 export const metadata = {
@@ -11,11 +13,15 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body>
-        <AuthProvider>
-          <StoreProvider>
-            {children}
-          </StoreProvider>
-        </AuthProvider>
+        <LoadingBarProvider>
+          <AuthProvider>
+            <CustomerAuthProvider>
+              <StoreProvider>
+                {children}
+              </StoreProvider>
+            </CustomerAuthProvider>
+          </AuthProvider>
+        </LoadingBarProvider>
       </body>
     </html>
   );

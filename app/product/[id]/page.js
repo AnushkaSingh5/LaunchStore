@@ -7,6 +7,7 @@ import { storeService } from '@/services/storeService';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
+import PageLoader from '@/components/PageLoader';
 
 export default function ProductDetails({ params }) {
   const { id } = use(params);
@@ -36,7 +37,7 @@ export default function ProductDetails({ params }) {
     router.push('/cart');
   };
 
-  if (loading) return <div className="loading-screen">Loading Product...</div>;
+  if (loading && !product) return <PageLoader />;
   if (!product) return <div className="error-screen">Product not found.</div>;
 
   return (

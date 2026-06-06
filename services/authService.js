@@ -15,7 +15,7 @@ export const authService = {
   /**
    * Register a new user and add initial profile metadata
    */
-  signUp: async (email, password, name, role = 'creator') => {
+  signUp: async (email, password, name, role = 'creator', phone = null) => {
     if (!supabaseClient) throw new Error('Supabase client is not initialized.');
     return await supabaseClient.auth.signUp({
       email,
@@ -24,6 +24,7 @@ export const authService = {
         data: {
           name,
           role,
+          phone,
         },
       },
     });

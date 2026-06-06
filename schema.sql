@@ -19,6 +19,43 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 -- Enable RLS for Profiles
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
+-- 1.5. CUSTOMERS TABLE
+-- Stores profile metadata for retail customers
+CREATE TABLE IF NOT EXISTS public.customers (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  auth_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  full_name TEXT,
+  email TEXT UNIQUE,
+  phone TEXT,
+  avatar_url TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Enable RLS for Customers
+ALTER TABLE public.customers ENABLE ROW LEVEL SECURITY;
+
+-- 1.6. CUSTOMER ADDRESSES TABLE
+-- Stores multiple shipping addresses for customer checkouts
+CREATE TABLE IF NOT EXISTS public.customer_addresses (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  customer_id UUID REFERENCES public.customers(id) ON DELETE CASCADE,
+  name TEXT,
+  full_name TEXT,
+  phone TEXT,
+  address_line_1 TEXT,
+  address_line_2 TEXT,
+  city TEXT,
+  state TEXT,
+  country TEXT,
+  postal_code TEXT,
+  is_default BOOLEAN DEFAULT false,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Enable RLS for Customer Addresses
+ALTER TABLE public.customer_addresses ENABLE ROW LEVEL SECURITY;
+
 -- 2. STORES TABLE
 -- Stores individual merchant shop instances
 CREATE TABLE IF NOT EXISTS public.stores (
@@ -77,6 +114,7 @@ ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
 CREATE TABLE IF NOT EXISTS public.orders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   store_id UUID NOT NULL REFERENCES public.stores(id) ON DELETE CASCADE,
+  customer_id UUID REFERENCES public.customers(id) ON DELETE SET NULL,
   customer_name TEXT NOT NULL,
   customer_email TEXT NOT NULL,
   customer_phone TEXT,
@@ -111,14 +149,43 @@ ALTER TABLE public.order_items ENABLE ROW LEVEL SECURITY;
 -- Automatically create a profile row in public.profiles when a new user registers in Supabase Auth
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
+DECLARE
+  v_role TEXT;
+  v_name TEXT;
+  v_phone TEXT;
 BEGIN
+  v_role := COALESCE(new.raw_user_meta_data->>'role', 'creator');
+  v_name := COALESCE(new.raw_user_meta_data->>'name', 'User');
+  v_phone := new.raw_user_meta_data->>'phone';
+
+  -- 1. Insert into public.profiles
   INSERT INTO public.profiles (id, name, email, role)
   VALUES (
     new.id,
-    COALESCE(new.raw_user_meta_data->>'name', 'New Merchant'),
+    v_name,
     new.email,
-    'creator' -- Strictly default public signups to the 'creator' role
-  );
+    v_role
+  )
+  ON CONFLICT (id) DO UPDATE
+  SET name = EXCLUDED.name,
+      role = EXCLUDED.role;
+
+  -- 2. If customer role, automatically create public.customers record
+  IF v_role = 'customer' THEN
+    INSERT INTO public.customers (id, auth_id, full_name, email, phone)
+    VALUES (
+      gen_random_uuid(),
+      new.id,
+      v_name,
+      new.email,
+      v_phone
+    )
+    ON CONFLICT (email) DO UPDATE
+    SET auth_id = EXCLUDED.auth_id,
+        full_name = EXCLUDED.full_name,
+        phone = EXCLUDED.phone;
+  END IF;
+
   RETURN new;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -137,6 +204,25 @@ CREATE OR REPLACE TRIGGER on_auth_user_created
 -- Users can view their own profile; Admins can view all
 CREATE POLICY "Allow public read of profiles" ON public.profiles FOR SELECT USING (true);
 CREATE POLICY "Allow user updates of own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+
+-- A.2 CUSTOMERS POLICIES
+CREATE POLICY "Allow customer read of own profile" ON public.customers FOR SELECT USING (auth.uid() = auth_id);
+CREATE POLICY "Allow customer update of own profile" ON public.customers FOR UPDATE USING (auth.uid() = auth_id);
+CREATE POLICY "Allow customer insert of own profile" ON public.customers FOR INSERT WITH CHECK (auth.uid() = auth_id);
+
+-- A.3 CUSTOMER ADDRESSES POLICIES
+CREATE POLICY "Allow customer read of own addresses" ON public.customer_addresses FOR SELECT USING (
+  EXISTS (SELECT 1 FROM public.customers WHERE id = customer_id AND auth_id = auth.uid())
+);
+CREATE POLICY "Allow customer insert of own addresses" ON public.customer_addresses FOR INSERT WITH CHECK (
+  EXISTS (SELECT 1 FROM public.customers WHERE id = customer_id AND auth_id = auth.uid())
+);
+CREATE POLICY "Allow customer update of own addresses" ON public.customer_addresses FOR UPDATE USING (
+  EXISTS (SELECT 1 FROM public.customers WHERE id = customer_id AND auth_id = auth.uid())
+);
+CREATE POLICY "Allow customer delete of own addresses" ON public.customer_addresses FOR DELETE USING (
+  EXISTS (SELECT 1 FROM public.customers WHERE id = customer_id AND auth_id = auth.uid())
+);
 
 -- B. STORES POLICIES
 -- Stores are publicly visible; creators can manage their own store; admins manage all
@@ -180,6 +266,9 @@ CREATE POLICY "Allow creators to view own store orders" ON public.orders FOR SEL
 CREATE POLICY "Allow creators to update own store orders" ON public.orders FOR UPDATE USING (
   EXISTS (SELECT 1 FROM public.stores WHERE id = store_id AND creator_id = auth.uid())
 );
+CREATE POLICY "Allow customer to view own orders" ON public.orders FOR SELECT USING (
+  customer_id IN (SELECT id FROM public.customers WHERE auth_id = auth.uid())
+);
 
 -- F. ORDER ITEMS POLICIES
 -- Public checkout can create order items; creators view their order items
@@ -189,6 +278,12 @@ CREATE POLICY "Allow creators to view own order items" ON public.order_items FOR
     SELECT 1 FROM public.orders o
     JOIN public.stores s ON o.store_id = s.id
     WHERE o.id = order_id AND s.creator_id = auth.uid()
+  )
+);
+CREATE POLICY "Allow customer to view own order items" ON public.order_items FOR SELECT USING (
+  EXISTS (
+    SELECT 1 FROM public.orders o
+    WHERE o.id = order_id AND o.customer_id IN (SELECT id FROM public.customers WHERE auth_id = auth.uid())
   )
 );
 
@@ -212,6 +307,16 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- A. ADMIN PROFILES POLICIES
 CREATE POLICY "Allow admin updates of all profiles" ON public.profiles FOR UPDATE USING (public.is_admin());
 CREATE POLICY "Allow admin deletes of all profiles" ON public.profiles FOR DELETE USING (public.is_admin());
+
+-- A.2 ADMIN CUSTOMERS POLICIES
+CREATE POLICY "Allow admin to view all customers" ON public.customers FOR SELECT USING (public.is_admin());
+CREATE POLICY "Allow admin to update all customers" ON public.customers FOR UPDATE USING (public.is_admin());
+CREATE POLICY "Allow admin to delete any customer" ON public.customers FOR DELETE USING (public.is_admin());
+
+-- A.3 ADMIN CUSTOMER ADDRESSES POLICIES
+CREATE POLICY "Allow admin to view all customer addresses" ON public.customer_addresses FOR SELECT USING (public.is_admin());
+CREATE POLICY "Allow admin to update all customer addresses" ON public.customer_addresses FOR UPDATE USING (public.is_admin());
+CREATE POLICY "Allow admin to delete any customer address" ON public.customer_addresses FOR DELETE USING (public.is_admin());
 
 -- B. ADMIN STORES POLICIES
 CREATE POLICY "Allow admin inserts of stores" ON public.stores FOR INSERT WITH CHECK (public.is_admin());
@@ -433,5 +538,75 @@ BEGIN
   ORDER BY p.created_at DESC;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+
+-- 13. CUSTOMER CARTS & CART ITEMS
+-- Stores persistent shopping carts for registered customers
+CREATE TABLE IF NOT EXISTS public.customer_carts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  customer_id UUID REFERENCES public.customers(id) ON DELETE CASCADE UNIQUE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS public.cart_items (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  cart_id UUID REFERENCES public.customer_carts(id) ON DELETE CASCADE,
+  product_id UUID REFERENCES public.products(id) ON DELETE CASCADE,
+  quantity INTEGER NOT NULL DEFAULT 1 CHECK (quantity > 0),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  UNIQUE (cart_id, product_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_customer_carts_customer_id ON public.customer_carts(customer_id);
+CREATE INDEX IF NOT EXISTS idx_cart_items_cart_id ON public.cart_items(cart_id);
+CREATE INDEX IF NOT EXISTS idx_cart_items_product_id ON public.cart_items(product_id);
+
+ALTER TABLE public.customer_carts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.cart_items ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow customer select of own cart" ON public.customer_carts FOR SELECT USING (
+  EXISTS (SELECT 1 FROM public.customers WHERE id = customer_id AND auth_id = auth.uid())
+);
+CREATE POLICY "Allow customer insert of own cart" ON public.customer_carts FOR INSERT WITH CHECK (
+  EXISTS (SELECT 1 FROM public.customers WHERE id = customer_id AND auth_id = auth.uid())
+);
+CREATE POLICY "Allow customer update of own cart" ON public.customer_carts FOR UPDATE USING (
+  EXISTS (SELECT 1 FROM public.customers WHERE id = customer_id AND auth_id = auth.uid())
+);
+CREATE POLICY "Allow customer delete of own cart" ON public.customer_carts FOR DELETE USING (
+  EXISTS (SELECT 1 FROM public.customers WHERE id = customer_id AND auth_id = auth.uid())
+);
+
+CREATE POLICY "Allow customer select of own cart items" ON public.cart_items FOR SELECT USING (
+  EXISTS (
+    SELECT 1 FROM public.customer_carts c
+    JOIN public.customers cust ON cust.id = c.customer_id
+    WHERE c.id = cart_id AND cust.auth_id = auth.uid()
+  )
+);
+CREATE POLICY "Allow customer insert of own cart items" ON public.cart_items FOR INSERT WITH CHECK (
+  EXISTS (
+    SELECT 1 FROM public.customer_carts c
+    JOIN public.customers cust ON cust.id = c.customer_id
+    WHERE c.id = cart_id AND cust.auth_id = auth.uid()
+  )
+);
+CREATE POLICY "Allow customer update of own cart items" ON public.cart_items FOR UPDATE USING (
+  EXISTS (
+    SELECT 1 FROM public.customer_carts c
+    JOIN public.customers cust ON cust.id = c.customer_id
+    WHERE c.id = cart_id AND cust.auth_id = auth.uid()
+  )
+);
+CREATE POLICY "Allow customer delete of own cart items" ON public.cart_items FOR DELETE USING (
+  EXISTS (
+    SELECT 1 FROM public.customer_carts c
+    JOIN public.customers cust ON cust.id = c.customer_id
+    WHERE c.id = cart_id AND cust.auth_id = auth.uid()
+  )
+);
+
 
 

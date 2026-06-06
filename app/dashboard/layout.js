@@ -6,9 +6,10 @@ import { useAuth } from '@/context/AuthContext';
 import { storeService } from '@/services/storeService';
 import DashboardLayout from '@/components/Dashboard/DashboardLayout';
 import { DashboardProvider } from '@/context/DashboardContext';
+import PageLoader from '@/components/PageLoader';
 
 function CreatorDashboardGuard({ children }) {
-  const { user, role, store, profile, loading, refreshStore, authTimeoutError, retryAuth } = useAuth();
+  const { user, role, store, profile, loading, refreshStore, authTimeoutError, retryAuth, signOut } = useAuth();
   const router = useRouter();
   
   // Store Setup Form State
@@ -94,6 +95,11 @@ function CreatorDashboardGuard({ children }) {
     } finally {
       setCreating(false);
     }
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    router.push('/login');
   };
 
   if (authTimeoutError && loading === false && (!user || role !== 'creator')) {
@@ -204,34 +210,64 @@ function CreatorDashboardGuard({ children }) {
     );
   }
 
+  if (loading && !profile) {
+    return <PageLoader />;
+  }
+
   if (loading) {
     return (
-      <div className="loader-screen">
-        <div className="spinner"></div>
-        <p>Loading Creator Dashboard...</p>
+      <DashboardLayout>
+        <div className="dashboard-skeleton">
+          <div className="skeleton-row">
+            <div className="skeleton-item shim" style={{ height: '140px', borderRadius: '16px' }}></div>
+            <div className="skeleton-item shim" style={{ height: '140px', borderRadius: '16px' }}></div>
+            <div className="skeleton-item shim" style={{ height: '140px', borderRadius: '16px' }}></div>
+          </div>
+          <div className="skeleton-box shim" style={{ height: '360px', borderRadius: '16px', marginTop: '24px' }}></div>
+        </div>
         <style jsx>{`
-          .loader-screen {
-            height: 100vh;
+          .dashboard-skeleton {
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background: #f8fafc;
-            gap: 16px;
+            width: 100%;
           }
-          .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid #e2e8f0;
-            border-top-color: #8b5cf6;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
+          .skeleton-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
           }
-          @keyframes spin {
-            to { transform: rotate(360deg); }
+          .skeleton-item, .skeleton-box {
+            background: #fff;
+            border: 1px solid rgba(0, 0, 0, 0.03);
+          }
+          .shim {
+            position: relative;
+            overflow: hidden;
+          }
+          .shim::after {
+            position: absolute;
+            top: 0; right: 0; bottom: 0; left: 0;
+            transform: translateX(-100%);
+            background-image: linear-gradient(
+              90deg,
+              rgba(255, 255, 255, 0) 0%,
+              rgba(255, 255, 255, 0.4) 20%,
+              rgba(255, 255, 255, 0.6) 60%,
+              rgba(255, 255, 255, 0) 100%
+            );
+            animation: shimmer 1.5s infinite;
+            content: '';
+          }
+          @keyframes shimmer {
+            100% { transform: translateX(100%); }
+          }
+          @media (max-width: 768px) {
+            .skeleton-row {
+              grid-template-columns: 1fr;
+            }
           }
         `}</style>
-      </div>
+      </DashboardLayout>
     );
   }
 
@@ -239,10 +275,108 @@ function CreatorDashboardGuard({ children }) {
 
   if (role !== 'creator') {
     return (
-      <div className="denied-screen">
-        <h2>Access Denied</h2>
-        <p>This panel is designated for store creators.</p>
-        <button onClick={() => router.push('/admin/login')}>Go to Admin Panel</button>
+      <div className="timeout-screen">
+        <div className="glow-bg"></div>
+        <div className="error-card fade-in">
+          <div className="error-icon">🔒</div>
+          <h2>Access Denied</h2>
+          <p>This panel is designated for store creators. You are currently logged in as a <strong>{role}</strong> ({user.email}).</p>
+          <div className="btn-group">
+            <button className="retry-btn" onClick={handleSignOut}>Sign Out & Switch Account</button>
+            <button className="secondary-btn" onClick={() => router.push('/')}>Return to Storefront</button>
+          </div>
+        </div>
+
+        <style jsx>{`
+          .timeout-screen {
+            height: 100vh;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8fafc;
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+            font-family: 'Outfit', sans-serif;
+          }
+          .glow-bg {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.05) 0%, rgba(255, 255, 255, 0) 70%);
+            top: -150px;
+            left: -150px;
+            z-index: 1;
+          }
+          .error-card {
+            width: 100%;
+            max-width: 460px;
+            background: #ffffff;
+            padding: 40px;
+            border-radius: 24px;
+            position: relative;
+            z-index: 2;
+            border: 1px solid rgba(0, 0, 0, 0.03);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.03);
+            text-align: center;
+          }
+          .error-icon {
+            font-size: 40px;
+            margin-bottom: 20px;
+          }
+          .error-card h2 {
+            font-size: 22px;
+            font-weight: 800;
+            color: #1e293b;
+            margin-bottom: 12px;
+            letter-spacing: -0.5px;
+          }
+          .error-card p {
+            font-size: 13px;
+            color: #64748b;
+            line-height: 1.6;
+            margin-bottom: 28px;
+          }
+          .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+          }
+          .retry-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: #fff;
+            font-weight: 700;
+            font-size: 14px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+          }
+          .retry-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.3);
+          }
+          .secondary-btn {
+            width: 100%;
+            padding: 14px;
+            background: transparent;
+            color: #64748b;
+            font-weight: 700;
+            font-size: 14px;
+            border-radius: 12px;
+            border: 1px solid #cbd5e1;
+            transition: all 0.2s;
+            cursor: pointer;
+          }
+          .secondary-btn:hover {
+            background: #f1f5f9;
+            color: #1e293b;
+          }
+        `}</style>
       </div>
     );
   }

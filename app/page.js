@@ -9,6 +9,7 @@ import Testimonials from '@/components/landing/Testimonials';
 import Pricing from '@/components/landing/Pricing';
 import FAQ from '@/components/landing/FAQ';
 import CTA from '@/components/landing/CTA';
+import CompanyPortal from '@/components/landing/CompanyPortal';
 import Footer from '@/components/landing/Footer';
 
 export const metadata = {
@@ -31,6 +32,7 @@ export default function Home() {
         <Pricing />
         <FAQ />
         <CTA />
+        <CompanyPortal />
       </main>
       <Footer />
     </>

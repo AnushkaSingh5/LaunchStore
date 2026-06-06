@@ -1,106 +1,209 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect } from 'react';
+import { useCustomerAuth } from '@/context/CustomerAuthContext';
+import { useAuth } from '@/context/AuthContext';
+import { cartService } from '@/services/cartService';
 
 const StoreContext = createContext();
 
 export function StoreProvider({ children }) {
+  const { customer: customerUser, customerProfile, loading: customerAuthLoading } = useCustomerAuth();
+  const { user: authUser, role: authRole } = useAuth();
   const [cart, setCart] = useState([]);
+  const [dbCartId, setDbCartId] = useState(null);
+  const [loadingDbCart, setLoadingDbCart] = useState(false);
   const [wishlist, setWishlist] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [isCartOpen, setIsCartOpen] = useState(false);
 
-  // Load from localStorage on mount
+  const wishlistKey = customerProfile ? `luxe_wishlist_customer_${customerProfile.id}` : 'luxe_wishlist_guest';
+
+  // 1. Manage customer database cart load, merge, and sync
   useEffect(() => {
-    const loadSavedData = async () => {
-      const savedCart = localStorage.getItem('luxe_cart');
-      const savedWishlist = localStorage.getItem('luxe_wishlist');
-      
-      if (savedCart) {
+    if (customerAuthLoading) return;
+
+    if (customerProfile) {
+      const loadAndSyncCart = async () => {
+        setLoadingDbCart(true);
         try {
-          setCart(JSON.parse(savedCart));
-        } catch (e) { console.error('Failed to parse cart', e); }
+          const dbCart = await cartService.getOrCreateCart(customerProfile.id);
+          setDbCartId(dbCart.id);
+
+          // Get guest cart items from sessionStorage
+          let guestCart = [];
+          const savedGuestCart = sessionStorage.getItem('luxe_cart_guest');
+          if (savedGuestCart) {
+            try {
+              guestCart = JSON.parse(savedGuestCart);
+            } catch (e) {
+              console.warn('Failed to parse guest cart', e);
+            }
+          }
+
+          let finalItems = [];
+          if (guestCart.length > 0) {
+            console.log('🔄 [StoreContext]: Syncing guest cart to database cart:', guestCart);
+            finalItems = await cartService.syncLocalCartToDb(dbCart.id, guestCart);
+            sessionStorage.removeItem('luxe_cart_guest');
+            localStorage.removeItem('luxe_cart_guest');
+          } else {
+            finalItems = await cartService.getCartItems(dbCart.id);
+          }
+
+          setCart(finalItems);
+        } catch (err) {
+          console.warn('⚠️ [StoreContext] Failed to load/sync database cart:', err);
+        } finally {
+          setLoadingDbCart(false);
+        }
+      };
+      loadAndSyncCart();
+    } else {
+      setDbCartId(null);
+
+      // If guest (not a customer and not a creator/admin), load from sessionStorage
+      const isCreatorOrAdmin = authRole === 'creator' || authRole === 'admin';
+      if (!customerUser && !isCreatorOrAdmin) {
+        const savedGuestCart = sessionStorage.getItem('luxe_cart_guest') || localStorage.getItem('luxe_cart_guest');
+        if (savedGuestCart) {
+          try {
+            const parsed = JSON.parse(savedGuestCart);
+            setCart(parsed);
+            sessionStorage.setItem('luxe_cart_guest', savedGuestCart);
+          } catch (e) {
+            setCart([]);
+          }
+        } else {
+          setCart([]);
+        }
+      } else {
+        // Creators/Admins cart always starts empty
+        setCart([]);
       }
-      
-      if (savedWishlist) {
-        try {
-          setWishlist(JSON.parse(savedWishlist));
-        } catch (e) { console.error('Failed to parse wishlist', e); }
+    }
+  }, [customerProfile, customerUser, customerAuthLoading, authRole]);
+
+  // Load wishlist from localStorage
+  useEffect(() => {
+    const savedWishlist = localStorage.getItem(wishlistKey);
+    if (savedWishlist) {
+      try {
+        setWishlist(JSON.parse(savedWishlist));
+      } catch (e) {
+        console.error('Failed to parse wishlist', e);
+        setWishlist([]);
       }
-    };
-    loadSavedData();
-  }, []);
+    } else {
+      setWishlist([]);
+    }
+  }, [wishlistKey]);
 
-  // Save to localStorage on changes
+  // Save wishlist to localStorage
   useEffect(() => {
-    localStorage.setItem('luxe_cart', JSON.stringify(cart));
-  }, [cart]);
+    localStorage.setItem(wishlistKey, JSON.stringify(wishlist));
+  }, [wishlist, wishlistKey]);
 
-  useEffect(() => {
-    localStorage.setItem('luxe_wishlist', JSON.stringify(wishlist));
-  }, [wishlist]);
+  // Helper to persist cart changes to storage or DB
+  const saveCartToStorage = async (updatedCart, changedProductId = null, newQty = null) => {
+    if (authRole === 'admin') return;
 
-  const addToCart = (product, quantity = 1) => {
+    if (customerProfile) {
+      try {
+        let activeCartId = dbCartId;
+        if (!activeCartId) {
+          const dbCart = await cartService.getOrCreateCart(customerProfile.id);
+          activeCartId = dbCart.id;
+          setDbCartId(activeCartId);
+        }
+        if (changedProductId) {
+          if (newQty === 0) {
+            await cartService.removeCartItem(activeCartId, changedProductId);
+          } else {
+            await cartService.addOrUpdateCartItem(activeCartId, changedProductId, newQty);
+          }
+        } else if (updatedCart.length === 0) {
+          await cartService.clearCart(activeCartId);
+        }
+      } catch (err) {
+        console.warn('Failed to update DB cart:', err);
+      }
+    } else if (!customerUser && authRole !== 'creator') {
+      // Guest
+      sessionStorage.setItem('luxe_cart_guest', JSON.stringify(updatedCart));
+    }
+  };
+
+  const addToCart = async (product, quantity = 1) => {
     if (!product) return;
-    setCart((prev) => {
-      const existing = prev.find((item) => item.id === product.id);
-      if (existing) {
-        const newQty = existing.quantity + quantity;
-        if (product.stock !== undefined && newQty > product.stock) {
-          alert(`Only ${product.stock} items in stock.`);
-          return prev;
-        }
-        return prev.map((item) =>
-          item.id === product.id
-            ? { ...item, quantity: newQty }
-            : item
-        );
-      }
-      if (product.stock !== undefined && quantity > product.stock) {
-        alert(`Only ${product.stock} items in stock.`);
-        return prev;
-      }
-      return [
-        ...prev,
-        {
-          id: product.id,
-          name: product.name,
-          price: parseFloat(product.price) || 0,
-          image: product.image || product.image_url || 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=800',
-          category: product.category || 'Uncategorized',
-          store_id: product.store_id,
-          store_slug: product.store_slug || product.store?.slug || '',
-          stock: product.stock !== undefined ? product.stock : 999,
-          quantity
-        }
-      ];
-    });
+    if (authRole === 'admin') return;
+
+    let newQty = quantity;
+    const existing = cart.find((item) => item.id === product.id);
+    if (existing) {
+      newQty = existing.quantity + quantity;
+    }
+
+    if (product.stock !== undefined && newQty > product.stock) {
+      alert(`Only ${product.stock} items in stock.`);
+      return;
+    }
+
+    let updatedCart = [];
+    if (existing) {
+      updatedCart = cart.map((item) =>
+        item.id === product.id ? { ...item, quantity: newQty } : item
+      );
+    } else {
+      const newItem = {
+        id: product.id,
+        name: product.name,
+        price: parseFloat(product.price) || 0,
+        image: product.image || product.image_url || 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=800',
+        category: product.category || 'Uncategorized',
+        store_id: product.store_id,
+        store_slug: product.store_slug || product.store?.slug || '',
+        stock: product.stock !== undefined ? product.stock : 999,
+        quantity
+      };
+      updatedCart = [...cart, newItem];
+    }
+
+    setCart(updatedCart);
+    await saveCartToStorage(updatedCart, product.id, newQty);
     setIsCartOpen(true);
   };
 
-  const removeFromCart = (productId) => {
-    setCart((prev) => prev.filter((item) => item.id !== productId));
+  const removeFromCart = async (productId) => {
+    const updatedCart = cart.filter((item) => item.id !== productId);
+    setCart(updatedCart);
+    await saveCartToStorage(updatedCart, productId, 0);
   };
 
-  const updateQuantity = (productId, delta) => {
-    setCart((prev) =>
-      prev.map((item) => {
-        if (item.id === productId) {
-          const newQty = item.quantity + delta;
-          if (newQty < 1) return item;
-          if (item.stock !== undefined && newQty > item.stock) {
-            alert(`Only ${item.stock} items in stock.`);
-            return item;
-          }
-          return { ...item, quantity: newQty };
-        }
-        return item;
-      })
+  const updateQuantity = async (productId, delta) => {
+    const item = cart.find((item) => item.id === productId);
+    if (!item) return;
+
+    const newQty = item.quantity + delta;
+    if (newQty < 1) return;
+
+    if (item.stock !== undefined && newQty > item.stock) {
+      alert(`Only ${item.stock} items in stock.`);
+      return;
+    }
+
+    const updatedCart = cart.map((item) =>
+      item.id === productId ? { ...item, quantity: newQty } : item
     );
+    setCart(updatedCart);
+    await saveCartToStorage(updatedCart, productId, newQty);
   };
 
-  const clearCart = () => setCart([]);
+  const clearCart = async () => {
+    setCart([]);
+    await saveCartToStorage([], null, null);
+  };
 
   const toggleWishlist = (product) => {
     setWishlist((prev) => {

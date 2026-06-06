@@ -12,6 +12,7 @@ import TopStores from '@/components/Admin/TopStores';
 import Table from '@/components/UI/Table';
 import Button from '@/components/UI/Button';
 import { useRouter } from 'next/navigation';
+import PageLoader from '@/components/PageLoader';
 
 export default function AdminOverview() {
   const { stores, products, orders, customers, analytics, activity, alerts, systemHealth, aiInsights, approveStore, loading } = useAdmin();
@@ -24,7 +25,87 @@ export default function AdminOverview() {
     }
   }, [adminUser, authLoading, router]);
 
-  if (authLoading || loading) return <div style={{ padding: '40px' }}>Loading platform overview...</div>;
+  if ((authLoading || loading) && !adminUser) {
+    return <PageLoader />;
+  }
+
+  if (authLoading || loading) {
+    return (
+      <div className="admin-overview">
+        <div className="overview-header">
+          <div className="header-text">
+            <h2>Platform Overview</h2>
+            <div className="skeleton-line shim" style={{ width: '200px', height: '14px', borderRadius: '4px', marginTop: '8px', background: '#e2e8f0' }}></div>
+          </div>
+        </div>
+        
+        <div className="stats-grid">
+          {[...Array(6)].map((_, i) => (
+            <div className="skeleton-card shim" key={i} style={{ height: '120px', borderRadius: '24px', background: '#fff', border: '1px solid #f1f5f9' }}></div>
+          ))}
+        </div>
+
+        <div className="analytics-overview shim" style={{ height: '320px', borderRadius: '24px', background: '#fff', border: '1px solid #f1f5f9' }}>
+        </div>
+        
+        <style jsx>{`
+          .admin-overview {
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+          }
+          .overview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          }
+          .header-text h2 {
+            font-size: 28px;
+            font-weight: 800;
+            color: #1e293b;
+            margin: 0;
+            letter-spacing: -0.5px;
+          }
+          .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+          }
+          .shim {
+            position: relative;
+            overflow: hidden;
+          }
+          .shim::after {
+            position: absolute;
+            top: 0; right: 0; bottom: 0; left: 0;
+            transform: translateX(-100%);
+            background-image: linear-gradient(
+              90deg,
+              rgba(255, 255, 255, 0) 0%,
+              rgba(255, 255, 255, 0.4) 20%,
+              rgba(255, 255, 255, 0.6) 60%,
+              rgba(255, 255, 255, 0) 100%
+            );
+            animation: shimmer 1.5s infinite;
+            content: '';
+          }
+          @keyframes shimmer {
+            100% { transform: translateX(100%); }
+          }
+          @media (max-width: 1200px) {
+            .stats-grid {
+              grid-template-columns: repeat(2, 1fr);
+            }
+          }
+          @media (max-width: 768px) {
+            .stats-grid {
+              grid-template-columns: 1fr;
+            }
+          }
+        `}</style>
+      </div>
+    );
+  }
   if (!adminUser) return null;
 
   // 1. Calculate dynamic, non-hardcoded dashboard telemetry

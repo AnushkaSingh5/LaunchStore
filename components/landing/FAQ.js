@@ -24,8 +24,10 @@ export default function FAQ() {
   ];
 
   const [activeIndex, setActiveIndex] = useState(null);
+  console.log('[FAQ] Rendered. activeIndex:', activeIndex);
 
   const toggleFAQ = (index) => {
+    console.log('[FAQ] Toggle index:', index, 'current activeIndex:', activeIndex);
     setActiveIndex(activeIndex === index ? null : index);
   };
 

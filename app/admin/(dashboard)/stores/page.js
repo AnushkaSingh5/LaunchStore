@@ -21,22 +21,20 @@ const getInitials = (name) => {
 };
 
 export default function StoresManagement() {
-  const { stores, approveStore, rejectStore, disableStore, loading } = useAdmin();
+  const { stores = [], approveStore, rejectStore, disableStore, loading } = useAdmin();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStore, setSelectedStore] = useState(null);
 
-  if (loading) return <div style={{ padding: '40px' }}>Loading stores...</div>;
-
-  const filteredStores = stores.filter(s => 
+  const filteredStores = loading ? [] : stores.filter(s => 
     s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     s.ownerName.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // Dynamic Metrics
-  const totalStores = stores.length;
-  const activeStores = stores.filter(s => s.status === 'Active').length;
-  const pendingStores = stores.filter(s => s.status === 'Pending').length;
-  const disabledStores = stores.filter(s => s.status === 'Disabled').length;
+  const totalStores = loading ? 0 : stores.length;
+  const activeStores = loading ? 0 : stores.filter(s => s.status === 'Active').length;
+  const pendingStores = loading ? 0 : stores.filter(s => s.status === 'Pending').length;
+  const disabledStores = loading ? 0 : stores.filter(s => s.status === 'Disabled').length;
 
   const activePercent = totalStores ? ((activeStores / totalStores) * 100).toFixed(1) : 0;
   const disabledPercent = totalStores ? ((disabledStores / totalStores) * 100).toFixed(1) : 0;
@@ -177,7 +175,7 @@ export default function StoresManagement() {
       </div>
 
       <div className="table-card">
-        <Table columns={columns} data={filteredStores} actions={actions} />
+        <Table columns={columns} data={filteredStores} actions={actions} loading={loading} />
         
         <div className="table-footer">
           <div className="showing-text">
