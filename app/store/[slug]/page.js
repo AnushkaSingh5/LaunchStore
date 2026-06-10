@@ -216,7 +216,7 @@ export default function StorePage({ params }) {
 
   return (
     <main className="dashboard-store">
-      <Navbar storeName={storeDetails?.name} />
+      <Navbar storeName={storeDetails?.name} logoUrl={storeDetails?.logo_url || storeDetails?.logo} />
       <Hero 
         bannerUrl={storeDetails?.banner_url || storeDetails?.banner}
         storeName={storeDetails?.name}
@@ -228,11 +228,11 @@ export default function StorePage({ params }) {
         <section className="section-wrapper categories-section">
           <div className="section-header">
             <h2 className="section-title">Explore Categories</h2>
-            <p className="section-subtitle">Curated collections for your home.</p>
+            <p className="section-subtitle">Curated collections for your lifestyle.</p>
           </div>
           <div className="categories-grid">
             {loading ? (
-              [...Array(5)].map((_, i) => (
+              [...Array(4)].map((_, i) => (
                 <div className="skeleton-category-card" key={i}>
                   <div className="skeleton-image shim"></div>
                   <div className="skeleton-title shim"></div>
@@ -251,10 +251,10 @@ export default function StorePage({ params }) {
           <section className="section-wrapper dashboard-card section-card">
             <div className="section-header align-left">
               <div className="title-box">
-                <h2 className="section-title">Featured Collections</h2>
-                <span className="live-badge">Live Now</span>
+                <h2 className="section-title">Featured Items</h2>
+                <span className="live-badge">Best Sellers</span>
               </div>
-              <p className="section-subtitle">Timeless pieces selected for modern enthusiasts.</p>
+              <p className="section-subtitle">Premium pieces selected for this showcase.</p>
             </div>
             <div className="products-grid">
               {featuredProducts.map(product => (
@@ -268,7 +268,7 @@ export default function StorePage({ params }) {
         <section className="section-wrapper dashboard-card section-card alt-bg">
           <div className="section-header">
             <h2 className="section-title">
-              {selectedCategory === 'All' ? 'Discover All' : `${selectedCategory} Collection`}
+              {selectedCategory === 'All' ? 'Discover All Products' : `${selectedCategory} Collection`}
               {searchQuery && ` - Results for "${searchQuery}"`}
             </h2>
             <p className="section-subtitle">
@@ -378,7 +378,7 @@ export default function StorePage({ params }) {
 
         .categories-grid {
           display: grid;
-          grid-template-columns: repeat(5, 1fr);
+          grid-template-columns: repeat(4, 1fr);
           gap: 24px;
         }
 

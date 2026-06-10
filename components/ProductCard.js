@@ -12,14 +12,17 @@ export default function ProductCard({ product }) {
 
   // Extract store slug from the active URL path to scope navigation inside creator's store
   const segments = pathname.split('/');
-  const storeSlug = segments[1] === 'store' ? segments[2] : null;
-  const productLink = storeSlug ? `/store/${storeSlug}/product/${product.id}` : `/product/${product.id}`;
+  const isDemo = segments[1] === 'demo-store';
+  const storeSlug = (segments[1] === 'store' || isDemo) ? segments[2] : null;
+  const productLink = storeSlug 
+    ? (isDemo ? `/demo-store/${storeSlug}/product/${product.id}` : `/store/${storeSlug}/product/${product.id}`) 
+    : `/product/${product.id}`;
 
   const handleBuyNow = (e) => {
     e.preventDefault();
     addToCart(product);
     if (storeSlug) {
-      router.push(`/store/${storeSlug}/cart`);
+      router.push(isDemo ? `/demo-store/${storeSlug}/cart` : `/store/${storeSlug}/cart`);
     } else {
       router.push('/cart');
     }
@@ -29,7 +32,7 @@ export default function ProductCard({ product }) {
     <div className="product-card dashboard-card">
       <div className="product-visual-wrapper">
         <Link href={productLink} className="product-visual">
-          <img src={product.image} alt={product.name} />
+          <img src={product.image} alt={product.name} onError={(e) => { e.target.style.display = 'none'; }} />
           {product.trending && <span className="product-badge accent">Trending</span>}
           {product.featured && !product.trending && <span className="product-badge secondary">New</span>}
         </Link>

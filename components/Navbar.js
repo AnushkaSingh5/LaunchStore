@@ -5,8 +5,9 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useStore } from '@/context/StoreContext';
 import { useCustomerAuth } from '@/context/CustomerAuthContext';
+import { demoStores } from '@/lib/demoData';
 
-export default function Navbar({ storeName }) {
+export default function Navbar({ storeName, logoUrl }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const { cartCount, searchQuery, setSearchQuery } = useStore();
   const { customer, customerProfile, logout } = useCustomerAuth();
@@ -18,8 +19,10 @@ export default function Navbar({ storeName }) {
   const pathname = usePathname();
 
   const pathParts = pathname ? pathname.split('/') : [];
-  const isStorePage = pathParts[1] === 'store' && pathParts[2];
+  const isDemo = pathParts[1] === 'demo-store';
+  const isStorePage = (pathParts[1] === 'store' || isDemo) && pathParts[2];
   const storeSlug = isStorePage ? pathParts[2] : null;
+  const storeLogo = logoUrl || (isDemo && storeSlug ? demoStores[storeSlug]?.logo : null);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
@@ -49,7 +52,7 @@ export default function Navbar({ storeName }) {
     
     // If user starts typing and is not on home page, redirect to home
     if (value.trim() !== '') {
-      const homePath = storeSlug ? `/store/${storeSlug}` : '/';
+      const homePath = storeSlug ? `/${pathParts[1]}/${storeSlug}` : '/';
       if (pathname !== homePath) {
         router.push(homePath);
       }
@@ -60,8 +63,16 @@ export default function Navbar({ storeName }) {
     <header className={`navbar-wrapper ${isScrolled ? 'scrolled' : ''}`}>
       <nav className="container nav-container dashboard-card glass">
         <div className="nav-main">
-          <Link href={storeSlug ? `/store/${storeSlug}` : "/"} className="logo">
-            {storeName || 'Online Store'}
+          <Link href={storeSlug ? `/${pathParts[1]}/${storeSlug}` : "/"} className="logo">
+            {storeLogo && (
+              <img 
+                src={storeLogo} 
+                alt={`${storeName} Logo`} 
+                className="logo-img" 
+                onError={(e) => { e.target.style.display = 'none'; }} 
+              />
+            )}
+            <span>{storeName || 'Online Store'}</span>
           </Link>
 
           <form className="search-container desktop-search" onSubmit={(e) => e.preventDefault()}>
@@ -78,65 +89,67 @@ export default function Navbar({ storeName }) {
           </form>
 
           <div className="nav-actions">
-            <div className="user-dropdown-container">
-              <button 
-                className="action-btn user-btn"
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                aria-label="User profile menu"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-              </button>
-              {isDropdownOpen && (
-                <div className="dropdown-menu glass">
-                  {user ? (
-                    <>
-                      <div className="dropdown-header">
-                        <div className="dropdown-name">{profile?.full_name || 'Customer'}</div>
-                        <div className="dropdown-email">{user.email}</div>
-                      </div>
-                      <div className="dropdown-divider"></div>
-                      <Link href={storeSlug ? `/customer/profile?store=${storeSlug}` : "/customer/profile"} className="dropdown-item" onClick={() => setIsDropdownOpen(false)}>
-                        My Profile
-                      </Link>
-                      <Link href={storeSlug ? `/customer/orders?store=${storeSlug}` : "/customer/orders"} className="dropdown-item" onClick={() => setIsDropdownOpen(false)}>
-                        My Orders
-                      </Link>
-                      <Link href={storeSlug ? `/customer/addresses?store=${storeSlug}` : "/customer/addresses"} className="dropdown-item" onClick={() => setIsDropdownOpen(false)}>
-                        My Addresses
-                      </Link>
-                      <div className="dropdown-divider"></div>
-                      <button 
-                        className="dropdown-item logout-btn" 
-                        onClick={() => {
-                          signOut();
-                          setIsDropdownOpen(false);
-                        }}
-                      >
-                        Logout
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <Link 
-                        href={storeSlug ? `/customer/login?redirect=/store/${storeSlug}` : "/customer/login"} 
-                        className="dropdown-item" 
-                        onClick={() => setIsDropdownOpen(false)}
-                      >
-                        Login
-                      </Link>
-                      <Link 
-                        href={storeSlug ? `/customer/signup?redirect=/store/${storeSlug}` : "/customer/signup"} 
-                        className="dropdown-item" 
-                        onClick={() => setIsDropdownOpen(false)}
-                      >
-                        Sign Up
-                      </Link>
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
-            <Link href={storeSlug ? `/store/${storeSlug}/cart` : "/cart"} className="action-btn cart-btn">
+            {!isDemo && (
+              <div className="user-dropdown-container">
+                <button 
+                  className="action-btn user-btn"
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  aria-label="User profile menu"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                </button>
+                {isDropdownOpen && (
+                  <div className="dropdown-menu glass">
+                    {user ? (
+                      <>
+                        <div className="dropdown-header">
+                          <div className="dropdown-name">{profile?.full_name || 'Customer'}</div>
+                          <div className="dropdown-email">{user.email}</div>
+                        </div>
+                        <div className="dropdown-divider"></div>
+                        <Link href={storeSlug ? `/customer/profile?store=${storeSlug}` : "/customer/profile"} className="dropdown-item" onClick={() => setIsDropdownOpen(false)}>
+                          My Profile
+                        </Link>
+                        <Link href={storeSlug ? `/customer/orders?store=${storeSlug}` : "/customer/orders"} className="dropdown-item" onClick={() => setIsDropdownOpen(false)}>
+                          My Orders
+                        </Link>
+                        <Link href={storeSlug ? `/customer/addresses?store=${storeSlug}` : "/customer/addresses"} className="dropdown-item" onClick={() => setIsDropdownOpen(false)}>
+                          My Addresses
+                        </Link>
+                        <div className="dropdown-divider"></div>
+                        <button 
+                          className="dropdown-item logout-btn" 
+                          onClick={() => {
+                            signOut();
+                            setIsDropdownOpen(false);
+                          }}
+                        >
+                          Logout
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <Link 
+                          href={storeSlug ? `/customer/login?redirect=/store/${storeSlug}` : "/customer/login"} 
+                          className="dropdown-item" 
+                          onClick={() => setIsDropdownOpen(false)}
+                        >
+                          Login
+                        </Link>
+                        <Link 
+                          href={storeSlug ? `/customer/signup?redirect=/store/${storeSlug}` : "/customer/signup"} 
+                          className="dropdown-item" 
+                          onClick={() => setIsDropdownOpen(false)}
+                        >
+                          Sign Up
+                        </Link>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+            <Link href={storeSlug ? `/${pathParts[1]}/${storeSlug}/cart` : "/cart"} className="action-btn cart-btn">
               <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><path d="M3 6h18"></path><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
               {cartCount > 0 && <span className="badge">{cartCount}</span>}
             </Link>
@@ -161,7 +174,7 @@ export default function Navbar({ storeName }) {
       <style jsx>{`
         .navbar-wrapper {
           position: fixed;
-          top: 0;
+          top: ${pathname?.includes('/demo-store') ? '48px' : '0px'};
           left: 0;
           width: 100%;
           z-index: 1000;
@@ -171,6 +184,12 @@ export default function Navbar({ storeName }) {
 
         .navbar-wrapper.scrolled {
           padding: 12px 0;
+        }
+
+        @media (max-width: 900px) {
+          .navbar-wrapper {
+            top: ${pathname?.includes('/demo-store') ? '76px' : '0px'};
+          }
         }
 
         .nav-container {
@@ -196,6 +215,18 @@ export default function Navbar({ storeName }) {
           letter-spacing: -0.5px;
           color: var(--primary);
           white-space: nowrap;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .logo-img {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          object-fit: cover;
+          border: 1px solid rgba(0, 0, 0, 0.08);
+          flex-shrink: 0;
         }
 
         .search-container {

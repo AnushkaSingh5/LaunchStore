@@ -1,17 +1,16 @@
 'use client';
 
 import { useState, useEffect, use } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/context/StoreContext';
-import { storeService } from '@/services/storeService';
-import { productService } from '@/services/productService';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
-import PageLoader from '@/components/PageLoader';
+import DemoStoreBanner from '@/components/DemoStoreBanner';
+import { demoStores } from '@/lib/demoData';
 
-export default function ProductDetails({ params }) {
-  const { id, slug } = use(params);
+export default function ProductDetailsClient({ slug, id }) {
   const { addToCart } = useStore();
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
@@ -21,57 +20,41 @@ export default function ProductDetails({ params }) {
   const router = useRouter();
 
   useEffect(() => {
-    const fetchProduct = async () => {
-      console.log(`[LaunchCart - ProductDetails] Starting fetchProduct for product ID: "${id}" on store slug: "${slug}"`);
-      setLoading(true);
-      try {
-        console.log(`[LaunchCart - ProductDetails] Calling storeService.getStoreBySlug("${slug}")...`);
-        const storeData = await storeService.getStoreBySlug(slug);
-        console.log(`[LaunchCart - ProductDetails] storeService.getStoreBySlug returned:`, storeData);
-        setStoreDetails(storeData);
-        
-        if (storeData && storeData.id) {
-          console.log(`[LaunchCart - ProductDetails] Store matched. Calling productService.getProductById("${id}")...`);
-          const prodData = await productService.getProductById(id);
-          console.log(`[LaunchCart - ProductDetails] productService.getProductById returned:`, prodData);
-          if (prodData) {
-            setProduct(prodData);
-            console.log(`[LaunchCart - ProductDetails] Fetching related products...`);
-            const related = await productService.getRelatedProducts(storeData.id, prodData.category, prodData.id);
-            console.log(`[LaunchCart - ProductDetails] Related products fetched count: ${related?.length}`);
-            setRelatedProducts(related);
-          } else {
-            console.warn(`[LaunchCart - ProductDetails] No product matches ID: "${id}"`);
-          }
-        } else {
-          console.warn(`[LaunchCart - ProductDetails] No store matches slug: "${slug}"`);
-        }
-      } catch (error) {
-        console.error("[LaunchCart - ProductDetails] Failed to fetch product details with error:", error);
-      } finally {
-        console.log("[LaunchCart - ProductDetails] Fetch product complete, setting loading to false.");
-        setLoading(false);
+    setLoading(true);
+    const store = demoStores[slug];
+    if (store) {
+      setStoreDetails(store);
+      const prod = store.products.find(p => p.id === id);
+      if (prod) {
+        setProduct({ ...prod, store_slug: slug });
+        const related = store.products.filter(p => p.category === prod.category && p.id !== prod.id);
+        setRelatedProducts(related);
       }
-    };
-    fetchProduct();
+    }
+    setLoading(false);
   }, [id, slug]);
 
   const handleBuyNow = () => {
-    addToCart(product, quantity);
-    router.push(`/store/${slug}/cart`);
+    if (product) {
+      addToCart(product, quantity);
+      router.push(`/demo-store/${slug}/cart`);
+    }
   };
 
   if (loading && !product) {
-    return <PageLoader />;
+    return (
+      <div className="loading-screen">
+        <p>Loading Product...</p>
+      </div>
+    );
   }
-
 
   if (!storeDetails) {
     return (
       <div className="store-not-found-screen">
         <div className="glass-card">
-          <h2>Store Not Found 🔍</h2>
-          <p>We couldn't find an active store with the link <strong>/store/{slug}</strong>. Please check the spelling or contact the owner.</p>
+          <h2>Demo Store Not Found 🔍</h2>
+          <p>We couldn't find a demo store matching the link <strong>/demo-store/{slug}</strong>.</p>
           <Link href="/" className="back-link">Return to Home</Link>
         </div>
         <style jsx>{`
@@ -93,20 +76,15 @@ export default function ProductDetails({ params }) {
             max-width: 480px;
             text-align: center;
             color: #fff;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
           }
           .glass-card h2 {
             font-size: 24px;
-            font-weight: 800;
             margin-bottom: 16px;
-            background: linear-gradient(135deg, #f43f5e, #fb7185);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: #f43f5e;
           }
           .glass-card p {
             font-size: 14px;
             color: #94a3b8;
-            line-height: 1.6;
             margin-bottom: 28px;
           }
           .back-link {
@@ -117,13 +95,6 @@ export default function ProductDetails({ params }) {
             border-radius: 12px;
             font-weight: 700;
             text-decoration: none;
-            transition: all 0.2s;
-            border: none;
-            cursor: pointer;
-          }
-          .back-link:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(225, 29, 72, 0.3);
           }
         `}</style>
       </div>
@@ -135,8 +106,8 @@ export default function ProductDetails({ params }) {
       <div className="store-not-found-screen">
         <div className="glass-card">
           <h2>Product Not Found 🔍</h2>
-          <p>We couldn't find the product details in this store. It might have been removed or set to draft.</p>
-          <Link href={`/store/${slug}`} className="back-link">Return to Store</Link>
+          <p>We couldn't find the product details in this store.</p>
+          <Link href={`/demo-store/${slug}`} className="back-link">Return to Store</Link>
         </div>
         <style jsx>{`
           .store-not-found-screen {
@@ -157,20 +128,15 @@ export default function ProductDetails({ params }) {
             max-width: 480px;
             text-align: center;
             color: #fff;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
           }
           .glass-card h2 {
             font-size: 24px;
-            font-weight: 800;
             margin-bottom: 16px;
-            background: linear-gradient(135deg, #f43f5e, #fb7185);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: #f43f5e;
           }
           .glass-card p {
             font-size: 14px;
             color: #94a3b8;
-            line-height: 1.6;
             margin-bottom: 28px;
           }
           .back-link {
@@ -181,13 +147,6 @@ export default function ProductDetails({ params }) {
             border-radius: 12px;
             font-weight: 700;
             text-decoration: none;
-            transition: all 0.2s;
-            border: none;
-            cursor: pointer;
-          }
-          .back-link:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
           }
         `}</style>
       </div>
@@ -196,7 +155,8 @@ export default function ProductDetails({ params }) {
 
   return (
     <div className="product-details-page">
-      <Navbar storeName={storeDetails?.name} logoUrl={storeDetails?.logo_url || storeDetails?.logo} />
+      <DemoStoreBanner />
+      <Navbar storeName={storeDetails.name} />
 
       <main className="container main-content">
         <div className="product-layout dashboard-card fade-in">
@@ -221,7 +181,7 @@ export default function ProductDetails({ params }) {
             </div>
 
             <p className="description">
-              {product.description || `Experience unparalleled quality and minimalist design. This ${product.name.toLowerCase()} is crafted from premium materials to elevate your living space and provide lasting comfort and style.`}
+              {product.description || `Experience unparalleled quality and minimalist design. This ${product.name.toLowerCase()} is crafted from premium materials to elevate your lifestyle and provide lasting comfort and style.`}
             </p>
 
             <div className="actions">
@@ -259,14 +219,14 @@ export default function ProductDetails({ params }) {
             </div>
             <div className="products-grid">
               {relatedProducts.map(p => (
-                <ProductCard key={p.id} product={p} />
+                <ProductCard key={p.id} product={{ ...p, store_slug: slug }} />
               ))}
             </div>
           </section>
         )}
       </main>
 
-      <Footer storeName={storeDetails?.name} />
+      <Footer storeName={storeDetails.name} />
 
       <style jsx>{`
         .product-details-page {
@@ -381,6 +341,9 @@ export default function ProductDetails({ params }) {
           justify-content: center;
           font-size: 20px;
           font-weight: 600;
+          border: none;
+          background: transparent;
+          cursor: pointer;
         }
 
         .quantity-selector span {
@@ -397,6 +360,8 @@ export default function ProductDetails({ params }) {
           border-radius: 12px;
           font-size: 16px;
           transition: var(--transition-smooth);
+          border: none;
+          cursor: pointer;
         }
 
         .add-to-cart-btn:hover {
@@ -446,13 +411,14 @@ export default function ProductDetails({ params }) {
           gap: 24px;
         }
 
-        .loading-screen, .error-screen {
+        .loading-screen {
           height: 100vh;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 20px;
+          font-size: 18px;
           font-weight: 600;
+          color: var(--text-sub);
         }
 
         @media (max-width: 1024px) {

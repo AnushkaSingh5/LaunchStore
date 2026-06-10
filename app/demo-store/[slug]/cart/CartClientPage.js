@@ -3,29 +3,21 @@
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { useStore } from '@/context/StoreContext';
-import { storeService } from '@/services/storeService';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import DemoStoreBanner from '@/components/DemoStoreBanner';
+import { demoStores } from '@/lib/demoData';
 
-export default function CartPage({ params }) {
-  const { slug } = use(params);
+export default function CartClientPage({ slug }) {
   const { cart: globalCart, updateQuantity, removeFromCart, clearCart } = useStore();
   const [storeDetails, setStoreDetails] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchStore = async () => {
-      setLoading(true);
-      try {
-        const data = await storeService.getStoreBySlug(slug);
-        setStoreDetails(data);
-      } catch (e) {
-        console.error('Failed to fetch store details in cart:', e);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchStore();
+    setLoading(true);
+    const data = demoStores[slug];
+    setStoreDetails(data);
+    setLoading(false);
   }, [slug]);
 
   if (loading) {
@@ -65,8 +57,8 @@ export default function CartPage({ params }) {
     return (
       <div className="store-not-found-screen">
         <div className="glass-card">
-          <h2>Store Not Found 🔍</h2>
-          <p>We couldn't find an active store with the link <strong>/store/{slug}</strong>. Please check the spelling or contact the owner.</p>
+          <h2>Demo Store Not Found 🔍</h2>
+          <p>We couldn't find a demo store matching the link <strong>/demo-store/{slug}</strong>.</p>
           <Link href="/" className="back-link">Return to Home</Link>
         </div>
         <style jsx>{`
@@ -88,20 +80,15 @@ export default function CartPage({ params }) {
             max-width: 480px;
             text-align: center;
             color: #fff;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
           }
           .glass-card h2 {
             font-size: 24px;
-            font-weight: 800;
             margin-bottom: 16px;
-            background: linear-gradient(135deg, #f43f5e, #fb7185);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: #f43f5e;
           }
           .glass-card p {
             font-size: 14px;
             color: #94a3b8;
-            line-height: 1.6;
             margin-bottom: 28px;
           }
           .back-link {
@@ -112,13 +99,6 @@ export default function CartPage({ params }) {
             border-radius: 12px;
             font-weight: 700;
             text-decoration: none;
-            transition: all 0.2s;
-            border: none;
-            cursor: pointer;
-          }
-          .back-link:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(225, 29, 72, 0.3);
           }
         `}</style>
       </div>
@@ -126,17 +106,18 @@ export default function CartPage({ params }) {
   }
 
   const cart = (globalCart || []).filter(
-    item => item.store_id === storeDetails?.id || item.store_slug === slug
+    item => item.store_slug === slug
   );
   const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-  const shipping = cart.length > 0 ? 0 : 0; // Free shipping for now
+  const shipping = cart.length > 0 ? 0 : 0; 
   const tax = cartTotal * 0.08;
   const total = cartTotal + tax + shipping;
 
   return (
     <div className="cart-page">
-      <Navbar storeName={storeDetails?.name} logoUrl={storeDetails?.logo_url || storeDetails?.logo} />
+      <DemoStoreBanner />
+      <Navbar storeName={storeDetails.name} />
 
       <main className="container main-content">
         <h1 className="page-title">Shopping Cart</h1>
@@ -146,7 +127,7 @@ export default function CartPage({ params }) {
             <div className="empty-icon">🛍️</div>
             <h2>Your cart is empty</h2>
             <p>Looks like you haven&apos;t added anything yet. Explore our collection to find something you love.</p>
-            <Link href={`/store/${slug}`} className="shop-btn">Continue Shopping</Link>
+            <Link href={`/demo-store/${slug}`} className="shop-btn">Continue Shopping</Link>
           </div>
         ) : (
           <div className="cart-layout">
@@ -187,7 +168,7 @@ export default function CartPage({ params }) {
                   </div>
 
                   <div className="item-action">
-                    <Link href={`/store/${slug}/checkout`} className="row-buy-btn">
+                    <Link href={`/demo-store/${slug}/checkout`} className="row-buy-btn">
                       Buy
                     </Link>
                   </div>
@@ -196,7 +177,7 @@ export default function CartPage({ params }) {
 
               <div className="cart-footer">
                 <button className="clear-btn" onClick={clearCart}>Clear Cart</button>
-                <Link href={`/store/${slug}`} className="back-link">← Continue Shopping</Link>
+                <Link href={`/demo-store/${slug}`} className="back-link">← Continue Shopping</Link>
               </div>
             </div>
 
@@ -221,7 +202,7 @@ export default function CartPage({ params }) {
                 <span>${total.toLocaleString()}</span>
               </div>
 
-              <Link href={`/store/${slug}/checkout`} className="checkout-btn" style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}>
+              <Link href={`/demo-store/${slug}/checkout`} className="checkout-btn" style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}>
                 Proceed to Checkout
               </Link>
 
@@ -234,7 +215,7 @@ export default function CartPage({ params }) {
         )}
       </main>
 
-      <Footer storeName={storeDetails?.name} />
+      <Footer storeName={storeDetails.name} />
 
       <style jsx>{`
         .cart-page {
@@ -371,7 +352,7 @@ export default function CartPage({ params }) {
           color: var(--accent);
         }
 
-         .quantity-selector {
+        .quantity-selector {
           display: flex;
           align-items: center;
           background: var(--bg-main);
@@ -389,6 +370,9 @@ export default function CartPage({ params }) {
           align-items: center;
           justify-content: center;
           font-weight: 700;
+          border: none;
+          background: transparent;
+          cursor: pointer;
         }
 
         .quantity-selector span {
@@ -419,6 +403,8 @@ export default function CartPage({ params }) {
           text-decoration: none !important;
           transition: var(--transition-fast);
           box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+          border: none;
+          cursor: pointer;
         }
 
         .row-buy-btn:hover {
@@ -441,6 +427,8 @@ export default function CartPage({ params }) {
           opacity: 0;
           transition: var(--transition-fast);
           box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          border: none;
+          cursor: pointer;
         }
 
         .item-image:hover .remove-btn {
@@ -464,6 +452,9 @@ export default function CartPage({ params }) {
           font-size: 14px;
           font-weight: 600;
           color: #ef4444;
+          border: none;
+          background: transparent;
+          cursor: pointer;
         }
 
         .back-link {
@@ -597,7 +588,7 @@ export default function CartPage({ params }) {
             padding: 10px 20px;
           }
           .remove-btn {
-            opacity: 1; /* Always show on mobile since there is no hover */
+            opacity: 1;
           }
           .cart-footer {
             padding: 20px 15px;

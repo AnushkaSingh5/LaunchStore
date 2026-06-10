@@ -54,10 +54,12 @@ export function AuthProvider({ children }) {
       attempt++;
       try {
         const activeToken = token || supabaseAnonKey;
-        const response = await fetchWithTimeout(`${supabaseUrl}/rest/v1/profiles?id=eq.${userId}&select=*`, {
+        const response = await fetchWithTimeout(`${supabaseUrl}/rest/v1/profiles?id=eq.${userId}&select=*&_t=${Date.now()}`, {
           headers: {
             'apikey': supabaseAnonKey,
-            'Authorization': `Bearer ${activeToken}`
+            'Authorization': `Bearer ${activeToken}`,
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache'
           }
         }, 10000);
 
@@ -135,10 +137,12 @@ export function AuthProvider({ children }) {
       attempt++;
       try {
         const activeToken = token || supabaseAnonKey;
-        const response = await fetchWithTimeout(`${supabaseUrl}/rest/v1/stores?creator_id=eq.${userId}&select=*`, {
+        const response = await fetchWithTimeout(`${supabaseUrl}/rest/v1/stores?creator_id=eq.${userId}&select=*&_t=${Date.now()}`, {
           headers: {
             'apikey': supabaseAnonKey,
-            'Authorization': `Bearer ${activeToken}`
+            'Authorization': `Bearer ${activeToken}`,
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache'
           }
         }, 10000);
 

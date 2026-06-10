@@ -90,3 +90,44 @@ CREATE POLICY "Allow user updates of own profile" ON public.profiles FOR UPDATE 
 CREATE POLICY "Allow user inserts of own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
 CREATE POLICY "Allow admin updates of all profiles" ON public.profiles FOR UPDATE USING (public.is_admin());
 CREATE POLICY "Allow admin deletes of all profiles" ON public.profiles FOR DELETE USING (public.is_admin());
+
+-- =======================================================
+-- 4. STORAGE BUCKETS & POLICIES SETUP
+-- =======================================================
+
+-- Create storage buckets if they don't exist
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('store-assets', 'store-assets', true)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('product-images', 'product-images', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- Clean up any existing policies to avoid conflicts
+DO $$
+BEGIN
+  DROP POLICY IF EXISTS "Allow public read of store assets" ON storage.objects;
+  DROP POLICY IF EXISTS "Allow public read of product images" ON storage.objects;
+  DROP POLICY IF EXISTS "Allow auth upload of store assets" ON storage.objects;
+  DROP POLICY IF EXISTS "Allow auth upload of product images" ON storage.objects;
+  DROP POLICY IF EXISTS "Allow auth update of store assets" ON storage.objects;
+  DROP POLICY IF EXISTS "Allow auth delete of store assets" ON storage.objects;
+  DROP POLICY IF EXISTS "Allow auth update of product images" ON storage.objects;
+  DROP POLICY IF EXISTS "Allow auth delete of product images" ON storage.objects;
+END
+$$;
+
+-- Allow public access to read objects in product-images and store-assets
+CREATE POLICY "Allow public read of store assets" ON storage.objects FOR SELECT USING (bucket_id = 'store-assets');
+CREATE POLICY "Allow public read of product images" ON storage.objects FOR SELECT USING (bucket_id = 'product-images');
+
+-- Allow authenticated users to upload objects to product-images and store-assets
+CREATE POLICY "Allow auth upload of store assets" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = 'store-assets');
+CREATE POLICY "Allow auth upload of product images" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = 'product-images');
+
+-- Allow authenticated users to update/delete their own objects
+CREATE POLICY "Allow auth update of store assets" ON storage.objects FOR UPDATE TO authenticated USING (bucket_id = 'store-assets');
+CREATE POLICY "Allow auth delete of store assets" ON storage.objects FOR DELETE TO authenticated USING (bucket_id = 'store-assets');
+CREATE POLICY "Allow auth update of product images" ON storage.objects FOR UPDATE TO authenticated USING (bucket_id = 'product-images');
+CREATE POLICY "Allow auth delete of product images" ON storage.objects FOR DELETE TO authenticated USING (bucket_id = 'product-images');

@@ -2,22 +2,16 @@
 
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useStore } from '@/context/StoreContext';
-import { useCustomerAuth } from '@/context/CustomerAuthContext';
-import { storeService } from '@/services/storeService';
-import { checkoutService } from '@/services/checkoutService';
-import { customerService } from '@/services/customerService';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import DemoStoreBanner from '@/components/DemoStoreBanner';
+import { demoStores } from '@/lib/demoData';
 
-export default function StoreCheckoutPage({ params }) {
-  const { slug } = use(params);
-  const { cart: globalCart, setCart, clearCart } = useStore();
-  const { customer: user, customerProfile: profile, loading: authLoading } = useCustomerAuth();
-  const router = useRouter();
-
+export default function CheckoutClientPage({ slug }) {
+  const { cart: globalCart, clearCart } = useStore();
   const [storeDetails, setStoreDetails] = useState(null);
+  const [loadingDetails, setLoadingDetails] = useState(true);
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -27,125 +21,56 @@ export default function StoreCheckoutPage({ params }) {
     state: '',
     pincode: ''
   });
-
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [placedOrder, setPlacedOrder] = useState(null);
-  const [loadingDetails, setLoadingDetails] = useState(true);
+  const [mockOrderId, setMockOrderId] = useState('');
 
-  const [savedAddresses, setSavedAddresses] = useState([]);
-  const [selectedAddressId, setSelectedAddressId] = useState('');
-
-  // Authenticate customer role and pre-fill details
   useEffect(() => {
-    if (authLoading) return;
+    setLoadingDetails(true);
+    const data = demoStores[slug];
+    setStoreDetails(data);
+    setLoadingDetails(false);
+  }, [slug]);
 
-    if (!user) {
-      router.push(`/customer/login?redirect=/store/${slug}/checkout`);
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setForm(prev => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: null }));
+    }
+  };
+
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setErrors({});
+
+    const newErrors = {};
+    if (!form.name.trim()) newErrors.name = 'Name is required';
+    if (!form.email.trim()) newErrors.email = 'Email is required';
+    if (!form.phone.trim()) newErrors.phone = 'Phone is required';
+    if (!form.address.trim()) newErrors.address = 'Address is required';
+    if (!form.city.trim()) newErrors.city = 'City is required';
+    if (!form.state.trim()) newErrors.state = 'State is required';
+    if (!form.pincode.trim()) newErrors.pincode = 'Pincode is required';
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      setLoading(false);
       return;
     }
 
-    setForm(prev => ({
-      ...prev,
-      name: prev.name || profile?.full_name || '',
-      email: prev.email || user.email || '',
-      phone: prev.phone || profile?.phone || '',
-    }));
-
-    const loadCustomerAddresses = async () => {
-      try {
-        if (profile?.id) {
-          const addresses = await customerService.getAddresses(profile.id);
-          setSavedAddresses(addresses);
-          
-          const defaultAddr = addresses.find(a => a.is_default);
-          if (defaultAddr) {
-            setSelectedAddressId(defaultAddr.id);
-            setForm(prev => ({
-              ...prev,
-              name: defaultAddr.full_name || prev.name || '',
-              phone: defaultAddr.phone || prev.phone || '',
-              address: defaultAddr.address_line_1 + (defaultAddr.address_line_2 ? `, ${defaultAddr.address_line_2}` : ''),
-              city: defaultAddr.city,
-              state: defaultAddr.state,
-              pincode: defaultAddr.postal_code,
-            }));
-          } else if (addresses.length > 0) {
-            setSelectedAddressId(addresses[0].id);
-            setForm(prev => ({
-              ...prev,
-              name: addresses[0].full_name || prev.name || '',
-              phone: addresses[0].phone || prev.phone || '',
-              address: addresses[0].address_line_1 + (addresses[0].address_line_2 ? `, ${addresses[0].address_line_2}` : ''),
-              city: addresses[0].city,
-              state: addresses[0].state,
-              pincode: addresses[0].postal_code,
-            }));
-          } else {
-            setSelectedAddressId('new');
-          }
-        }
-      } catch (err) {
-        console.warn('⚠️ [Checkout] Failed to load shipping addresses:', err);
-      }
-    };
-
-    loadCustomerAddresses();
-  }, [user, profile, authLoading, slug, router]);
-
-  const handleSelectSavedAddress = (addr) => {
-    setSelectedAddressId(addr.id);
-    setForm(prev => ({
-      ...prev,
-      name: addr.full_name || '',
-      phone: addr.phone || '',
-      address: addr.address_line_1 + (addr.address_line_2 ? `, ${addr.address_line_2}` : ''),
-      city: addr.city || '',
-      state: addr.state || '',
-      pincode: addr.postal_code || '',
-    }));
-    setErrors({});
+    setTimeout(() => {
+      const orderId = Math.random().toString(36).substring(2, 10).toUpperCase();
+      setMockOrderId(orderId);
+      clearCart();
+      setSuccess(true);
+      setLoading(false);
+    }, 1500);
   };
 
-  const handleSelectNewAddress = () => {
-    setSelectedAddressId('new');
-    setForm(prev => ({
-      ...prev,
-      name: profile?.full_name || '',
-      phone: profile?.phone || '',
-      address: '',
-      city: '',
-      state: '',
-      pincode: '',
-    }));
-    setErrors({});
-  };
-
-  useEffect(() => {
-    const fetchStore = async () => {
-      setLoadingDetails(true);
-      try {
-        const data = await storeService.getStoreBySlug(slug);
-        setStoreDetails(data);
-      } catch (e) {
-        console.warn('⚠️ [Checkout] Failed to fetch store details in checkout:', e);
-      } finally {
-        setLoadingDetails(false);
-      }
-    };
-    fetchStore();
-  }, [slug]);
-
-  console.log('🛒 [Checkout] Render state:', { 
-    slug, 
-    loadingDetails, 
-    authLoading, 
-    userEmail: user?.email, 
-    profileName: profile?.full_name 
-  });
-
-  if (loadingDetails || authLoading) {
+  if (loadingDetails) {
     return (
       <div className="store-loading-screen">
         <div className="spinner"></div>
@@ -182,8 +107,8 @@ export default function StoreCheckoutPage({ params }) {
     return (
       <div className="store-not-found-screen">
         <div className="glass-card">
-          <h2>Store Not Found 🔍</h2>
-          <p>We couldn't find an active store with the link <strong>/store/{slug}</strong>. Please check the spelling or contact the owner.</p>
+          <h2>Demo Store Not Found 🔍</h2>
+          <p>We couldn't find a demo store matching the link <strong>/demo-store/{slug}</strong>.</p>
           <Link href="/" className="back-link">Return to Home</Link>
         </div>
         <style jsx>{`
@@ -205,20 +130,15 @@ export default function StoreCheckoutPage({ params }) {
             max-width: 480px;
             text-align: center;
             color: #fff;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
           }
           .glass-card h2 {
             font-size: 24px;
-            font-weight: 800;
             margin-bottom: 16px;
-            background: linear-gradient(135deg, #f43f5e, #fb7185);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: #f43f5e;
           }
           .glass-card p {
             font-size: 14px;
             color: #94a3b8;
-            line-height: 1.6;
             margin-bottom: 28px;
           }
           .back-link {
@@ -229,138 +149,53 @@ export default function StoreCheckoutPage({ params }) {
             border-radius: 12px;
             font-weight: 700;
             text-decoration: none;
-            transition: all 0.2s;
-            border: none;
-            cursor: pointer;
-          }
-          .back-link:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(225, 29, 72, 0.3);
           }
         `}</style>
       </div>
     );
   }
 
-  // Filter global cart items to only purchase items belonging to this specific store
   const cart = (globalCart || []).filter(
-    item => item.store_id === storeDetails?.id || item.store_slug === slug
+    item => item.store_slug === slug
   );
   
   const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const tax = cartTotal * 0.08;
-  const total = cartTotal + tax; // Free shipping
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: null }));
-    }
-    if (['name', 'phone', 'address', 'city', 'state', 'pincode'].includes(name) && selectedAddressId !== 'new') {
-      setSelectedAddressId('new');
-    }
-  };
-
-  const handleFormSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setErrors({});
-
-    const validation = checkoutService.validateCheckoutForm(form);
-    if (!validation.isValid) {
-      setErrors(validation.errors);
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const response = await checkoutService.processCheckout(cart, {
-        ...form,
-        id: profile?.id
-      });
-      if (response.success && response.orders?.length > 0) {
-        setPlacedOrder(response.orders[0]);
-
-        // Auto-save the address to the customer's address book if it is new
-        try {
-          if (profile?.id) {
-            const existingAddresses = await customerService.getAddresses(profile.id);
-            const addressExists = existingAddresses.some(addr => 
-              (addr.full_name || '').toLowerCase().trim() === (form.name || '').toLowerCase().trim() &&
-              (addr.phone || '').trim() === (form.phone || '').trim() &&
-              (addr.address_line_1 || '').toLowerCase().trim() === (form.address || '').toLowerCase().trim() &&
-              (addr.city || '').toLowerCase().trim() === (form.city || '').toLowerCase().trim() &&
-              (addr.state || '').toLowerCase().trim() === (form.state || '').toLowerCase().trim() &&
-              (addr.postal_code || '').trim() === (form.pincode || '').trim()
-            );
-
-            if (!addressExists) {
-              console.log('🔄 [Checkout]: Address not in address book. Auto-saving to database...');
-              await customerService.createAddress({
-                customer_id: profile.id,
-                name: existingAddresses.length === 0 ? 'Home (Default)' : `Saved Address ${existingAddresses.length + 1}`,
-                full_name: form.name,
-                phone: form.phone,
-                address_line_1: form.address,
-                address_line_2: null,
-                city: form.city,
-                state: form.state,
-                country: 'US',
-                postal_code: form.pincode,
-                is_default: existingAddresses.length === 0
-              });
-              console.log('✅ [Checkout]: Auto-save complete.');
-            }
-          }
-        } catch (addrErr) {
-          console.warn('⚠️ [Checkout] Failed to auto-save address to address book:', addrErr?.message || addrErr);
-        }
-
-        await clearCart();
-        setSuccess(true);
-      }
-    } catch (err) {
-      console.warn('⚠️ [Checkout] Failed to process checkout:', err);
-      alert('Failed to place order: ' + err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const total = cartTotal + tax;
 
   if (success) {
     return (
       <div className="checkout-page">
-        <Navbar storeName={storeDetails?.name} logoUrl={storeDetails?.logo_url || storeDetails?.logo} />
+        <DemoStoreBanner />
+        <Navbar storeName={storeDetails.name} />
         <main className="container success-container fade-in">
           <div className="success-card dashboard-card">
             <div className="success-icon">🎉</div>
             <h1>Purchase Completed!</h1>
-            <p className="success-lead">Thank you for ordering from <strong>{storeDetails?.name}</strong>! Your order is registered and is being processed by the creator.</p>
+            <p className="success-lead">Thank you for ordering from <strong>{storeDetails.name}</strong>! Since this is a demo store, your order is simulated and no real checkout took place.</p>
             
             <div className="orders-summary-box">
               <h3>Order Details</h3>
               <div className="order-summary-item">
                 <span className="order-num">Order ID</span>
-                <span className="order-val">#{String(placedOrder?.id || '').slice(0, 8).toUpperCase()}</span>
+                <span className="order-val">#{mockOrderId}</span>
               </div>
               <div className="order-summary-item">
                 <span className="order-num">Total Charged</span>
-                <span className="order-val">${parseFloat(placedOrder?.total_amount || 0).toFixed(2)}</span>
+                <span className="order-val">${total.toFixed(2)}</span>
               </div>
               <div className="order-summary-item">
                 <span className="order-num">Status</span>
-                <span className="order-status-badge">Pending</span>
+                <span className="order-status-badge">Completed (Demo)</span>
               </div>
             </div>
 
             <div className="action-row">
-              <Link href={`/store/${slug}`} className="primary-btn">Back to Shop</Link>
-              <Link href={slug ? `/customer/orders?store=${slug}` : "/customer/orders"} className="secondary-btn">Track Order History</Link>
+              <Link href={`/demo-store/${slug}`} className="primary-btn">Back to Shop</Link>
             </div>
           </div>
         </main>
-        <Footer storeName={storeDetails?.name} />
+        <Footer storeName={storeDetails.name} />
         <style jsx>{`
           .success-container {
             padding-top: 140px;
@@ -428,8 +263,8 @@ export default function StoreCheckoutPage({ params }) {
           }
           .order-status-badge {
             font-size: 11px;
-            background: #fffbeb;
-            color: #b45309;
+            background: #dcfce7;
+            color: #166534;
             padding: 2px 8px;
             border-radius: 99px;
             font-weight: 700;
@@ -440,7 +275,7 @@ export default function StoreCheckoutPage({ params }) {
             margin-top: 10px;
             width: 100%;
           }
-          .primary-btn, .secondary-btn {
+          .primary-btn {
             flex: 1;
             padding: 14px;
             border-radius: 12px;
@@ -449,22 +284,11 @@ export default function StoreCheckoutPage({ params }) {
             transition: var(--transition-smooth);
             text-decoration: none;
             font-size: 14px;
-          }
-          .primary-btn {
             background: var(--primary);
             color: var(--white);
           }
           .primary-btn:hover {
             background: var(--accent);
-            transform: translateY(-1px);
-          }
-          .secondary-btn {
-            background: var(--bg-main);
-            color: var(--text-main);
-            border: 1px solid var(--secondary);
-          }
-          .secondary-btn:hover {
-            background: var(--secondary);
             transform: translateY(-1px);
           }
         `}</style>
@@ -474,7 +298,8 @@ export default function StoreCheckoutPage({ params }) {
 
   return (
     <div className="checkout-page">
-      <Navbar storeName={storeDetails?.name} logoUrl={storeDetails?.logo_url || storeDetails?.logo} />
+      <DemoStoreBanner />
+      <Navbar storeName={storeDetails.name} />
 
       <main className="container main-content">
         <h1 className="page-title">Secure Checkout</h1>
@@ -484,47 +309,12 @@ export default function StoreCheckoutPage({ params }) {
             <div className="empty-icon">🛍️</div>
             <h2>Nothing to checkout</h2>
             <p>Your cart is currently empty for this store. Explore our collection to add items before proceeding.</p>
-            <Link href={`/store/${slug}`} className="shop-btn">Continue Shopping</Link>
+            <Link href={`/demo-store/${slug}`} className="shop-btn">Continue Shopping</Link>
           </div>
         ) : (
           <div className="checkout-layout">
             <form onSubmit={handleFormSubmit} className="checkout-form dashboard-card fade-in">
-              <h2 className="section-title">Shipping & Contact Details</h2>
-
-              {savedAddresses.length > 0 && (
-                <div className="address-selector">
-                  <h3 className="address-selector-title">Select Shipping Address</h3>
-                  <div className="address-cards-grid">
-                    {savedAddresses.map(addr => (
-                      <div 
-                        key={addr.id} 
-                        className={`address-card-option ${selectedAddressId === addr.id ? 'selected' : ''}`}
-                        onClick={() => handleSelectSavedAddress(addr)}
-                      >
-                        <div className="address-card-header">
-                          <span className="address-badge">{addr.name || 'Address'}</span>
-                          {addr.is_default && <span className="default-indicator-dot"></span>}
-                        </div>
-                        <div className="address-card-body">
-                          <h4>{addr.full_name}</h4>
-                          <p>{addr.address_line_1}</p>
-                          {addr.address_line_2 && <p>{addr.address_line_2}</p>}
-                          <p>{addr.city}, {addr.state} - {addr.postal_code}</p>
-                          <p className="addr-phone-text">📞 {addr.phone}</p>
-                        </div>
-                      </div>
-                    ))}
-                    
-                    <div 
-                      className={`address-card-option new-address-card-option ${selectedAddressId === 'new' ? 'selected' : ''}`}
-                      onClick={handleSelectNewAddress}
-                    >
-                      <span className="plus-icon">+</span>
-                      <p>Use New Address</p>
-                    </div>
-                  </div>
-                </div>
-              )}
+              <h2 className="section-title">Shipping & Contact Details (Demo Mode)</h2>
               
               <div className="form-group">
                 <label>Full Name</label>
@@ -665,123 +455,9 @@ export default function StoreCheckoutPage({ params }) {
         )}
       </main>
 
-      <Footer storeName={storeDetails?.name} />
+      <Footer storeName={storeDetails.name} />
 
       <style jsx>{`
-        /* Address Selector Styling */
-        .address-selector {
-          margin-bottom: 20px;
-          border-bottom: 1px solid var(--secondary);
-          padding-bottom: 24px;
-        }
-        .address-selector-title {
-          font-size: 14px;
-          font-weight: 700;
-          color: var(--text-main);
-          margin-bottom: 14px;
-          letter-spacing: -0.2px;
-        }
-        .address-cards-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-          gap: 16px;
-        }
-        .address-card-option {
-          border: 1.5px solid var(--secondary);
-          border-radius: 14px;
-          padding: 16px;
-          background: var(--bg-main);
-          cursor: pointer;
-          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-          position: relative;
-          min-height: 140px;
-        }
-        .address-card-option:hover {
-          border-color: var(--text-sub);
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
-        }
-        .address-card-option.selected {
-          border-color: var(--primary);
-          background: var(--white);
-          box-shadow: 0 0 0 1px var(--primary), 0 8px 20px rgba(139, 92, 246, 0.05);
-        }
-        .address-card-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-        .address-badge {
-          font-size: 10px;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          background: rgba(0, 0, 0, 0.04);
-          color: var(--text-sub);
-          padding: 3px 8px;
-          border-radius: 6px;
-        }
-        .address-card-option.selected .address-badge {
-          background: var(--primary);
-          color: var(--white);
-        }
-        .default-indicator-dot {
-          width: 8px;
-          height: 8px;
-          background: #10b981;
-          border-radius: 50%;
-          box-shadow: 0 0 8px #10b981;
-        }
-        .address-card-body {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-        }
-        .address-card-body h4 {
-          font-size: 14px;
-          font-weight: 700;
-          color: var(--text-main);
-          margin-bottom: 2px;
-        }
-        .address-card-body p {
-          font-size: 12px;
-          color: var(--text-sub);
-          line-height: 1.4;
-          margin: 0;
-        }
-        .addr-phone-text {
-          margin-top: 4px !important;
-          font-weight: 600;
-          color: var(--text-main) !important;
-        }
-        .new-address-card-option {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          text-align: center;
-          border: 1.5px dashed var(--text-sub);
-          background: transparent;
-        }
-        .new-address-card-option .plus-icon {
-          font-size: 24px;
-          color: var(--text-sub);
-          font-weight: 300;
-        }
-        .new-address-card-option p {
-          font-size: 13px;
-          font-weight: 700;
-          color: var(--text-main);
-          margin: 0;
-        }
-        .new-address-card-option.selected {
-          border-style: solid;
-          background: var(--white);
-        }
-
         .checkout-page {
           background: var(--bg-main);
           min-height: 100vh;
@@ -832,22 +508,53 @@ export default function StoreCheckoutPage({ params }) {
         }
         .checkout-layout {
           display: grid;
-          grid-template-columns: 1fr 400px;
+          grid-template-columns: 1fr 380px;
           gap: 40px;
           align-items: start;
         }
         .checkout-form {
           background: var(--white);
           padding: 40px;
-          display: flex;
-          flex-direction: column;
-          gap: 24px;
         }
         .section-title {
-          font-size: 22px;
-          font-weight: 800;
-          margin-bottom: 10px;
+          font-size: 20px;
+          font-weight: 700;
+          margin-bottom: 24px;
           color: var(--text-main);
+        }
+        .form-group {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          margin-bottom: 20px;
+        }
+        .form-group label {
+          font-size: 13px;
+          font-weight: 600;
+          color: var(--text-main);
+        }
+        .form-group input, .form-group textarea {
+          width: 100%;
+          padding: 12px 16px;
+          border-radius: 12px;
+          border: 1px solid rgba(0, 0, 0, 0.08);
+          font-size: 14px;
+          color: var(--text-main);
+          outline: none;
+          background: var(--white);
+          transition: all 0.2s;
+        }
+        .form-group input:focus, .form-group textarea:focus {
+          border-color: var(--accent);
+          box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.08);
+        }
+        .form-group .error-input {
+          border-color: #ef4444;
+        }
+        .error-text {
+          font-size: 11px;
+          color: #ef4444;
+          font-weight: 600;
         }
         .form-row {
           display: grid;
@@ -858,56 +565,25 @@ export default function StoreCheckoutPage({ params }) {
           display: grid;
           grid-template-columns: 1fr 1fr 120px;
           gap: 20px;
-        }
-        .form-group {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-        }
-        .form-group label {
-          font-size: 13px;
-          font-weight: 700;
-          color: var(--text-main);
-        }
-        .form-group input, .form-group textarea {
-          padding: 12px 16px;
-          border-radius: 12px;
-          border: 1px solid var(--secondary);
-          background: var(--bg-main);
-          font-size: 14px;
-          outline: none;
-          transition: var(--transition-smooth);
-        }
-        .form-group input:focus, .form-group textarea:focus {
-          border-color: var(--primary);
-          background: var(--white);
-          box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.08);
-        }
-        .error-input {
-          border-color: #ef4444 !important;
-          background: #fef2f2 !important;
-        }
-        .error-text {
-          font-size: 11px;
-          color: #ef4444;
-          font-weight: 600;
+          margin-bottom: 10px;
         }
         .submit-order-btn {
-          margin-top: 10px;
+          width: 100%;
           padding: 16px;
           background: var(--primary);
           color: var(--white);
-          border-radius: 12px;
           font-weight: 700;
-          font-size: 15px;
+          font-size: 16px;
+          border-radius: 12px;
           transition: var(--transition-smooth);
+          margin-top: 10px;
           border: none;
           cursor: pointer;
         }
         .submit-order-btn:hover {
           background: var(--accent);
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+          transform: translateY(-2px);
+          box-shadow: var(--shadow-md);
         }
         .submit-order-btn:disabled {
           opacity: 0.7;
@@ -916,19 +592,21 @@ export default function StoreCheckoutPage({ params }) {
         .summary-section {
           background: var(--white);
           padding: 40px;
+          position: sticky;
+          top: 120px;
         }
         .summary-title {
-          font-size: 22px;
-          font-weight: 800;
+          font-size: 24px;
+          font-weight: 700;
           margin-bottom: 24px;
-          border-bottom: 1px solid var(--secondary);
-          padding-bottom: 12px;
         }
         .cart-items-preview {
           display: flex;
           flex-direction: column;
-          gap: 20px;
-          margin-bottom: 30px;
+          gap: 16px;
+          margin-bottom: 24px;
+          max-height: 360px;
+          overflow-y: auto;
         }
         .preview-item {
           display: flex;
@@ -938,7 +616,7 @@ export default function StoreCheckoutPage({ params }) {
         .preview-item img {
           width: 60px;
           height: 60px;
-          border-radius: 8px;
+          border-radius: 10px;
           object-fit: cover;
           background: var(--bg-main);
         }
@@ -948,7 +626,7 @@ export default function StoreCheckoutPage({ params }) {
         .preview-details h3 {
           font-size: 14px;
           font-weight: 700;
-          margin-bottom: 4px;
+          margin-bottom: 2px;
         }
         .qty-price {
           font-size: 12px;
@@ -959,32 +637,51 @@ export default function StoreCheckoutPage({ params }) {
           font-size: 14px;
         }
         .summary-totals {
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
           border-top: 1px solid var(--secondary);
-          padding-top: 24px;
+          padding-top: 20px;
         }
         .sum-row {
           display: flex;
           justify-content: space-between;
+          margin-bottom: 12px;
           font-size: 14px;
           color: var(--text-sub);
         }
         .sum-row.grand-total {
-          border-top: 1.5px dashed var(--secondary);
-          padding-top: 16px;
-          font-size: 20px;
-          font-weight: 800;
+          margin-top: 20px;
+          padding-top: 20px;
+          border-top: 2px solid var(--secondary);
+          font-size: 18px;
+          font-weight: 700;
           color: var(--text-main);
         }
-        .free {
-          color: #10b981;
+        .sum-row .free {
+          color: #22c55e;
           font-weight: 700;
         }
-        @media (max-width: 991px) {
+        @media (max-width: 1200px) {
           .checkout-layout {
             grid-template-columns: 1fr;
+          }
+          .summary-section {
+            position: static;
+          }
+        }
+        @media (max-width: 768px) {
+          .page-title {
+            font-size: 28px;
+            margin-bottom: 24px;
+            padding: 0 10px;
+          }
+          .checkout-form {
+            padding: 24px 15px;
+          }
+          .form-row, .form-grid {
+            grid-template-columns: 1fr;
+            gap: 0;
+          }
+          .summary-section {
+            padding: 24px 15px;
           }
         }
       `}</style>

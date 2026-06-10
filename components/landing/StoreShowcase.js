@@ -76,7 +76,7 @@ export default function StoreShowcase() {
                 <p className={styles.storeDesc}>{store.desc}</p>
                 <div className={styles.footerRow}>
                   <Link 
-                    href={`/store/${store.slug}`} 
+                    href={`/demo-store/${store.slug}`} 
                     className={styles.demoLink}
                     style={{ '--accent-hover': store.accentColor }}
                   >

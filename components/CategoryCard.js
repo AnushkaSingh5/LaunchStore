@@ -12,7 +12,7 @@ export default function CategoryCard({ category }) {
       onClick={() => setSelectedCategory(category.title)}
     >
       <div className="tile-image">
-        <img src={category.image} alt={category.title} />
+        <img src={category.image} alt={category.title} onError={(e) => { e.target.style.display = 'none'; }} />
         <div className="tile-overlay"></div>
       </div>
       <div className="tile-content">
@@ -50,6 +50,7 @@ export default function CategoryCard({ category }) {
           width: 100%;
           height: 100%;
           z-index: 0;
+          background: linear-gradient(135deg, #3b82f6 0%, #1e3a8a 100%);
         }
 
         .tile-image img {

@@ -104,11 +104,13 @@ export const storeService = {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-      const response = await fetch(`${supabaseUrl}/rest/v1/stores?slug=eq.${slug}&select=*`, {
+      const response = await fetch(`${supabaseUrl}/rest/v1/stores?slug=eq.${slug}&select=*&_t=${Date.now()}`, {
         headers: {
           'apikey': supabaseAnonKey,
           'Authorization': `Bearer ${supabaseAnonKey}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
         }
       });
       if (!response.ok) {
@@ -220,7 +222,8 @@ export const storeService = {
    */
   uploadLogo: async (file, storeId) => {
     if (!supabaseClient) throw new Error('Supabase client is not initialized.');
-    const filePath = `stores/${storeId}/logo`;
+    const fileExt = file.name.split('.').pop() || 'png';
+    const filePath = `stores/${storeId}/logo-${Date.now()}.${fileExt}`;
 
     let attempt = 0;
     const maxAttempts = 3;
@@ -236,13 +239,16 @@ export const storeService = {
         if (error) {
           console.warn(`[LaunchCart - Storage] Logo upload attempt ${attempt} error:`, error.message || error);
           
-          if (error.message?.includes('Bucket not found') || error.message?.includes('bucket_not_found') || error.status === 400 || error.statusCode === 400) {
-            console.warn('[LaunchCart - Storage] Bucket "store-assets" not found or bad request. Attempting to ensure bucket exists...');
-            try {
-              await supabaseClient.storage.createBucket('store-assets', { public: true });
-            } catch (createErr) {
-              console.error('[LaunchCart - Storage] Failed to create bucket:', createErr.message);
-            }
+          const isBucketErr = error.message?.includes('Bucket not found') || 
+                              error.message?.includes('bucket_not_found') || 
+                              error.status === 400 || 
+                              error.statusCode === 400 ||
+                              error.status === 403 ||
+                              error.statusCode === 403;
+          
+          if (isBucketErr) {
+            console.warn('[LaunchCart - Storage] Storage bucket error/not found. Falling back to compressed Base64 data URL immediately.');
+            return await compressImage(file, 200, 200);
           }
           
           if (attempt < maxAttempts) {
@@ -259,6 +265,19 @@ export const storeService = {
         return publicUrl;
       } catch (err) {
         console.warn(`[LaunchCart - Storage] Exception on logo upload attempt ${attempt}:`, err.message || err);
+        
+        const isBucketErr = err.message?.includes('Bucket not found') || 
+                            err.message?.includes('bucket_not_found') || 
+                            err.status === 400 || 
+                            err.statusCode === 400 ||
+                            err.status === 403 ||
+                            err.statusCode === 403;
+        
+        if (isBucketErr) {
+          console.warn('[LaunchCart - Storage] Storage bucket exception. Falling back to compressed Base64 data URL immediately.');
+          return await compressImage(file, 200, 200);
+        }
+
         if (attempt < maxAttempts) {
           await new Promise(resolve => setTimeout(resolve, 1500));
           continue;
@@ -274,7 +293,8 @@ export const storeService = {
    */
   uploadBanner: async (file, storeId) => {
     if (!supabaseClient) throw new Error('Supabase client is not initialized.');
-    const filePath = `stores/${storeId}/banner`;
+    const fileExt = file.name.split('.').pop() || 'png';
+    const filePath = `stores/${storeId}/banner-${Date.now()}.${fileExt}`;
 
     let attempt = 0;
     const maxAttempts = 3;
@@ -290,13 +310,16 @@ export const storeService = {
         if (error) {
           console.warn(`[LaunchCart - Storage] Banner upload attempt ${attempt} error:`, error.message || error);
           
-          if (error.message?.includes('Bucket not found') || error.message?.includes('bucket_not_found') || error.status === 400 || error.statusCode === 400) {
-            console.warn('[LaunchCart - Storage] Bucket "store-assets" not found or bad request. Attempting to ensure bucket exists...');
-            try {
-              await supabaseClient.storage.createBucket('store-assets', { public: true });
-            } catch (createErr) {
-              console.error('[LaunchCart - Storage] Failed to create bucket:', createErr.message);
-            }
+          const isBucketErr = error.message?.includes('Bucket not found') || 
+                              error.message?.includes('bucket_not_found') || 
+                              error.status === 400 || 
+                              error.statusCode === 400 ||
+                              error.status === 403 ||
+                              error.statusCode === 403;
+          
+          if (isBucketErr) {
+            console.warn('[LaunchCart - Storage] Storage bucket error/not found. Falling back to compressed Base64 data URL immediately.');
+            return await compressImage(file, 800, 500);
           }
           
           if (attempt < maxAttempts) {
@@ -313,6 +336,19 @@ export const storeService = {
         return publicUrl;
       } catch (err) {
         console.warn(`[LaunchCart - Storage] Exception on banner upload attempt ${attempt}:`, err.message || err);
+        
+        const isBucketErr = err.message?.includes('Bucket not found') || 
+                            err.message?.includes('bucket_not_found') || 
+                            err.status === 400 || 
+                            err.statusCode === 400 ||
+                            err.status === 403 ||
+                            err.statusCode === 403;
+        
+        if (isBucketErr) {
+          console.warn('[LaunchCart - Storage] Storage bucket exception. Falling back to compressed Base64 data URL immediately.');
+          return await compressImage(file, 800, 500);
+        }
+
         if (attempt < maxAttempts) {
           await new Promise(resolve => setTimeout(resolve, 1500));
           continue;
