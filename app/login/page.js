@@ -25,6 +25,7 @@ export default function LoginPage() {
       if (result && result.error) throw result.error;
       
       console.log('✅ [LaunchCart - LoginPage]: SignIn response success, redirecting...');
+      console.log("Navigation triggered");
       router.push('/dashboard');
     } catch (err) {
       console.error('❌ [LaunchCart - LoginPage]: Login error:', err);
@@ -100,6 +101,7 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="name@example.com"
               required
+              autoComplete="off"
             />
           </div>
 
@@ -115,6 +117,7 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               required
+              autoComplete="new-password"
             />
           </div>
 

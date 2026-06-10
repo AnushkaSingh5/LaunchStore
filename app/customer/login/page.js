@@ -25,6 +25,7 @@ function LoginContent() {
       const res = await login(email, password);
       if (res && res.success) {
         console.log('✅ [LaunchCart - CustomerLogin]: Login success. Redirecting to:', redirect);
+        console.log("Navigation triggered");
         router.push(redirect);
       }
     } catch (err) {
@@ -67,6 +68,7 @@ function LoginContent() {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
             required
+            autoComplete="off"
           />
         </div>
 
@@ -79,6 +81,7 @@ function LoginContent() {
             onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••"
             required
+            autoComplete="new-password"
           />
         </div>
 

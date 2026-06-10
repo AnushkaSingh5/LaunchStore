@@ -48,6 +48,7 @@ export default function CustomerPortalLayout({ children }) {
   useEffect(() => {
     if (isPublicRoute) return;
     if (!loading && (!customer || !customerProfile)) {
+      console.log("Navigation triggered");
       router.push('/customer/login?redirect=' + encodeURIComponent(pathname));
     }
   }, [customer, customerProfile, loading, router, pathname]);

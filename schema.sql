@@ -204,6 +204,7 @@ CREATE OR REPLACE TRIGGER on_auth_user_created
 -- Users can view their own profile; Admins can view all
 CREATE POLICY "Allow public read of profiles" ON public.profiles FOR SELECT USING (true);
 CREATE POLICY "Allow user updates of own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Allow user inserts of own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
 
 -- A.2 CUSTOMERS POLICIES
 CREATE POLICY "Allow customer read of own profile" ON public.customers FOR SELECT USING (auth.uid() = auth_id);

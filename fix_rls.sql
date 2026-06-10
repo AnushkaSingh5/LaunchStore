@@ -69,3 +69,24 @@ CREATE POLICY "Allow creator deletes of own products" ON public.products FOR DEL
 CREATE POLICY "Allow admin inserts of products" ON public.products FOR INSERT WITH CHECK (public.is_admin());
 CREATE POLICY "Allow admin updates of all products" ON public.products FOR UPDATE USING (public.is_admin());
 CREATE POLICY "Allow admin deletes of all products" ON public.products FOR DELETE USING (public.is_admin());
+
+-- =======================================================
+-- 3. PROFILES RLS POLICIES
+-- =======================================================
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+
+DO $$
+BEGIN
+  DROP POLICY IF EXISTS "Allow public read of profiles" ON public.profiles;
+  DROP POLICY IF EXISTS "Allow user updates of own profile" ON public.profiles;
+  DROP POLICY IF EXISTS "Allow user inserts of own profile" ON public.profiles;
+  DROP POLICY IF EXISTS "Allow admin updates of all profiles" ON public.profiles;
+  DROP POLICY IF EXISTS "Allow admin deletes of all profiles" ON public.profiles;
+END
+$$;
+
+CREATE POLICY "Allow public read of profiles" ON public.profiles FOR SELECT USING (true);
+CREATE POLICY "Allow user updates of own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Allow user inserts of own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
+CREATE POLICY "Allow admin updates of all profiles" ON public.profiles FOR UPDATE USING (public.is_admin());
+CREATE POLICY "Allow admin deletes of all profiles" ON public.profiles FOR DELETE USING (public.is_admin());

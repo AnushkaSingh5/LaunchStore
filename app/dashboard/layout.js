@@ -9,7 +9,7 @@ import { DashboardProvider } from '@/context/DashboardContext';
 import PageLoader from '@/components/PageLoader';
 
 function CreatorDashboardGuard({ children }) {
-  const { user, role, store, profile, loading, refreshStore, authTimeoutError, retryAuth, signOut } = useAuth();
+  const { user, role, store, storeLoading, profile, loading, refreshStore, authTimeoutError, retryAuth, signOut } = useAuth();
   const router = useRouter();
   
   // Store Setup Form State
@@ -24,6 +24,7 @@ function CreatorDashboardGuard({ children }) {
 
   useEffect(() => {
     if (!loading && !user) {
+      console.log("Navigation triggered");
       router.push('/login');
     }
   }, [user, loading, router]);
@@ -68,29 +69,74 @@ function CreatorDashboardGuard({ children }) {
     }
     setCreating(true);
     try {
+      console.log('🔄 [LaunchCart - Onboarding]: Checking for existing store first...');
+      const existingStore = await storeService.getStoreByCreator(user.id);
+      
+      let newStore = existingStore;
+      if (existingStore) {
+        console.log('✅ [LaunchCart - Onboarding]: Existing store found. ID:', existingStore.id);
+        console.log('🔄 [LaunchCart - Onboarding]: Updating existing store settings...');
+        newStore = await storeService.updateStore(existingStore.id, {
+          name: storeName,
+          slug,
+          description,
+        });
+        console.log('✅ [LaunchCart - Onboarding]: Existing store updated. ID:', newStore.id);
+      } else {
+        console.log('🔄 [LaunchCart - Onboarding]: Creating store database record first...');
+        newStore = await storeService.createStore({
+          creator_id: user.id,
+          name: storeName,
+          slug,
+          description,
+          logo_url: '',
+          banner_url: '',
+          status: 'pending', // Starts as pending for store approval system!
+        });
+        console.log('✅ [LaunchCart - Onboarding]: Store record created successfully. ID:', newStore.id);
+      }
+
+      // Verify store.id and store.slug exist before upload begins
+      if (!newStore || !newStore.id || !newStore.slug) {
+        throw new Error('Store record could not be resolved or created successfully.');
+      }
+
+      console.log("Store ID:", newStore.id);
+
       let logoUrl = '';
       let bannerUrl = '';
 
       if (logoFile) {
-        logoUrl = await storeService.uploadLogo(logoFile, user.id);
+        console.log("Uploading logo...");
+        console.log('🔄 [LaunchCart - Onboarding]: Uploading logo for store ID:', newStore.id);
+        logoUrl = await storeService.uploadLogo(logoFile, newStore.id);
+        console.log('✅ [LaunchCart - Onboarding]: Logo uploaded. URL:', logoUrl);
       }
       if (bannerFile) {
-        bannerUrl = await storeService.uploadBanner(bannerFile, user.id);
+        console.log("Uploading banner...");
+        console.log('🔄 [LaunchCart - Onboarding]: Uploading banner for store ID:', newStore.id);
+        bannerUrl = await storeService.uploadBanner(bannerFile, newStore.id);
+        console.log('✅ [LaunchCart - Onboarding]: Banner uploaded. URL:', bannerUrl);
       }
 
-      await storeService.createStore({
-        creator_id: user.id,
-        name: storeName,
-        slug,
-        description,
-        logo_url: logoUrl,
-        banner_url: bannerUrl,
-        status: 'pending', // Starts as pending for store approval system!
-      });
+      if (logoUrl || bannerUrl) {
+        console.log('🔄 [LaunchCart - Onboarding]: Saving logo/banner URLs to store...');
+        await storeService.updateStore(newStore.id, {
+          logo_url: logoUrl || undefined,
+          banner_url: bannerUrl || undefined,
+        });
+        console.log('✅ [LaunchCart - Onboarding]: Store URLs updated.');
+      }
 
-      await refreshStore();
+      console.log('🔄 [LaunchCart - Onboarding]: Refreshing store state...');
+      await refreshStore(user.id);
+      console.log('✅ [LaunchCart - Onboarding]: Store state refreshed.');
+
+      console.log('🔄 [LaunchCart - Onboarding]: Redirecting to dashboard...');
+      console.log("Navigation triggered");
+      router.push('/dashboard');
     } catch (err) {
-      console.error(err);
+      console.error('❌ [LaunchCart - Onboarding]: Failed to create store:', err);
       alert('Error creating store: ' + err.message);
     } finally {
       setCreating(false);
@@ -99,6 +145,7 @@ function CreatorDashboardGuard({ children }) {
 
   const handleSignOut = async () => {
     await signOut();
+    console.log("Navigation triggered");
     router.push('/login');
   };
 
@@ -210,11 +257,11 @@ function CreatorDashboardGuard({ children }) {
     );
   }
 
-  if (loading && !profile) {
+  if ((loading || storeLoading) && !profile) {
     return <PageLoader />;
   }
 
-  if (loading) {
+  if (loading || storeLoading) {
     return (
       <DashboardLayout>
         <div className="dashboard-skeleton">

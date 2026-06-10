@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { supabaseClient } from '@/lib/supabase';
 import { customerService } from '@/services/customerService';
 import { useLoading } from '@/components/TopLoader';
@@ -12,20 +12,58 @@ export function CustomerAuthProvider({ children }) {
   const [customer, setCustomer] = useState(null);
   const [customerProfile, setCustomerProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  
+  const initialSessionLoadedRef = useRef(false);
 
   // Fetch customer profile from public.customers using auth UID
   const fetchCustomerProfile = async (authId) => {
-    try {
-      const profileData = await customerService.getCustomerProfileByAuthId(authId);
-      if (profileData) {
-        setCustomerProfile(profileData);
-        return profileData;
+    console.log("Profile fetch started");
+    let attempt = 0;
+    const maxAttempts = 3;
+    while (attempt < maxAttempts) {
+      attempt++;
+      try {
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('TimeoutError')), 10000)
+        );
+        const profileData = await Promise.race([
+          customerService.getCustomerProfileByAuthId(authId),
+          timeoutPromise
+        ]);
+        if (profileData) {
+          setCustomerProfile(profileData);
+          console.log("Profile fetch complete");
+          return profileData;
+        }
+        console.log("Profile fetch complete");
+        return null;
+      } catch (err) {
+        console.warn(`❌ [LaunchCart - CustomerAuth]: Error fetching customer profile (Attempt ${attempt}/${maxAttempts}):`, err.message || err);
+        
+        const isJwtFuture = err.message?.includes('JWT issued at future') || 
+                             err.message?.includes('issued at future') ||
+                             err.status === 401 ||
+                             String(err.code) === 'PGRST301';
+
+        const isTimeout = err.message === 'TimeoutError';
+
+        // Do not retry on pure timeout to keep startup responsive
+        if (isTimeout) {
+          console.log("Profile fetch complete");
+          return null;
+        }
+
+        if (isJwtFuture && attempt < maxAttempts) {
+          console.log(`[LaunchCart - CustomerAuth] Retrying profile fetch in 1.5s due to authorization error...`);
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          continue;
+        }
+        console.log("Profile fetch complete");
+        return null;
       }
-      return null;
-    } catch (err) {
-      console.error('❌ [LaunchCart - CustomerAuth]: Error fetching customer profile:', err.message);
-      return null;
     }
+    console.log("Profile fetch complete");
+    return null;
   };
 
   useEffect(() => {
@@ -39,31 +77,37 @@ export function CustomerAuthProvider({ children }) {
     const loadSession = async () => {
       startLoading();
       try {
-        console.log('🔄 [LaunchCart - CustomerAuth]: loadSession start');
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        console.log('🔄 [LaunchCart - CustomerAuth]: getSession done. Session:', session ? 'Yes' : 'No');
+        console.log("Session restore started");
+        const getSessionTimeout = new Promise((resolve) => {
+          setTimeout(() => {
+            console.warn('⚠️ [LaunchCart - CustomerAuth]: Initial getSession check timed out after 10s.');
+            resolve({ data: { session: null } });
+          }, 10000);
+        });
+        const { data: { session } } = await Promise.race([
+          supabaseClient.auth.getSession(),
+          getSessionTimeout
+        ]);
+        console.log("Session restore complete");
+
         if (session && session.user && isSubscribed) {
-          console.log('🔄 [LaunchCart - CustomerAuth]: Fetching customer profile for auth ID:', session.user.id);
           const profileData = await fetchCustomerProfile(session.user.id);
-          console.log('🔄 [LaunchCart - CustomerAuth]: fetchCustomerProfile done. profileData:', profileData);
           if (profileData) {
             setCustomer(session.user);
           } else {
-            console.log('🔄 [LaunchCart - CustomerAuth]: User has no customer profile. Set as logged out.');
             setCustomer(null);
             setCustomerProfile(null);
           }
         } else {
-          console.log('🔄 [LaunchCart - CustomerAuth]: No session or not subscribed.');
           setCustomer(null);
           setCustomerProfile(null);
         }
       } catch (err) {
-        console.error('❌ [LaunchCart - CustomerAuth]: Session load failed:', err);
+        console.warn('❌ [LaunchCart - CustomerAuth]: Session load failed:', err);
       } finally {
         if (isSubscribed) {
+          initialSessionLoadedRef.current = true;
           setLoading(false);
-          console.log('✅ [LaunchCart - CustomerAuth]: loadSession finish, loading set to false');
         }
         completeLoading();
       }
@@ -81,31 +125,31 @@ export function CustomerAuthProvider({ children }) {
         return; // Handled by loadSession
       }
 
+      if (!initialSessionLoadedRef.current) {
+        console.log(`🔔 [LaunchCart - CustomerAuth]: onAuthStateChange event "${event}" ignored during initial session load.`);
+        return;
+      }
+
       setLoading(true);
       startLoading();
       try {
         if (session && session.user) {
-          console.log('🔄 [LaunchCart - CustomerAuth]: Fetching customer profile on state change for auth ID:', session.user.id);
           const profileData = await fetchCustomerProfile(session.user.id);
-          console.log('🔄 [LaunchCart - CustomerAuth]: Fetch complete on state change. profileData:', profileData);
           if (profileData) {
             setCustomer(session.user);
           } else {
-            console.log('🔄 [LaunchCart - CustomerAuth]: User has no customer profile on state change. Set as logged out.');
             setCustomer(null);
             setCustomerProfile(null);
           }
         } else {
-          console.log('🔄 [LaunchCart - CustomerAuth]: No session on state change.');
           setCustomer(null);
           setCustomerProfile(null);
         }
       } catch (err) {
-        console.error('❌ [LaunchCart - CustomerAuth]: Auth state change error:', err);
+        console.warn('❌ [LaunchCart - CustomerAuth]: Auth state change error:', err);
       } finally {
         if (isSubscribed) {
           setLoading(false);
-          console.log('✅ [LaunchCart - CustomerAuth]: auth state change finish, loading set to false');
         }
         completeLoading();
       }
@@ -171,7 +215,6 @@ export function CustomerAuthProvider({ children }) {
       let user = data.user;
       let session = data.session;
 
-      // If signUp doesn't automatically create session (e.g. email verification configuration)
       if (!session) {
         const loginRes = await supabaseClient.auth.signInWithPassword({ email, password });
         if (loginRes.error) throw loginRes.error;
@@ -212,7 +255,7 @@ export function CustomerAuthProvider({ children }) {
       setCustomerProfile(profileData);
       return { success: true };
     } catch (err) {
-      console.error('❌ [LaunchCart - CustomerAuth]: Signup failed:', err);
+      console.warn('❌ [LaunchCart - CustomerAuth]: Signup failed:', err);
       throw err;
     } finally {
       setLoading(false);
@@ -225,14 +268,18 @@ export function CustomerAuthProvider({ children }) {
     setLoading(true);
     startLoading();
     try {
-      await supabaseClient.auth.signOut();
+      supabaseClient.auth.signOut().catch(err => {
+        console.warn('⚠️ [LaunchCart - CustomerAuth]: Background Supabase signOut warning:', err.message || err);
+      });
+      console.log('✅ [LaunchCart - CustomerAuth]: Supabase signOut triggered in background.');
+    } catch (err) {
+      console.warn('❌ [LaunchCart - CustomerAuth]: Logout failed:', err);
+    } finally {
       setCustomer(null);
       setCustomerProfile(null);
-    } catch (err) {
-      console.error('❌ [LaunchCart - CustomerAuth]: Logout failed:', err);
-    } finally {
       setLoading(false);
       completeLoading();
+      console.log('✅ [LaunchCart - CustomerAuth]: Local customer states cleared.');
     }
   };
 

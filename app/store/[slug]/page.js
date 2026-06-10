@@ -29,9 +29,10 @@ export default function StorePage({ params }) {
       setLoading(true);
       startLoading();
       try {
+        console.log('Slug:', slug);
         console.log(`[LaunchCart - StorePage] Calling storeService.getStoreBySlug("${slug}")...`);
         const storeData = await storeService.getStoreBySlug(slug);
-        console.log(`[LaunchCart - StorePage] storeService.getStoreBySlug returned:`, storeData);
+        console.log('Store:', storeData);
         setStoreDetails(storeData);
         
         if (storeData && storeData.id) {
@@ -40,7 +41,7 @@ export default function StorePage({ params }) {
             productService.getProductsByStore(storeData.id, false),
             categoryService.getCategoriesByStore(storeData.id)
           ]);
-          console.log(`[LaunchCart - StorePage] Products fetched count: ${prodData?.length}, Categories fetched count: ${catData?.length}`);
+          console.log('Products:', prodData);
           
           const safeCatData = catData || [];
           const mappedProducts = (prodData || []).map(p => {

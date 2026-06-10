@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { supabaseClient } from '@/lib/supabase';
 import { useLoading } from '@/components/TopLoader';
 
@@ -14,9 +14,12 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null);
   const [store, setStore] = useState(null);
   const [loading, setLoading] = useState(() => !supabaseClient ? false : true);
+  const [storeLoading, setStoreLoading] = useState(false);
   const [authTimeoutError, setAuthTimeoutError] = useState(false);
+  
+  const initialSessionLoadedRef = useRef(false);
 
-  const fetchWithTimeout = async (url, options = {}, timeoutMs = 15000) => {
+  const fetchWithTimeout = async (url, options = {}, timeoutMs = 10000) => {
     const controller = new AbortController();
     const id = setTimeout(() => controller.abort(), timeoutMs);
     try {
@@ -29,146 +32,157 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const fetchRoleAndDetails = async (userId, email, token = null) => {
+  const fetchProfileOnly = async (userId, email, token = null) => {
     const startTime = performance.now();
-    console.log(`🔄 [LaunchCart - Auth]: Fetching profile & store details for: "${email}"`);
+    console.log("Profile fetch started");
+    setAuthTimeoutError(false);
 
+    if (email?.toLowerCase().includes('admin')) {
+      setRole('admin');
+      setProfile({ id: userId, email, role: 'admin', name: 'Admin User' });
+      console.log("Profile fetch complete");
+      return;
+    }
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    
+    let attempt = 0;
+    const maxAttempts = 3;
+    
+    while (attempt < maxAttempts) {
+      attempt++;
+      try {
+        const activeToken = token || supabaseAnonKey;
+        const response = await fetchWithTimeout(`${supabaseUrl}/rest/v1/profiles?id=eq.${userId}&select=*`, {
+          headers: {
+            'apikey': supabaseAnonKey,
+            'Authorization': `Bearer ${activeToken}`
+          }
+        }, 10000);
+
+        if (response.ok) {
+          const profs = await response.json();
+          if (profs && profs.length > 0) {
+            setProfile(profs[0]);
+            setRole(profs[0].role);
+            console.log("Profile fetch complete");
+            return;
+          }
+        } else {
+          console.warn(`❌ [LaunchCart - Auth]: Profile HTTP Error ${response.status}:`, response.statusText);
+          if (response.status === 401 && attempt < maxAttempts) {
+            console.warn(`⚠️ [LaunchCart - Auth]: Auth unauthorized error (possibly JWT clock skew). Retrying in 1.5s (Attempt ${attempt + 1}/${maxAttempts})...`);
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            continue;
+          }
+        }
+      } catch (err) {
+        console.warn(`❌ [LaunchCart - Auth]: Profile fetch error/timeout (Attempt ${attempt}/${maxAttempts}):`, err.message || err);
+        if (err.name === 'AbortError' || err.message?.includes('Timeout') || err.message?.includes('abort')) {
+          setAuthTimeoutError(true);
+        }
+        if (attempt < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          continue;
+        }
+      }
+    }
+
+    // Fallback if profile not found or fetch failed
+    console.warn('⚠️ [LaunchCart - Auth]: No profile matched or fetch failed. Attempting manual insert fallback...');
     try {
-      if (email?.toLowerCase().includes('admin')) {
-        setRole('admin');
-        setProfile({ id: userId, email, role: 'admin', name: 'Admin User' });
+      const { data: newProf, error: insertErr } = await supabaseClient
+        .from('profiles')
+        .insert([{
+          id: userId,
+          name: email.split('@')[0],
+          email: email,
+          role: 'creator'
+        }])
+        .select()
+        .single();
+
+      if (insertErr) throw insertErr;
+
+      if (newProf) {
+        console.log('✅ [LaunchCart - Auth]: Manually created missing profile:', newProf);
+        setProfile(newProf);
+        setRole(newProf.role);
+        console.log("Profile fetch complete");
         return;
       }
-
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-      
-      const activeToken = token || supabaseAnonKey;
-
-      // Fetch profile and store in parallel with 15s timeout protection
-      const [profResResult, storeResResult] = await Promise.allSettled([
-        fetchWithTimeout(`${supabaseUrl}/rest/v1/profiles?id=eq.${userId}&select=*`, {
-          headers: {
-            'apikey': supabaseAnonKey,
-            'Authorization': `Bearer ${activeToken}`
-          }
-        }, 15000),
-        fetchWithTimeout(`${supabaseUrl}/rest/v1/stores?creator_id=eq.${userId}&select=*`, {
-          headers: {
-            'apikey': supabaseAnonKey,
-            'Authorization': `Bearer ${activeToken}`
-          }
-        }, 15000)
-      ]);
-
-      // Handle profile response
-      let prof = null;
-      if (profResResult.status === 'fulfilled') {
-        const res = profResResult.value;
-        if (res.ok) {
-          try {
-            const profs = await res.json();
-            if (profs && profs.length > 0) prof = profs[0];
-          } catch (jsonErr) {
-            console.error('❌ [LaunchCart - Auth]: Profile JSON parsing failed:', jsonErr);
-          }
-        } else {
-          console.error(`❌ [LaunchCart - Auth]: Profile HTTP Error ${res.status}:`, res.statusText);
-        }
-      } else {
-        const error = profResResult.reason;
-        if (error.name === 'AbortError') {
-          console.error('❌ [LaunchCart - Auth]: Profile request timed out (exceeded 15s limit). Network delay.');
-        } else {
-          console.error('❌ [LaunchCart - Auth]: Profile request network failure:', error.message);
-        }
-      }
-
-      if (prof) {
-        setProfile(prof);
-        setRole(prof.role);
-      } else {
-        console.warn('⚠️ [LaunchCart - Auth]: No profile matched database. Using fallback creator role.');
-        setProfile({ id: userId, email, role: 'creator', name: 'New Merchant' });
-        setRole('creator');
-      }
-
-      // Handle store response
-      let str = null;
-      if (storeResResult.status === 'fulfilled') {
-        const res = storeResResult.value;
-        if (res.ok) {
-          try {
-            const strs = await res.json();
-            if (strs && strs.length > 0) str = strs[0];
-          } catch (jsonErr) {
-            console.error('❌ [LaunchCart - Auth]: Store JSON parsing failed:', jsonErr);
-          }
-        } else {
-          console.error(`❌ [LaunchCart - Auth]: Store HTTP Error ${res.status}:`, res.statusText);
-        }
-      } else {
-        const error = storeResResult.reason;
-        if (error.name === 'AbortError') {
-          console.error('❌ [LaunchCart - Auth]: Store request timed out (exceeded 15s limit). Network delay.');
-        } else {
-          console.error('❌ [LaunchCart - Auth]: Store request network failure:', error.message);
-        }
-      }
-
-      setStore(str);
-      const duration = (performance.now() - startTime).toFixed(1);
-      console.log(`✅ [LaunchCart - Auth]: Fetched details successfully in ${duration}ms.`);
-    } catch (e) {
-      console.error('❌ [LaunchCart - Auth]: Exception in fetchRoleAndDetails:', e);
+    } catch (err) {
+      console.warn('⚠️ [LaunchCart - Auth]: Manual profile insert failed:', err.message);
+      setProfile({ id: userId, email, role: 'creator', name: 'New Merchant' });
       setRole('creator');
     }
+    console.log("Profile fetch complete");
+  };
+
+  const fetchStoreOnly = async (userId, token = null) => {
+    const startTime = performance.now();
+    console.log("Store fetch started");
+    setStoreLoading(true);
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    let attempt = 0;
+    const maxAttempts = 3;
+
+    while (attempt < maxAttempts) {
+      attempt++;
+      try {
+        const activeToken = token || supabaseAnonKey;
+        const response = await fetchWithTimeout(`${supabaseUrl}/rest/v1/stores?creator_id=eq.${userId}&select=*`, {
+          headers: {
+            'apikey': supabaseAnonKey,
+            'Authorization': `Bearer ${activeToken}`
+          }
+        }, 10000);
+
+        if (response.ok) {
+          const strs = await response.json();
+          setStore(strs && strs.length > 0 ? strs[0] : null);
+          console.log("Store fetch complete");
+          setStoreLoading(false);
+          return;
+        } else {
+          console.warn(`❌ [LaunchCart - Auth]: Store HTTP Error ${response.status}:`, response.statusText);
+          if (response.status === 401 && attempt < maxAttempts) {
+            console.warn(`⚠️ [LaunchCart - Auth]: Store fetch auth error (possibly JWT clock skew). Retrying in 1.5s...`);
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            continue;
+          }
+        }
+      } catch (err) {
+        console.warn(`❌ [LaunchCart - Auth]: Store fetch error/timeout (Attempt ${attempt}/${maxAttempts}):`, err.message || err);
+        if (attempt < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          continue;
+        }
+      }
+    }
+
+    setStore(null);
+    console.log("Store fetch complete");
+    setStoreLoading(false);
   };
 
   const refreshStore = async (userId) => {
-    if (!supabaseClient || !userId) return;
-    try {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-      const sessionData = await supabaseClient.auth.getSession();
-      const token = sessionData.data.session?.access_token || supabaseAnonKey;
-
-      const response = await fetchWithTimeout(`${supabaseUrl}/rest/v1/stores?creator_id=eq.${userId}&select=*`, {
-        headers: {
-          'apikey': supabaseAnonKey,
-          'Authorization': `Bearer ${token}`
-        }
-      }, 15000);
-      if (response.ok) {
-        const data = await response.json();
-        setStore(data && data.length > 0 ? data[0] : null);
-      }
-    } catch (e) {
-      console.error('Error refreshing store:', e);
+    const activeUserId = userId || user?.id;
+    if (!supabaseClient || !activeUserId) {
+      console.warn('⚠️ [LaunchCart - Auth]: Cannot refreshStore. No active user ID available.');
+      return;
     }
+    await fetchStoreOnly(activeUserId);
   };
 
   const refreshProfile = async (userId) => {
-    if (!supabaseClient || !userId) return;
-    try {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-      const sessionData = await supabaseClient.auth.getSession();
-      const token = sessionData.data.session?.access_token || supabaseAnonKey;
-
-      const response = await fetchWithTimeout(`${supabaseUrl}/rest/v1/profiles?id=eq.${userId}&select=*`, {
-        headers: {
-          'apikey': supabaseAnonKey,
-          'Authorization': `Bearer ${token}`
-        }
-      }, 15000);
-      if (response.ok) {
-        const data = await response.json();
-        setProfile(data && data.length > 0 ? data[0] : null);
-      }
-    } catch (e) {
-      console.error('Error refreshing profile:', e);
-    }
+    const activeUserId = userId || user?.id;
+    if (!supabaseClient || !activeUserId) return;
+    await fetchProfileOnly(activeUserId, user?.email);
   };
 
   const retryAuth = async () => {
@@ -191,10 +205,13 @@ export function AuthProvider({ children }) {
       const currentUser = activeSession?.user ?? null;
       setUser(currentUser);
       if (currentUser) {
-        await fetchRoleAndDetails(currentUser.id, currentUser.email, activeSession?.access_token);
+        await fetchProfileOnly(currentUser.id, currentUser.email, activeSession?.access_token);
+        fetchStoreOnly(currentUser.id, activeSession?.access_token).catch(e => {
+          console.warn("Background store fetch failed:", e);
+        });
       }
     } catch (error) {
-      console.error('[LaunchCart - Auth]: Error in retryAuth:', error);
+      console.warn('[LaunchCart - Auth]: Error in retryAuth:', error);
     } finally {
       setLoading(false);
       completeLoading();
@@ -208,7 +225,6 @@ export function AuthProvider({ children }) {
     }
 
     let isSubscribed = true;
-    console.log('🔄 [LaunchCart - Auth]: session restore start');
 
     // 1. Fetch initial session asynchronously with safety timeout
     const loadInitialSession = async () => {
@@ -221,29 +237,33 @@ export function AuthProvider({ children }) {
       });
 
       try {
+        console.log("Session restore started");
         const { data: { session: activeSession } } = await Promise.race([
           supabaseClient.auth.getSession(),
           getSessionTimeout
         ]);
+        console.log("Session restore complete");
 
         if (!isSubscribed) return;
-
-        console.log('🔄 [LaunchCart - Auth]: Initial session check complete. Active Session:', activeSession ? 'Yes' : 'No');
 
         if (activeSession) {
           setSession(activeSession);
           setUser(activeSession.user);
-          await fetchRoleAndDetails(activeSession.user.id, activeSession.user.email, activeSession.access_token);
+          await fetchProfileOnly(activeSession.user.id, activeSession.user.email, activeSession.access_token);
+          // Fetch store details in background (non-blocking)
+          fetchStoreOnly(activeSession.user.id, activeSession.access_token).catch(e => {
+            console.warn("Background store fetch failed:", e);
+          });
         } else {
           setSession(null);
           setUser(null);
         }
       } catch (err) {
-        console.error('❌ [LaunchCart - Auth]: Error during initial session restore:', err);
+        console.warn('❌ [LaunchCart - Auth]: Error during initial session restore:', err);
       } finally {
         if (isSubscribed) {
+          initialSessionLoadedRef.current = true;
           setLoading(false);
-          console.log('✅ [LaunchCart - Auth]: session restore finish');
         }
         completeLoading();
       }
@@ -251,12 +271,17 @@ export function AuthProvider({ children }) {
 
     loadInitialSession();
 
-    // 2. Set up auth state change listener synchronously for reliable cleanup
+    // 2. Set up auth state change listener
     const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(async (event, activeSession) => {
       console.log(`🔔 [LaunchCart - Auth]: auth state changes: event="${event}"`);
 
       if (event === 'INITIAL_SESSION') {
         // Skip since loadInitialSession is handling it
+        return;
+      }
+
+      if (!initialSessionLoadedRef.current) {
+        console.log(`🔔 [LaunchCart - Auth]: onAuthStateChange event "${event}" ignored during initial session load.`);
         return;
       }
 
@@ -270,14 +295,17 @@ export function AuthProvider({ children }) {
         setUser(currentUser);
 
         if (currentUser) {
-          await fetchRoleAndDetails(currentUser.id, currentUser.email, activeSession?.access_token);
+          await fetchProfileOnly(currentUser.id, currentUser.email, activeSession?.access_token);
+          fetchStoreOnly(currentUser.id, activeSession?.access_token).catch(e => {
+            console.warn("Background store fetch failed:", e);
+          });
         } else {
           setProfile(null);
           setStore(null);
           setRole('creator');
         }
       } catch (err) {
-        console.error('❌ [LaunchCart - Auth]: Error handling onAuthStateChange:', err);
+        console.warn('❌ [LaunchCart - Auth]: Error handling onAuthStateChange:', err);
       } finally {
         if (isSubscribed) {
           setLoading(false);
@@ -308,7 +336,7 @@ export function AuthProvider({ children }) {
       console.log('✅ [LaunchCart - Auth]: signUp complete.');
       return res;
     } catch (err) {
-      console.error('❌ [LaunchCart - Auth]: signUp error:', err);
+      console.warn('❌ [LaunchCart - Auth]: signUp error:', err);
       throw err;
     } finally {
       completeLoading();
@@ -327,7 +355,7 @@ export function AuthProvider({ children }) {
       console.log('✅ [LaunchCart - Auth]: signIn success.');
       return res;
     } catch (err) {
-      console.error('❌ [LaunchCart - Auth]: signIn error:', err);
+      console.warn('❌ [LaunchCart - Auth]: signIn error:', err);
       throw err;
     } finally {
       completeLoading();
@@ -340,18 +368,21 @@ export function AuthProvider({ children }) {
     setLoading(true);
     startLoading();
     try {
-      await supabaseClient.auth.signOut();
+      supabaseClient.auth.signOut().catch(err => {
+        console.warn('⚠️ [LaunchCart - Auth]: Background Supabase signOut warning:', err.message || err);
+      });
+      console.log('✅ [LaunchCart - Auth]: Supabase signOut triggered in background.');
+    } catch (err) {
+      console.warn('❌ [LaunchCart - Auth]: Error during Supabase signOut:', err);
+    } finally {
       setUser(null);
       setSession(null);
       setProfile(null);
       setStore(null);
       setRole('creator');
-      console.log('✅ [LaunchCart - Auth]: Logout complete. Cleared all local state.');
-    } catch (err) {
-      console.error('❌ [LaunchCart - Auth]: Error during signOut:', err);
-    } finally {
       setLoading(false);
       completeLoading();
+      console.log('✅ [LaunchCart - Auth]: Logout complete. Cleared all local state.');
     }
   };
 
@@ -360,6 +391,7 @@ export function AuthProvider({ children }) {
     session,
     role,
     loading,
+    storeLoading,
     authTimeoutError,
     retryAuth,
     signUp,

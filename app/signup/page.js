@@ -23,12 +23,44 @@ export default function SignupPage() {
     setSuccessMsg('');
     startLoading();
     try {
-      const { error } = await authService.signUp(email, password, storeName);
-      if (error) throw error;
-      setSuccessMsg('Account created successfully! Redirecting you to login...');
+      console.log('🔄 [LaunchCart - MerchantSignup]: Calling signUp service for email:', email);
+      
+      let result;
+      let session;
+      try {
+        result = await authService.signUp(email, password, storeName);
+        if (result && result.error) throw result.error;
+        session = result.data?.session;
+      } catch (signUpErr) {
+        const isAlreadyRegistered = signUpErr.message?.toLowerCase().includes('already registered') || 
+                                     signUpErr.message?.toLowerCase().includes('already exists') ||
+                                     signUpErr.status === 400;
+        if (isAlreadyRegistered) {
+          console.log('🔄 [LaunchCart - MerchantSignup]: User already registered, attempting auto-login instead...');
+          const loginRes = await authService.signIn(email, password);
+          if (loginRes.error) {
+            throw new Error('This account already exists, and login failed. Please verify your password.');
+          }
+          result = loginRes;
+          session = loginRes.data?.session;
+        } else {
+          throw signUpErr;
+        }
+      }
+
+      // Auto-authenticate: check if a session is returned, otherwise login explicitly
+      if (!session) {
+        console.log('🔄 [LaunchCart - MerchantSignup]: No session in signUp/signIn response, performing explicit signIn...');
+        const loginRes = await authService.signIn(email, password);
+        if (loginRes.error) throw loginRes.error;
+        session = loginRes.data?.session;
+      }
+
+      console.log('✅ [LaunchCart - MerchantSignup]: Signup and auto-login successful.');
+      setSuccessMsg('Account verified successfully! Entering dashboard...');
       setTimeout(() => {
-        router.push('/login');
-      }, 1500);
+        router.push('/dashboard');
+      }, 1000);
     } catch (err) {
       console.error(err);
       setErrorMsg(err.message || 'Error signing up. Please try again.');

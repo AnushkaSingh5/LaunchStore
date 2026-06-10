@@ -46,6 +46,7 @@ export default function StoreLoginPage({ params }) {
       if (result && result.error) throw result.error;
       
       console.log('✅ [LaunchCart - StoreLoginPage]: SignIn response success. Redirecting to:', redirect);
+      console.log("Navigation triggered");
       router.push(redirect);
     } catch (err) {
       console.error('❌ [LaunchCart - StoreLoginPage]: Login error:', err);
@@ -91,6 +92,7 @@ export default function StoreLoginPage({ params }) {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
               required
+              autoComplete="off"
             />
           </div>
 
@@ -105,6 +107,7 @@ export default function StoreLoginPage({ params }) {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               required
+              autoComplete="new-password"
             />
           </div>
 

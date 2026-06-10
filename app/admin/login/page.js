@@ -81,6 +81,7 @@ export default function AdminLoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="admin@launchcart.com"
               required
+              autoComplete="off"
             />
           </div>
 
@@ -93,6 +94,7 @@ export default function AdminLoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               required
+              autoComplete="new-password"
             />
           </div>
 

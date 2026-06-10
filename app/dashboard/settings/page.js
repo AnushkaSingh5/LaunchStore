@@ -80,14 +80,14 @@ export default function SettingsPage() {
 
   const handleFileUpload = async (field, e) => {
     const file = e.target.files[0];
-    if (!file || !user) return;
+    if (!file || !user || !store) return;
     setSaving(true);
     try {
       let url = '';
       if (field === 'logo') {
-        url = await storeService.uploadLogo(file, user.id);
+        url = await storeService.uploadLogo(file, store.id);
       } else if (field === 'banner') {
-        url = await storeService.uploadBanner(file, user.id);
+        url = await storeService.uploadBanner(file, store.id);
       }
       handleChange(field, url);
     } catch (err) {

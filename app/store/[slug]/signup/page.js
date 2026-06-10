@@ -49,12 +49,21 @@ export default function StoreSignupPage({ params }) {
       // SignUp options structure matches the schema setup to map role and metadata
       const result = await authService.signUp(email, password, name, 'customer', phone);
       if (result && result.error) throw result.error;
+
+      // Auto-authenticate: check if a session is returned, otherwise login explicitly
+      let session = result.data?.session;
+      if (!session) {
+        console.log('🔄 [LaunchCart - StoreSignupPage]: No session in signUp response, performing explicit signIn...');
+        const loginRes = await authService.signIn(email, password);
+        if (loginRes.error) throw loginRes.error;
+        session = loginRes.data?.session;
+      }
       
-      console.log('✅ [LaunchCart - StoreSignupPage]: SignUp response success.');
-      setSuccessMsg('Account created successfully! Redirecting to login...');
+      console.log('✅ [LaunchCart - StoreSignupPage]: Customer signup and auto-login successful.');
+      setSuccessMsg('Account created successfully! Redirecting...');
       setTimeout(() => {
-        router.push(`/store/${slug}/login?redirect=${encodeURIComponent(redirect)}`);
-      }, 1500);
+        router.push(redirect);
+      }, 1000);
     } catch (err) {
       console.error('❌ [LaunchCart - StoreSignupPage]: Signup error:', err);
       setErrorMsg(err.message || 'Failed to register account. Please try again.');
