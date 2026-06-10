@@ -91,7 +91,7 @@ function CreatorDashboardGuard({ children }) {
           description,
           logo_url: '',
           banner_url: '',
-          status: 'pending', // Starts as pending for store approval system!
+          status: 'approved', // Automatically approved in development/testing!
         });
         console.log('✅ [LaunchCart - Onboarding]: Store record created successfully. ID:', newStore.id);
       }
