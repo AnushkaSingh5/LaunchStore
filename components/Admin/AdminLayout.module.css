@@ -14,17 +14,18 @@
   border-right: 1px solid #f1f5f9;
   display: flex;
   flex-direction: column;
-  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   height: 100vh;
   position: fixed;
   top: 0;
   left: 0;
   z-index: 100;
   overflow: hidden;
+  transform: translateX(0);
 }
 
 .sidebar.collapsed {
-  width: 80px;
+  transform: translateX(-100%);
 }
 
 .logoSection {
@@ -326,7 +327,7 @@
 }
 
 .layoutCollapsed .main {
-  margin-left: 80px;
+  margin-left: 0;
 }
 
 .navbar {
@@ -497,5 +498,30 @@
   }
   .searchWrapper {
     display: none;
+  }
+}
+
+.mobileToggle {
+  display: none; /* Hidden by default on desktop when sidebar is open */
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 4px;
+  align-items: center;
+  justify-content: center;
+}
+
+.mobileToggle:hover {
+  color: #1e293b;
+}
+
+.layoutCollapsed .mobileToggle {
+  display: flex; /* Show in navbar when sidebar is collapsed */
+}
+
+@media (max-width: 1024px) {
+  .mobileToggle {
+    display: flex !important;
   }
 }
