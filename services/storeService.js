@@ -104,13 +104,14 @@ export const storeService = {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-      const response = await fetch(`${supabaseUrl}/rest/v1/stores?slug=eq.${slug}&select=*&_t=${Date.now()}`, {
+      const response = await fetch(`${supabaseUrl}/rest/v1/stores?slug=eq.${slug}&select=*`, {
         headers: {
           'apikey': supabaseAnonKey,
           'Authorization': `Bearer ${supabaseAnonKey}`,
           'Content-Type': 'application/json',
           'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache'
+          'Pragma': 'no-cache',
+          'X-Cache-Buster': Date.now().toString()
         }
       });
       if (!response.ok) {
