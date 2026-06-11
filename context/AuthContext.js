@@ -150,7 +150,9 @@ export function AuthProvider({ children }) {
 
         if (response.ok) {
           const strs = await response.json();
-          setStore(strs && strs.length > 0 ? strs[0] : null);
+          const storeRecord = strs && strs.length > 0 ? strs[0] : null;
+          console.log("Fetched Store:", storeRecord);
+          setStore(storeRecord);
           console.log("Store fetch complete");
           setStoreLoading(false);
           return;

@@ -214,6 +214,7 @@ export const storeService = {
         .select()
         .single();
       if (error) throw error;
+      console.log("Store Updated:", data);
       return data;
     });
   },
@@ -249,7 +250,9 @@ export const storeService = {
           
           if (isBucketErr) {
             console.warn('[LaunchCart - Storage] Storage bucket error/not found. Falling back to compressed Base64 data URL immediately.');
-            return await compressImage(file, 200, 200);
+            const base64Url = await compressImage(file, 200, 200);
+            console.log("Upload Success:", base64Url);
+            return base64Url;
           }
           
           if (attempt < maxAttempts) {
@@ -263,6 +266,7 @@ export const storeService = {
           .from('store-assets')
           .getPublicUrl(filePath);
           
+        console.log("Upload Success:", publicUrl);
         return publicUrl;
       } catch (err) {
         console.warn(`[LaunchCart - Storage] Exception on logo upload attempt ${attempt}:`, err.message || err);
@@ -276,7 +280,9 @@ export const storeService = {
         
         if (isBucketErr) {
           console.warn('[LaunchCart - Storage] Storage bucket exception. Falling back to compressed Base64 data URL immediately.');
-          return await compressImage(file, 200, 200);
+          const base64Url = await compressImage(file, 200, 200);
+          console.log("Upload Success:", base64Url);
+          return base64Url;
         }
 
         if (attempt < maxAttempts) {
@@ -284,7 +290,9 @@ export const storeService = {
           continue;
         }
         console.warn('[LaunchCart - Storage] Falling back to compressed Base64 data URL for logo.');
-        return await compressImage(file, 200, 200);
+        const base64Url = await compressImage(file, 200, 200);
+        console.log("Upload Success:", base64Url);
+        return base64Url;
       }
     }
   },
@@ -320,7 +328,9 @@ export const storeService = {
           
           if (isBucketErr) {
             console.warn('[LaunchCart - Storage] Storage bucket error/not found. Falling back to compressed Base64 data URL immediately.');
-            return await compressImage(file, 800, 500);
+            const base64Url = await compressImage(file, 800, 500);
+            console.log("Upload Success:", base64Url);
+            return base64Url;
           }
           
           if (attempt < maxAttempts) {
@@ -334,6 +344,7 @@ export const storeService = {
           .from('store-assets')
           .getPublicUrl(filePath);
           
+        console.log("Upload Success:", publicUrl);
         return publicUrl;
       } catch (err) {
         console.warn(`[LaunchCart - Storage] Exception on banner upload attempt ${attempt}:`, err.message || err);
@@ -347,7 +358,9 @@ export const storeService = {
         
         if (isBucketErr) {
           console.warn('[LaunchCart - Storage] Storage bucket exception. Falling back to compressed Base64 data URL immediately.');
-          return await compressImage(file, 800, 500);
+          const base64Url = await compressImage(file, 800, 500);
+          console.log("Upload Success:", base64Url);
+          return base64Url;
         }
 
         if (attempt < maxAttempts) {
@@ -355,7 +368,9 @@ export const storeService = {
           continue;
         }
         console.warn('[LaunchCart - Storage] Falling back to compressed Base64 data URL for banner.');
-        return await compressImage(file, 800, 500);
+        const base64Url = await compressImage(file, 800, 500);
+        console.log("Upload Success:", base64Url);
+        return base64Url;
       }
     }
   },

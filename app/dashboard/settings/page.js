@@ -9,7 +9,7 @@ import Toggle from '@/components/UI/Toggle';
 import Button from '@/components/UI/Button';
 
 export default function SettingsPage() {
-  const { store, user, refreshStore } = useAuth();
+  const { store, user, refreshStore, setStore } = useAuth();
   const [settings, setSettings] = useState({
     storeName: '',
     description: '',
@@ -86,10 +86,15 @@ export default function SettingsPage() {
       let url = '';
       if (field === 'logo') {
         url = await storeService.uploadLogo(file, store.id);
+        await storeService.updateStore(store.id, { logo_url: url });
+        setStore(prev => prev ? { ...prev, logo_url: url } : prev);
       } else if (field === 'banner') {
         url = await storeService.uploadBanner(file, store.id);
+        await storeService.updateStore(store.id, { banner_url: url });
+        setStore(prev => prev ? { ...prev, banner_url: url } : prev);
       }
       handleChange(field, url);
+      await refreshStore();
     } catch (err) {
       console.error(err);
       alert('Upload failed: ' + err.message);
