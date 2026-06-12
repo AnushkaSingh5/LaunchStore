@@ -21,7 +21,7 @@ export default function AdminProducts() {
     { field: 'name', label: 'Product Name', render: (row) => <span style={{ fontWeight: 700 }}>{row.name}</span> },
     { field: 'store', label: 'Store' },
     { field: 'category', label: 'Category' },
-    { field: 'price', label: 'Price', render: (row) => `$${(row.price || 0).toLocaleString()}` },
+    { field: 'price', label: 'Price', render: (row) => `₹${(row.price || 0).toLocaleString()}` },
     { field: 'status', label: 'Status', render: (row) => (
       <span className={`status-badge ${row.status.toLowerCase()}`}>{row.status}</span>
     )},
@@ -77,7 +77,7 @@ export default function AdminProducts() {
               <div className="product-info">
                 <h3>{selectedProduct.name}</h3>
                 <p className="category-tag">{selectedProduct.category}</p>
-                <p className="price-tag">${(selectedProduct.price || 0).toLocaleString()}</p>
+                <p className="price-tag">₹{(selectedProduct.price || 0).toLocaleString()}</p>
                 <div className={`status-badge ${selectedProduct.status.toLowerCase()}`}>{selectedProduct.status}</div>
               </div>
             </div>

@@ -96,7 +96,7 @@ export default function CustomerOrdersPage() {
                   })}
                 </span>
                 <span className="order-store">{order.store?.name || 'Online Store'}</span>
-                <span className="order-amount">${parseFloat(order.total_amount || 0).toFixed(2)}</span>
+                <span className="order-amount">₹{parseFloat(order.total_amount || 0).toFixed(2)}</span>
                 <span className="order-status">
                   <span className={`status-pill ${getStatusClass(order.status)}`}>
                     {order.status}
@@ -181,9 +181,9 @@ export default function CustomerOrdersPage() {
                       </div>
                       <div className="item-info">
                         <h4>{item.productName}</h4>
-                        <span className="qty-price">{item.quantity} × ${parseFloat(item.price || 0).toFixed(2)}</span>
+                        <span className="qty-price">{item.quantity} × ₹{parseFloat(item.price || 0).toFixed(2)}</span>
                       </div>
-                      <span className="item-subtotal">${(parseFloat(item.price || 0) * parseInt(item.quantity || 1)).toFixed(2)}</span>
+                      <span className="item-subtotal">₹{(parseFloat(item.price || 0) * parseInt(item.quantity || 1)).toFixed(2)}</span>
                     </div>
                   ))}
                 </div>
@@ -194,7 +194,7 @@ export default function CustomerOrdersPage() {
               <div className="total-breakdown">
                 <div className="breakdown-row grand-total">
                   <span>Grand Total Paid</span>
-                  <span>${parseFloat(selectedOrder.total_amount || 0).toFixed(2)}</span>
+                  <span>₹{parseFloat(selectedOrder.total_amount || 0).toFixed(2)}</span>
                 </div>
               </div>
             </div>

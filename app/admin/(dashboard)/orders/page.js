@@ -26,7 +26,7 @@ export default function AdminOrders() {
     )},
     { field: 'customer', label: 'Customer' },
     { field: 'store', label: 'Store' },
-    { field: 'total', label: 'Total Amount', render: (row) => `$${row.total.toLocaleString()}` },
+    { field: 'total', label: 'Total Amount', render: (row) => `₹${row.total.toLocaleString()}` },
     { field: 'paymentMethod', label: 'Payment' },
     { field: 'status', label: 'Status', render: (row) => (
       <span className={`status-pill ${row.status.toLowerCase()}`}>{row.status}</span>
@@ -71,7 +71,7 @@ export default function AdminOrders() {
               <div className="detail-grid">
                 <div className="detail-item"><strong>Order ID:</strong> <span>{selectedOrder.id}</span></div>
                 <div className="detail-item"><strong>Date:</strong> <span>{selectedOrder.date}</span></div>
-                <div className="detail-item"><strong>Total:</strong> <span style={{ color: '#8b5cf6', fontSize: '18px' }}>${selectedOrder.total.toLocaleString()}</span></div>
+                <div className="detail-item"><strong>Total:</strong> <span style={{ color: '#8b5cf6', fontSize: '18px' }}>₹{selectedOrder.total.toLocaleString()}</span></div>
                 <div className="detail-item"><strong>Status:</strong> <span className={`status-pill ${selectedOrder.status.toLowerCase()}`}>{selectedOrder.status}</span></div>
               </div>
             </div>

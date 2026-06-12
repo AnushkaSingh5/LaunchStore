@@ -74,7 +74,7 @@ export default function ProductCard({ product }) {
           <h3 className="product-name">{product.name}</h3>
         </Link>
         <div className="product-footer">
-          <span className="product-price">${product.price.toLocaleString()}</span>
+          <span className="product-price">₹{product.price.toLocaleString()}</span>
           <button 
             className="buy-btn"
             onClick={handleBuyNow}

@@ -30,7 +30,7 @@ export default function TopStores({ stores = [] }) {
                     <span>{store.name}</span>
                   </div>
                 </td>
-                <td className="revenue">${(store.revenue || 0).toLocaleString()}</td>
+                <td className="revenue">₹{(store.revenue || 0).toLocaleString()}</td>
                 <td>{store.ordersCount}</td>
                 <td>
                   <span className={`growth ${store.growth >= 0 ? 'up' : 'down'}`}>

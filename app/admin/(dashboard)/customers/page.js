@@ -73,7 +73,7 @@ export default function AdminCustomers() {
               <h4>Engagement Summary</h4>
               <div className="detail-grid">
                 <div className="detail-item"><strong>Total Orders:</strong> <span>{selectedCustomer.totalOrders} orders</span></div>
-                <div className="detail-item"><strong>Total Spent:</strong> <span>${selectedCustomer.totalSpent || '0.00'}</span></div>
+                <div className="detail-item"><strong>Total Spent:</strong> <span>₹{selectedCustomer.totalSpent || '0.00'}</span></div>
                 <div className="detail-item"><strong>Phone:</strong> <span>{selectedCustomer.phone}</span></div>
                 <div className="detail-item"><strong>Customer Since:</strong> <span>{selectedCustomer.joinedDate || '2024'}</span></div>
               </div>

@@ -70,7 +70,7 @@ export default function AdminAnalytics({ revenueData = [0, 0, 0, 0, 0, 0, 0], or
         </div>
         <div className="chart-content">
           <div className="total-revenue-stat">
-            <span className="value">${totalRevenue.toLocaleString()}</span>
+            <span className="value">₹{totalRevenue.toLocaleString()}</span>
             <span className={`trend ${revTrendClass}`}>{revTrendSign}</span>
           </div>
           <svg width="100%" height="200" viewBox="0 0 600 200" preserveAspectRatio="none">

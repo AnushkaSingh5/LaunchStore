@@ -346,7 +346,7 @@ export default function StoreCheckoutPage({ params }) {
               </div>
               <div className="order-summary-item">
                 <span className="order-num">Total Charged</span>
-                <span className="order-val">${parseFloat(placedOrder?.total_amount || 0).toFixed(2)}</span>
+                <span className="order-val">₹{parseFloat(placedOrder?.total_amount || 0).toFixed(2)}</span>
               </div>
               <div className="order-summary-item">
                 <span className="order-num">Status</span>
@@ -635,9 +635,9 @@ export default function StoreCheckoutPage({ params }) {
                     <img src={item.image} alt={item.name} />
                     <div className="preview-details">
                       <h3>{item.name}</h3>
-                      <span className="qty-price">{item.quantity} × ${item.price.toLocaleString()}</span>
+                      <span className="qty-price">{item.quantity} × ₹{item.price.toLocaleString()}</span>
                     </div>
-                    <span className="preview-total">${(item.price * item.quantity).toLocaleString()}</span>
+                    <span className="preview-total">₹{(item.price * item.quantity).toLocaleString()}</span>
                   </div>
                 ))}
               </div>
@@ -645,11 +645,11 @@ export default function StoreCheckoutPage({ params }) {
               <div className="summary-totals">
                 <div className="sum-row">
                   <span>Subtotal</span>
-                  <span>${cartTotal.toLocaleString()}</span>
+                  <span>₹{cartTotal.toLocaleString()}</span>
                 </div>
                 <div className="sum-row">
                   <span>Tax (8%)</span>
-                  <span>${tax.toLocaleString()}</span>
+                  <span>₹{tax.toLocaleString()}</span>
                 </div>
                 <div className="sum-row">
                   <span>Shipping</span>
@@ -657,7 +657,7 @@ export default function StoreCheckoutPage({ params }) {
                 </div>
                 <div className="sum-row grand-total">
                   <span>Total</span>
-                  <span>${total.toLocaleString()}</span>
+                  <span>₹{total.toLocaleString()}</span>
                 </div>
               </div>
             </div>

@@ -184,7 +184,7 @@ export default function PaymentsPage() {
           </div>
 
           <div className="form-group">
-            <label>Flat Shipping Fee ($)</label>
+            <label>Flat Shipping Fee (₹)</label>
             <input 
               type="number" 
               value={payments.flatFee} 
@@ -213,7 +213,7 @@ export default function PaymentsPage() {
           </div>
           <div className="info-text">
             <strong>How it works</strong>
-            <p>A flat shipping fee of ${payments.flatFee} will be applied to every order, regardless of the order value or destination.</p>
+            <p>A flat shipping fee of ₹{payments.flatFee} will be applied to every order, regardless of the order value or destination.</p>
           </div>
         </div>
       </div>

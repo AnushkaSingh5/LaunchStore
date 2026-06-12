@@ -213,7 +213,7 @@ export default function ProductDetails({ params }) {
             </nav>
 
             <h1 className="title">{product.name}</h1>
-            <p className="price">${product.price.toLocaleString()}</p>
+            <p className="price">₹{product.price.toLocaleString()}</p>
 
             <div className="rating">
               <div className="stars">★★★★★</div>

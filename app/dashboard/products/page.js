@@ -314,7 +314,7 @@ export default function ProductsPage() {
             )}
             {(filters.minPrice || filters.maxPrice) && (
               <div className="filter-chip">
-                Price: ${filters.minPrice || 0} - ${filters.maxPrice || '∞'}
+                Price: ₹{filters.minPrice || 0} - ₹{filters.maxPrice || '∞'}
                 <button onClick={() => { handleFilterChange('minPrice', ''); handleFilterChange('maxPrice', ''); }}>&times;</button>
               </div>
             )}
@@ -357,7 +357,7 @@ export default function ProductsPage() {
                     </div>
                   </td>
                   <td>{category}</td>
-                  <td className="price-cell">${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                  <td className="price-cell">₹{price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                   <td>
                     <span style={{ color: stock === 0 ? '#ef4444' : 'inherit', fontWeight: stock === 0 ? 600 : 400 }}>
                       {stock === 0 ? 'Out of Stock' : stock}
@@ -453,9 +453,9 @@ export default function ProductsPage() {
 
           <div className="form-row">
             <div className="form-group">
-              <label>Price (USD) <span className="required">*</span></label>
+              <label>Price (Rupees) <span className="required">*</span></label>
               <div className="input-with-icon">
-                <div className="input-prefix">$</div>
+                <div className="input-prefix">₹</div>
                 <input 
                   type="number" 
                   placeholder="0.00" 

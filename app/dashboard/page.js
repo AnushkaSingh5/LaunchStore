@@ -227,7 +227,7 @@ export default function DashboardOverview() {
             </div>
             <div className="stat-info">
               <h3>Total Sales</h3>
-              <p className="stat-value">${stats.totalSales.toLocaleString()}</p>
+              <p className="stat-value">₹{stats.totalSales.toLocaleString()}</p>
             </div>
             <div className="sparkline">
               <Sparkline color="#a855f7" path="M0 20 Q 15 5, 30 15 T 60 5" />
@@ -317,7 +317,7 @@ export default function DashboardOverview() {
           <div className="chart-title">
             <span className="chart-label">Total Sales</span>
             <div className="chart-value-row">
-              <h2>${stats.totalSales.toLocaleString()}</h2>
+              <h2>₹{stats.totalSales.toLocaleString()}</h2>
               <span className={`badge ${salesChangeClass}`}>
                 {salesChangeIcon || '→'} {previousPeriodSales > 0 ? `${Math.abs(((currentPeriodSales - previousPeriodSales) / previousPeriodSales) * 100).toFixed(1)}%` : currentPeriodSales > 0 ? '100.0%' : '0.0%'}
               </span>
@@ -335,7 +335,7 @@ export default function DashboardOverview() {
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} tickFormatter={(val) => `$${val}`} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} tickFormatter={(val) => `₹${val}`} />
                 <Tooltip 
                   contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                   itemStyle={{ color: '#8b5cf6', fontWeight: 600 }}
@@ -353,7 +353,7 @@ export default function DashboardOverview() {
               </div>
               <div className="metric-info">
                 <p>Average Order Value</p>
-                <h4>${avgOrderValue > 0 ? `$${avgOrderValue.toLocaleString()}` : '$0'}</h4>
+                <h4>${avgOrderValue > 0 ? `₹${avgOrderValue.toLocaleString()}` : '₹0'}</h4>
               </div>
             </div>
             <div className="metric">
@@ -371,7 +371,7 @@ export default function DashboardOverview() {
               </div>
               <div className="metric-info">
                 <p>Refunds</p>
-                <h4>${refunds > 0 ? `$${refunds.toLocaleString()}` : '$0'}</h4>
+                <h4>${refunds > 0 ? `₹${refunds.toLocaleString()}` : '₹0'}</h4>
               </div>
             </div>
           </div>
@@ -395,7 +395,7 @@ export default function DashboardOverview() {
                     {order.status}
                   </span>
                 </div>
-                <div className="order-total">${order.total}</div>
+                <div className="order-total">₹{order.total}</div>
               </div>
             ))}
           </div>

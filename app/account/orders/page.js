@@ -136,7 +136,7 @@ export default function CustomerOrdersHistoryPage() {
                             <span className="status-pill" style={{ background: statusStyle.bg, color: statusStyle.text }}>
                               {order.status}
                             </span>
-                            <span className="order-total">${parseFloat(order.total_amount || 0).toFixed(2)}</span>
+                            <span className="order-total">₹{parseFloat(order.total_amount || 0).toFixed(2)}</span>
                             <span className={`expand-chevron ${isExpanded ? 'rotated' : ''}`}>▼</span>
                           </div>
                         </div>
@@ -181,8 +181,8 @@ export default function CustomerOrdersHistoryPage() {
                                       />
                                       <strong>{item.productName}</strong>
                                     </div>
-                                    <span className="item-qty-price">{item.quantity} × ${parseFloat(item.price || 0).toFixed(2)}</span>
-                                    <span className="item-sub">${(parseFloat(item.price || 0) * parseInt(item.quantity || 1)).toFixed(2)}</span>
+                                    <span className="item-qty-price">{item.quantity} × ₹{parseFloat(item.price || 0).toFixed(2)}</span>
+                                    <span className="item-sub">₹{(parseFloat(item.price || 0) * parseInt(item.quantity || 1)).toFixed(2)}</span>
                                   </div>
                                 ))
                               )}

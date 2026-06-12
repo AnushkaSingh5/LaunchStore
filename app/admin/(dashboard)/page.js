@@ -162,12 +162,12 @@ export default function AdminOverview() {
     },
     { 
       title: 'Total Revenue', 
-      value: `$${totalRevenue.toLocaleString()}`, 
+      value: `₹${totalRevenue.toLocaleString()}`, 
       icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>, 
       color: '#10b981', 
       change: `${revenueChangePct}%`, 
       trend: 'up',
-      subChange: `+$${revenueThisWeek.toLocaleString()} this week`,
+      subChange: `+₹${revenueThisWeek.toLocaleString()} this week`,
       chartData: analytics?.miniCharts?.revenue
     },
     { 
@@ -220,7 +220,7 @@ export default function AdminOverview() {
     )},
     { field: 'customer', label: 'Customer' },
     { field: 'store', label: 'Store' },
-    { field: 'total', label: 'Amount', render: (row) => `$${row.total.toLocaleString()}` },
+    { field: 'total', label: 'Amount', render: (row) => `₹${row.total.toLocaleString()}` },
     { field: 'status', label: 'Status', render: (row) => (
       <span className={`status-pill ${row.status.toLowerCase()}`}>{row.status}</span>
     )},

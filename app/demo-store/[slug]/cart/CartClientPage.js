@@ -151,7 +151,7 @@ export default function CartClientPage({ slug }) {
                     <div className="item-details">
                       <h3>{item.name}</h3>
                       <p className="category">{item.category}</p>
-                      <p className="price">${item.price.toLocaleString()}</p>
+                      <p className="price">₹{item.price.toLocaleString()}</p>
                     </div>
                   </div>
 
@@ -164,7 +164,7 @@ export default function CartClientPage({ slug }) {
                   </div>
 
                   <div className="item-total">
-                    ${(item.price * item.quantity).toLocaleString()}
+                    ₹{(item.price * item.quantity).toLocaleString()}
                   </div>
 
                   <div className="item-action">
@@ -186,11 +186,11 @@ export default function CartClientPage({ slug }) {
 
               <div className="summary-row">
                 <span>Subtotal</span>
-                <span>${cartTotal.toLocaleString()}</span>
+                <span>₹{cartTotal.toLocaleString()}</span>
               </div>
               <div className="summary-row">
                 <span>Estimated Tax (8%)</span>
-                <span>${tax.toLocaleString()}</span>
+                <span>₹{tax.toLocaleString()}</span>
               </div>
               <div className="summary-row">
                 <span>Shipping</span>
@@ -199,7 +199,7 @@ export default function CartClientPage({ slug }) {
 
               <div className="summary-total">
                 <span>Total</span>
-                <span>${total.toLocaleString()}</span>
+                <span>₹{total.toLocaleString()}</span>
               </div>
 
               <Link href={`/demo-store/${slug}/checkout`} className="checkout-btn" style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}>

@@ -31,7 +31,7 @@ export default function AdminCreators() {
     { field: 'name', label: 'Creator Name', render: (row) => <span style={{ fontWeight: 700 }}>{row.name}</span> },
     { field: 'email', label: 'Email' },
     { field: 'storeName', label: 'Primary Store' },
-    { field: 'revenue', label: 'Total Revenue', render: (row) => `$${(row.revenue || 0).toLocaleString()}` },
+    { field: 'revenue', label: 'Total Revenue', render: (row) => `₹${(row.revenue || 0).toLocaleString()}` },
     { field: 'status', label: 'Status', render: (row) => (
       <span className={`status-badge ${row.status.toLowerCase()}`}>{row.status}</span>
     )},
@@ -92,7 +92,7 @@ export default function AdminCreators() {
               </div>
               <div className="detail-item">
                 <strong>Total Revenue</strong>
-                <span>${(selectedCreator.revenue || 0).toLocaleString()}</span>
+                <span>₹{(selectedCreator.revenue || 0).toLocaleString()}</span>
               </div>
               <div className="detail-item">
                 <strong>Growth Trend</strong>

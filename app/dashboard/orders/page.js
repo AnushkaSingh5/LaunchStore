@@ -82,9 +82,9 @@ export default function OrdersPage() {
     const matchesPayment = filters.paymentStatus.length === 0; 
 
     let matchesAmount = true;
-    if (filters.amount === '$0 - $100') matchesAmount = order.total <= 100;
-    else if (filters.amount === '$100 - $500') matchesAmount = order.total > 100 && order.total <= 500;
-    else if (filters.amount === '$500+') matchesAmount = order.total > 500;
+    if (filters.amount === '₹0 - ₹100') matchesAmount = order.total <= 100;
+    else if (filters.amount === '₹100 - ₹500') matchesAmount = order.total > 100 && order.total <= 500;
+    else if (filters.amount === '₹500+') matchesAmount = order.total > 500;
 
     return matchesSearch && matchesStatus && matchesAmount && matchesPayment;
   }).sort((a, b) => {
@@ -366,8 +366,8 @@ export default function OrdersPage() {
         <button className={`quick-chip ${filters.status.includes('Cancelled') ? 'active' : ''}`} onClick={() => toggleFilter('status', 'Cancelled')}>
           <span className="dot red"></span> Cancelled
         </button>
-        <button className={`quick-chip ${filters.amount === '$500+' ? 'active' : ''}`} onClick={() => handleFilterChange('amount', filters.amount === '$500+' ? 'All' : '$500+')}>
-          <span className="dot purple"></span> High Value ($500+)
+        <button className={`quick-chip ${filters.amount === '₹500+' ? 'active' : ''}`} onClick={() => handleFilterChange('amount', filters.amount === '₹500+' ? 'All' : '$500+')}>
+          <span className="dot purple"></span> High Value (₹500+)
         </button>
         <button className="quick-chip">
           <span className="dot blue"></span> COD Orders
@@ -407,7 +407,7 @@ export default function OrdersPage() {
                     <span>10:30 AM</span>
                   </div>
                 </div>
-                <div className="col-total"><strong>${order.total.toFixed(2)}</strong></div>
+                <div className="col-total"><strong>₹{order.total.toFixed(2)}</strong></div>
                 <div className="col-status">
                   <span className="status-pill" style={{ background: status.bg, color: status.text }}>
                     <span className="dot" style={{ background: status.dot }}></span>
@@ -488,7 +488,7 @@ export default function OrdersPage() {
               <h3>Order Amount</h3>
             </div>
             <div className="filter-options">
-              {['All', '$0 - $100', '$100 - $500', '$500+'].map(a => (
+              {['All', '₹0 - ₹100', '₹100 - ₹500', '₹500+'].map(a => (
                 <label key={a} className="radio-label">
                   <input type="radio" name="oAmount" checked={filters.amount === a} onChange={() => handleFilterChange('amount', a)} />
                   <span className="radio-custom"></span>
@@ -1691,8 +1691,8 @@ export default function OrdersPage() {
                     </div>
                   </div>
                   <div className="col-qty">{item.quantity}</div>
-                  <div className="col-price">${parseFloat(item.price || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
-                  <div className="col-total"><strong>${(parseFloat(item.price || 0) * parseInt(item.quantity || 1)).toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong></div>
+                  <div className="col-price">₹{parseFloat(item.price || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                  <div className="col-total"><strong>₹{(parseFloat(item.price || 0) * parseInt(item.quantity || 1)).toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong></div>
                 </div>
               ))}
             </div>
@@ -1705,7 +1705,7 @@ export default function OrdersPage() {
               </div>
               <strong>Order Total</strong>
             </div>
-            <div className="total-val">${selectedOrder?.total.toFixed(2)}</div>
+            <div className="total-val">₹{selectedOrder?.total.toFixed(2)}</div>
           </div>
 
           <div className="timeline-section">
