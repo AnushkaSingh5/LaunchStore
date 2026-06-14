@@ -89,7 +89,79 @@ const compressImageBase64 = (base64Str, maxWidth = 800, maxHeight = 800) => {
   });
 };
 
+const generateUniqueProductSlug = async (storeId, name, productId = null) => {
+  let baseSlug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-+|-+$)/g, '');
+  if (!baseSlug) baseSlug = 'product';
+  
+  if (!supabaseClient) {
+    let finalSlug = baseSlug;
+    let counter = 1;
+    const existing = products.filter(p => p.store_id === storeId && (productId ? p.id !== productId : true));
+    const existingSlugs = existing.map(p => p.slug || p.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-+|-+$)/g, ''));
+    while (existingSlugs.includes(finalSlug)) {
+      finalSlug = `${baseSlug}-${counter}`;
+      counter++;
+    }
+    return finalSlug;
+  }
+
+  let finalSlug = baseSlug;
+  let counter = 1;
+  let exists = true;
+  
+  while (exists) {
+    let query = supabaseClient
+      .from('products')
+      .select('id')
+      .eq('store_id', storeId)
+      .eq('slug', finalSlug);
+      
+    if (productId) {
+      query = query.neq('id', productId);
+    }
+    
+    const { data, error } = await query;
+    if (!error && data && data.length > 0) {
+      finalSlug = `${baseSlug}-${counter}`;
+      counter++;
+    } else {
+      exists = false;
+    }
+  }
+  return finalSlug;
+};
+
 export const productService = {
+  /**
+   * Fetch a single product details by store ID and slug
+   */
+  getProductBySlug: async (storeId, slug) => {
+    if (!supabaseClient) {
+      const match = products.find(p => p.store_id === storeId && (p.slug === slug || p.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') === slug));
+      return match || null;
+    }
+    try {
+      const { data, error } = await supabaseClient
+        .from('products')
+        .select('*, store:store_id(*), category:category_id(*)')
+        .eq('store_id', storeId)
+        .eq('slug', slug);
+
+      if (error) throw error;
+      if (!data || data.length === 0) return null;
+
+      const product = data[0];
+      return {
+        ...product,
+        image: product.image_url || 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=800',
+        images: product.images || [product.image_url],
+        category: product.category?.name || 'Uncategorized',
+      };
+    } catch (e) {
+      console.error('Error fetching product by slug:', e);
+      return null;
+    }
+  },
   /**
    * Fetch all products matching a specific storeId
    */
@@ -171,10 +243,13 @@ export const productService = {
       }
     }
 
+    const slug = productInput.slug || await generateUniqueProductSlug(productInput.store_id, productInput.name);
+
     const dbInput = {
       store_id: productInput.store_id,
       category_id: productInput.category_id || null,
       name: productInput.name,
+      slug,
       description: productInput.description || '',
       price: parseFloat(productInput.price) || 0.00,
       image_url: mainImage,
@@ -182,6 +257,11 @@ export const productService = {
       status: productInput.status || 'Published',
       stock: parseInt(productInput.stock) || 0,
       featured: !!productInput.featured,
+      seo_title: productInput.seo_title || null,
+      seo_description: productInput.seo_description || null,
+      og_title: productInput.og_title || null,
+      og_description: productInput.og_description || null,
+      canonical_url: productInput.canonical_url || null,
     };
 
     console.log('[LaunchCart - ProductService] dbInput mapped:', dbInput);
@@ -232,9 +312,22 @@ export const productService = {
       }
     }
 
+    let slug = updateInput.slug;
+    if (updateInput.name && !slug) {
+      const { data: currentProduct } = await supabaseClient
+        .from('products')
+        .select('store_id')
+        .eq('id', productId)
+        .single();
+      if (currentProduct) {
+        slug = await generateUniqueProductSlug(currentProduct.store_id, updateInput.name, productId);
+      }
+    }
+
     const dbInput = {
       category_id: updateInput.category_id !== undefined ? updateInput.category_id : undefined,
       name: updateInput.name,
+      slug: slug,
       description: updateInput.description,
       price: updateInput.price !== undefined ? parseFloat(updateInput.price) : undefined,
       image_url: mainImage,
@@ -242,6 +335,11 @@ export const productService = {
       status: updateInput.status,
       stock: updateInput.stock !== undefined ? parseInt(updateInput.stock) : undefined,
       featured: updateInput.featured !== undefined ? !!updateInput.featured : undefined,
+      seo_title: updateInput.seo_title,
+      seo_description: updateInput.seo_description,
+      og_title: updateInput.og_title,
+      og_description: updateInput.og_description,
+      canonical_url: updateInput.canonical_url,
     };
 
     // Filter undefined keys

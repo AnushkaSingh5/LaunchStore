@@ -119,6 +119,12 @@ export default function AdminOverview() {
 
   const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   
+  const outOfStockProductsCount = products.filter(p => (parseInt(p.stock) || 0) === 0).length;
+  const lowStockProductsCount = products.filter(p => {
+    const stock = parseInt(p.stock) || 0;
+    return stock > 0 && stock < 10;
+  }).length;
+  
   // Total Stores & growth
   const newStoresThisWeek = stores.filter(s => new Date(s.createdDate) > oneWeekAgo).length;
   const storesChangePct = stores.length ? ((newStoresThisWeek / stores.length) * 100).toFixed(0) : 0;
@@ -133,21 +139,29 @@ export default function AdminOverview() {
   const ordersCountThisWeek = ordersThisWeek.length;
   const ordersChangePct = orders.length ? ((ordersCountThisWeek / orders.length) * 100).toFixed(0) : 0;
 
-  // Active Creators (unique creator accounts on platform)
-  const allCreatorsEmails = new Set(stores.map(s => s.email));
-  const uniqueCreatorsCount = allCreatorsEmails.size;
-  const newCreatorsThisWeekCount = new Set(
-    stores.filter(s => new Date(s.createdDate) > oneWeekAgo).map(s => s.email)
-  ).size;
-  const creatorsChangePct = uniqueCreatorsCount ? ((newCreatorsThisWeekCount / uniqueCreatorsCount) * 100).toFixed(0) : 0;
+  // Paid Orders & growth
+  const paidOrders = orders.filter(o => (o.paymentStatus || '').toLowerCase() === 'paid');
+  const paidOrdersCount = paidOrders.length;
+  const paidOrdersThisWeek = ordersThisWeek.filter(o => (o.paymentStatus || '').toLowerCase() === 'paid').length;
+  const paidChangePct = paidOrdersCount ? ((paidOrdersThisWeek / paidOrdersCount) * 100).toFixed(0) : 0;
 
-  // Pending approvals
-  const pendingCount = stores.filter(s => s.status === 'Pending').length;
-  const pendingChangePct = stores.length ? ((pendingCount / stores.length) * 100).toFixed(0) : 0;
+  // Pending Payments & growth
+  const pendingOrders = orders.filter(o => {
+    const ps = (o.paymentStatus || '').toLowerCase();
+    return ps === 'pending' || ps === 'pending_payment';
+  });
+  const pendingOrdersCount = pendingOrders.length;
+  const pendingOrdersThisWeek = ordersThisWeek.filter(o => {
+    const ps = (o.paymentStatus || '').toLowerCase();
+    return ps === 'pending' || ps === 'pending_payment';
+  }).length;
+  const pendingChangePct = pendingOrdersCount ? ((pendingOrdersThisWeek / pendingOrdersCount) * 100).toFixed(0) : 0;
 
-  // Platform Growth (weekly store count increase rate)
-  const storesLastWeek = stores.length - newStoresThisWeek;
-  const platformGrowthPct = storesLastWeek > 0 ? ((newStoresThisWeek / storesLastWeek) * 100).toFixed(1) : (newStoresThisWeek ? (newStoresThisWeek * 100).toFixed(0) : 0);
+  // Failed Payments & growth
+  const failedOrders = orders.filter(o => (o.paymentStatus || '').toLowerCase() === 'failed');
+  const failedOrdersCount = failedOrders.length;
+  const failedOrdersThisWeek = ordersThisWeek.filter(o => (o.paymentStatus || '').toLowerCase() === 'failed').length;
+  const failedChangePct = failedOrdersCount ? ((failedOrdersThisWeek / failedOrdersCount) * 100).toFixed(0) : 0;
 
   const stats = [
     { 
@@ -181,34 +195,34 @@ export default function AdminOverview() {
       chartData: analytics?.miniCharts?.orders
     },
     { 
-      title: 'Active Creators', 
-      value: uniqueCreatorsCount.toLocaleString(), 
-      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>, 
-      color: '#3b82f6', 
-      change: `${creatorsChangePct}%`, 
+      title: 'Paid Orders', 
+      value: paidOrdersCount.toLocaleString(), 
+      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>, 
+      color: '#10b981', 
+      change: `${paidChangePct}%`, 
       trend: 'up',
-      subChange: `+${newCreatorsThisWeekCount} new this week`,
-      chartData: analytics?.miniCharts?.creators
+      subChange: `+${paidOrdersThisWeek} this week`,
+      chartData: analytics?.miniCharts?.paid
     },
     { 
-      title: 'Pending Approvals', 
-      value: pendingCount.toLocaleString(), 
-      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>, 
-      color: '#ef4444', 
+      title: 'Pending Payments', 
+      value: pendingOrdersCount.toLocaleString(), 
+      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>, 
+      color: '#fbbf24', 
       change: `${pendingChangePct}%`, 
-      trend: pendingCount > 0 ? 'up' : 'down',
-      subChange: 'Awaiting admin action',
+      trend: 'up',
+      subChange: `+${pendingOrdersThisWeek} this week`,
       chartData: analytics?.miniCharts?.pending
     },
     { 
-      title: 'Platform Growth', 
-      value: `+${platformGrowthPct}%`, 
-      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>, 
-      color: '#a855f7', 
-      change: 'Weekly', 
+      title: 'Failed Payments', 
+      value: failedOrdersCount.toLocaleString(), 
+      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>, 
+      color: '#ef4444', 
+      change: `${failedChangePct}%`, 
       trend: 'up',
-      subChange: 'Based on store joins',
-      chartData: analytics?.miniCharts?.growth
+      subChange: `+${failedOrdersThisWeek} this week`,
+      chartData: analytics?.miniCharts?.failed
     },
   ];
 
@@ -265,6 +279,22 @@ export default function AdminOverview() {
           </div>
         </div>
         <div className="grid-right">
+          <div className="inventory-health-card" style={{ marginBottom: '8px' }}>
+            <div className="card-header">
+              <h3>Inventory Health</h3>
+              <button className="view-all" onClick={() => router.push('/admin/products')}>Manage</button>
+            </div>
+            <div className="inventory-stats">
+              <div className="inventory-stat-item out-of-stock">
+                <span className="label">Out of Stock</span>
+                <span className="count">{outOfStockProductsCount}</span>
+              </div>
+              <div className="inventory-stat-item low-stock">
+                <span className="label">Low Stock</span>
+                <span className="count">{lowStockProductsCount}</span>
+              </div>
+            </div>
+          </div>
           <TopStores stores={stores} />
           <AIInsights insights={aiInsights} />
         </div>
@@ -378,6 +408,44 @@ export default function AdminOverview() {
         .status-pill.processing { background: #fef3c7; color: #92400e; }
         .status-pill.shipped { background: #dbeafe; color: #1e40af; }
         .status-pill.cancelled { background: #fee2e2; color: #b91c1c; }
+
+        .inventory-health-card {
+          background: #fff;
+          border-radius: 24px;
+          padding: 24px;
+          border: 1px solid #f1f5f9;
+          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+        }
+        .inventory-stats {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        .inventory-stat-item {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 12px 16px;
+          border-radius: 12px;
+          font-weight: 700;
+        }
+        .inventory-stat-item.out-of-stock {
+          background: #fef2f2;
+          color: #ef4444;
+          border: 1px solid #fecaca;
+        }
+        .inventory-stat-item.low-stock {
+          background: #fffbeb;
+          color: #d97706;
+          border: 1px solid #fef3c7;
+        }
+        .inventory-stat-item .count {
+          font-size: 18px;
+          font-weight: 800;
+        }
+        .inventory-stat-item .label {
+          font-size: 13px;
+        }
 
         @media (max-width: 1400px) {
           .analytics-overview, .secondary-grid {

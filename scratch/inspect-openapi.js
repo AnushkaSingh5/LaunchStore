@@ -24,11 +24,9 @@ try {
       }
     });
     const data = await res.json();
-    const orderSchema = data.definitions?.orders;
-    if (orderSchema) {
-      console.log('Orders columns in DB:', Object.keys(orderSchema.properties));
-    } else {
-      console.log('Definitions for orders table not found in OpenAPI schema');
+    console.log('Available definitions:', Object.keys(data.definitions || {}));
+    if (data.definitions && data.definitions.orders) {
+      console.log('Orders properties:', Object.keys(data.definitions.orders.properties));
     }
   }
 
@@ -36,3 +34,4 @@ try {
 } catch (e) {
   console.error(e);
 }
+

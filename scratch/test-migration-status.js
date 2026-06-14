@@ -18,24 +18,32 @@ try {
 
   const headers = {
     'apikey': supabaseAnonKey,
-    'Authorization': `Bearer ${supabaseAnonKey}`
+    'Authorization': `Bearer ${supabaseAnonKey}`,
+    'Content-Type': 'application/json',
+    'Prefer': 'return=representation'
   };
 
-  async function check() {
-    // Attempt to query the payment-related columns specifically
-    const url = `${supabaseUrl}/rest/v1/orders?select=id,payment_status,payment_provider,payment_id,payment_order_id,paid_at&limit=1`;
-    console.log('Fetching:', url);
-    const res = await fetch(url, { headers });
+  async function testInsert() {
+    const payload = {
+      store_id: '020ad177-30de-4afa-adbc-047db82f4a3c', // AestheticStore ID from db-check
+      customer_name: 'Test Constraint',
+      customer_email: 'test@constraint.com',
+      total_amount: 10.00,
+      status: 'Pending'
+    };
+
+    console.log('Testing insert of Pending status...');
+    const res = await fetch(`${supabaseUrl}/rest/v1/orders`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload)
+    });
     const data = await res.json();
-    if (res.ok) {
-      console.log('✅ Columns exist! Response:', data);
-    } else {
-      console.error('❌ Columns check failed:', data);
-    }
+    console.log('Response Status:', res.status);
+    console.log('Response Data:', data);
   }
 
-  check();
+  testInsert();
 } catch (e) {
   console.error(e);
 }
-

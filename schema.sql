@@ -13,6 +13,8 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   name TEXT,
   email TEXT UNIQUE NOT NULL,
   role TEXT NOT NULL DEFAULT 'creator' CHECK (role IN ('creator', 'admin', 'customer')),
+  onboarding_completed BOOLEAN NOT NULL DEFAULT FALSE,
+  onboarding_step INTEGER NOT NULL DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -68,7 +70,12 @@ CREATE TABLE IF NOT EXISTS public.stores (
   banner_url TEXT,
   status TEXT NOT NULL DEFAULT 'approved' CHECK (status IN ('pending', 'approved', 'rejected', 'disabled')),
   theme_settings JSONB DEFAULT '{}'::jsonb,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  seo_title TEXT,
+  seo_description TEXT,
+  og_title TEXT,
+  og_description TEXT,
+  canonical_url TEXT
 );
 
 -- Enable RLS for Stores
@@ -96,6 +103,7 @@ CREATE TABLE IF NOT EXISTS public.products (
   store_id UUID NOT NULL REFERENCES public.stores(id) ON DELETE CASCADE,
   category_id UUID REFERENCES public.categories(id) ON DELETE SET NULL,
   name TEXT NOT NULL,
+  slug TEXT NOT NULL,
   description TEXT,
   price NUMERIC(10, 2) NOT NULL CHECK (price >= 0),
   image_url TEXT,
@@ -103,11 +111,37 @@ CREATE TABLE IF NOT EXISTS public.products (
   status TEXT NOT NULL DEFAULT 'Published' CHECK (status IN ('Published', 'Draft')),
   stock INTEGER NOT NULL DEFAULT 0 CHECK (stock >= 0),
   featured BOOLEAN NOT NULL DEFAULT false,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  seo_title TEXT,
+  seo_description TEXT,
+  og_title TEXT,
+  og_description TEXT,
+  canonical_url TEXT,
+  UNIQUE (store_id, slug)
 );
 
 -- Enable RLS for Products
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
+
+-- 4.5. COUPONS TABLE
+-- Stores discount coupon configurations per store
+CREATE TABLE IF NOT EXISTS public.coupons (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  store_id UUID NOT NULL REFERENCES public.stores(id) ON DELETE CASCADE,
+  code TEXT NOT NULL,
+  discount_type TEXT NOT NULL CHECK (discount_type IN ('percentage', 'fixed')),
+  discount_value NUMERIC(10, 2) NOT NULL CHECK (discount_value > 0),
+  max_uses INTEGER NOT NULL CHECK (max_uses >= 0),
+  current_uses INTEGER NOT NULL DEFAULT 0 CHECK (current_uses >= 0),
+  minimum_order_amount NUMERIC(10, 2) DEFAULT 0 CHECK (minimum_order_amount >= 0),
+  expiry_date TIMESTAMP WITH TIME ZONE,
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  UNIQUE (store_id, code)
+);
+
+-- Enable RLS for Coupons
+ALTER TABLE public.coupons ENABLE ROW LEVEL SECURITY;
 
 -- 5. ORDERS TABLE
 -- Stores customer purchases inside specific stores
@@ -121,7 +155,10 @@ CREATE TABLE IF NOT EXISTS public.orders (
   total_amount NUMERIC(10, 2) NOT NULL CHECK (total_amount >= 0),
   status TEXT NOT NULL DEFAULT 'Pending' CHECK (status IN ('Pending', 'Completed', 'Cancelled')),
   shipping_address TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  coupon_id UUID REFERENCES public.coupons(id) ON DELETE SET NULL,
+  coupon_code TEXT,
+  discount_amount NUMERIC(10, 2) DEFAULT 0 CHECK (discount_amount >= 0)
 );
 
 -- Enable RLS for Orders
@@ -608,6 +645,32 @@ CREATE POLICY "Allow customer delete of own cart items" ON public.cart_items FOR
     WHERE c.id = cart_id AND cust.auth_id = auth.uid()
   )
 );
+
+
+-- 10. RLS POLICIES FOR COUPONS
+CREATE POLICY "Allow public read of coupons" ON public.coupons FOR SELECT USING (true);
+CREATE POLICY "Allow creator inserts of coupons" ON public.coupons FOR INSERT WITH CHECK (
+  EXISTS (
+    SELECT 1 FROM public.stores
+    WHERE stores.id = coupons.store_id AND stores.creator_id = auth.uid()
+  )
+);
+CREATE POLICY "Allow creator updates of own coupons" ON public.coupons FOR UPDATE USING (
+  EXISTS (
+    SELECT 1 FROM public.stores
+    WHERE stores.id = coupons.store_id AND stores.creator_id = auth.uid()
+  )
+);
+CREATE POLICY "Allow creator deletes of own coupons" ON public.coupons FOR DELETE USING (
+  EXISTS (
+    SELECT 1 FROM public.stores
+    WHERE stores.id = coupons.store_id AND stores.creator_id = auth.uid()
+  )
+);
+
+-- Admin RLS policies for coupons
+CREATE POLICY "Allow admin updates of all coupons" ON public.coupons FOR UPDATE USING (public.is_admin());
+CREATE POLICY "Allow admin deletes of all coupons" ON public.coupons FOR DELETE USING (public.is_admin());
 
 
 

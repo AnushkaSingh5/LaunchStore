@@ -1,70 +1,33 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useStore } from '@/context/StoreContext';
-import { storeService } from '@/services/storeService';
-import { productService } from '@/services/productService';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
-import PageLoader from '@/components/PageLoader';
 
-export default function ProductDetails({ params }) {
-  const { id, slug } = use(params);
+export default function ProductClient({ slug, initialStoreDetails, initialProduct, initialRelatedProducts }) {
   const { addToCart } = useStore();
-  const [product, setProduct] = useState(null);
-  const [relatedProducts, setRelatedProducts] = useState([]);
+  const [product, setProduct] = useState(initialProduct);
+  const [relatedProducts, setRelatedProducts] = useState(initialRelatedProducts || []);
   const [quantity, setQuantity] = useState(1);
-  const [loading, setLoading] = useState(true);
-  const [storeDetails, setStoreDetails] = useState(null);
+  const [storeDetails, setStoreDetails] = useState(initialStoreDetails);
   const router = useRouter();
 
   useEffect(() => {
-    const fetchProduct = async () => {
-      console.log(`[LaunchCart - ProductDetails] Starting fetchProduct for product ID: "${id}" on store slug: "${slug}"`);
-      setLoading(true);
-      try {
-        console.log(`[LaunchCart - ProductDetails] Calling storeService.getStoreBySlug("${slug}")...`);
-        const storeData = await storeService.getStoreBySlug(slug);
-        console.log(`[LaunchCart - ProductDetails] storeService.getStoreBySlug returned:`, storeData);
-        setStoreDetails(storeData);
-        
-        if (storeData && storeData.id) {
-          console.log(`[LaunchCart - ProductDetails] Store matched. Calling productService.getProductById("${id}")...`);
-          const prodData = await productService.getProductById(id);
-          console.log(`[LaunchCart - ProductDetails] productService.getProductById returned:`, prodData);
-          if (prodData) {
-            setProduct(prodData);
-            console.log(`[LaunchCart - ProductDetails] Fetching related products...`);
-            const related = await productService.getRelatedProducts(storeData.id, prodData.category, prodData.id);
-            console.log(`[LaunchCart - ProductDetails] Related products fetched count: ${related?.length}`);
-            setRelatedProducts(related);
-          } else {
-            console.warn(`[LaunchCart - ProductDetails] No product matches ID: "${id}"`);
-          }
-        } else {
-          console.warn(`[LaunchCart - ProductDetails] No store matches slug: "${slug}"`);
-        }
-      } catch (error) {
-        console.error("[LaunchCart - ProductDetails] Failed to fetch product details with error:", error);
-      } finally {
-        console.log("[LaunchCart - ProductDetails] Fetch product complete, setting loading to false.");
-        setLoading(false);
-      }
-    };
-    fetchProduct();
-  }, [id, slug]);
+    setProduct(initialProduct);
+    setStoreDetails(initialStoreDetails);
+    setRelatedProducts(initialRelatedProducts || []);
+    setQuantity(1);
+  }, [initialProduct, initialStoreDetails, initialRelatedProducts]);
 
   const handleBuyNow = () => {
+    if (!product) return;
     addToCart(product, quantity);
     router.push(`/store/${slug}/cart`);
   };
-
-  if (loading && !product) {
-    return <PageLoader />;
-  }
-
 
   if (!storeDetails) {
     return (
@@ -202,18 +165,28 @@ export default function ProductDetails({ params }) {
         <div className="product-layout dashboard-card fade-in">
           <div className="product-gallery">
             <div className="main-image">
-              <img src={product.image} alt={product.name} />
+              <img src={product.image || product.image_url} alt={product.name} />
               {product.trending && <span className="badge">Trending</span>}
             </div>
           </div>
 
           <div className="product-info">
             <nav className="breadcrumb">
-              <span>Home</span> / <span>{product.category}</span> / <span>{product.name}</span>
+              <span>Home</span> / <span>{product.category || 'Uncategorized'}</span> / <span>{product.name}</span>
             </nav>
 
             <h1 className="title">{product.name}</h1>
             <p className="price">₹{product.price.toLocaleString()}</p>
+
+            <div className="stock-status-wrapper" style={{ marginBottom: '20px' }}>
+              {product.stock === 0 ? (
+                <span className="stock-badge-detail out-of-stock">Out of Stock</span>
+              ) : product.stock < 10 ? (
+                <span className="stock-badge-detail low-stock">Low Stock (Only {product.stock} items left)</span>
+              ) : (
+                <span className="stock-badge-detail in-stock">In Stock ({product.stock} items available)</span>
+              )}
+            </div>
 
             <div className="rating">
               <div className="stars">★★★★★</div>
@@ -226,16 +199,41 @@ export default function ProductDetails({ params }) {
 
             <div className="actions">
               <div className="quantity-selector">
-                <button onClick={() => setQuantity(Math.max(1, quantity - 1))}>-</button>
-                <span>{quantity}</span>
-                <button onClick={() => setQuantity(quantity + 1)}>+</button>
+                <button 
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  disabled={product.stock === 0}
+                >
+                  -
+                </button>
+                <span>{product.stock === 0 ? 0 : quantity}</span>
+                <button 
+                  onClick={() => {
+                    if (product.stock !== undefined && quantity >= product.stock) {
+                      alert(`Only ${product.stock} items available.`);
+                      return;
+                    }
+                    setQuantity(quantity + 1);
+                  }}
+                  disabled={product.stock === 0}
+                >
+                  +
+                </button>
               </div>
-              <button
-                className="add-to-cart-btn"
-                onClick={handleBuyNow}
-              >
-                Buy Now
-              </button>
+              {product.stock === 0 ? (
+                <button
+                  className="add-to-cart-btn disabled-btn"
+                  disabled
+                >
+                  Out of Stock
+                </button>
+              ) : (
+                <button
+                  className="add-to-cart-btn"
+                  onClick={handleBuyNow}
+                >
+                  Buy Now
+                </button>
+              )}
             </div>
 
             <div className="features">
@@ -255,7 +253,7 @@ export default function ProductDetails({ params }) {
           <section className="related-section">
             <div className="section-header">
               <h2 className="section-title">Related Products</h2>
-              <p className="section-subtitle">You might also like these pieces from the {product.category} collection.</p>
+              <p className="section-subtitle">You might also like these pieces from the {product.category || 'collection'}.</p>
             </div>
             <div className="products-grid">
               {relatedProducts.map(p => (
@@ -381,6 +379,9 @@ export default function ProductDetails({ params }) {
           justify-content: center;
           font-size: 20px;
           font-weight: 600;
+          border: none;
+          background: transparent;
+          cursor: pointer;
         }
 
         .quantity-selector span {
@@ -397,6 +398,8 @@ export default function ProductDetails({ params }) {
           border-radius: 12px;
           font-size: 16px;
           transition: var(--transition-smooth);
+          border: none;
+          cursor: pointer;
         }
 
         .add-to-cart-btn:hover {
@@ -476,6 +479,34 @@ export default function ProductDetails({ params }) {
           .quantity-selector {
             justify-content: space-between;
           }
+        }
+
+        .stock-badge-detail {
+          display: inline-block;
+          font-size: 13px;
+          font-weight: 700;
+          padding: 6px 12px;
+          border-radius: 8px;
+        }
+        .stock-badge-detail.out-of-stock {
+          background: #fee2e2;
+          color: #ef4444;
+        }
+        .stock-badge-detail.low-stock {
+          background: #fffbeb;
+          color: #f59e0b;
+        }
+        .stock-badge-detail.in-stock {
+          background: #dcfce7;
+          color: #22c55e;
+        }
+        .disabled-btn {
+          opacity: 0.6;
+          cursor: not-allowed !important;
+          background: #cbd5e1 !important;
+          color: #64748b !important;
+          box-shadow: none !important;
+          transform: none !important;
         }
       `}</style>
     </div>

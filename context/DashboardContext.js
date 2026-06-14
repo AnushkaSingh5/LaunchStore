@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { productService } from '@/services/productService';
 import { categoryService } from '@/services/categoryService';
+import { couponService } from '@/services/couponService';
 import { supabaseClient } from '@/lib/supabase';
 import { mockDashboardData } from '@/data/mockDashboardData';
 
@@ -15,6 +16,7 @@ export function DashboardProvider({ children }) {
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
   const [customers, setCustomers] = useState([]);
+  const [coupons, setCoupons] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Initial load
@@ -33,6 +35,7 @@ export function DashboardProvider({ children }) {
         setProducts([]);
         setOrders([]);
         setCustomers([]);
+        setCoupons([]);
         setLoading(false);
         return;
       }
@@ -47,14 +50,18 @@ export function DashboardProvider({ children }) {
           setProducts(mockDashboardData.products.map(p => ({ ...p, image: '', images: [] })));
           setOrders(mockDashboardData.orders);
           setCustomers(mockDashboardData.customers);
+          
+          const mockCops = await couponService.getCouponsByStore(store.id);
+          setCoupons(mockCops || []);
           return;
         }
 
-        console.log('[LaunchCart - DashboardContext]: Fetching products and categories from services...');
+        console.log('[LaunchCart - DashboardContext]: Fetching products, categories and coupons from services...');
         // Fetch from Supabase
-        const [prodData, catData] = await Promise.all([
+        const [prodData, catData, couponData] = await Promise.all([
           productService.getProductsByStore(store.id, true),
           categoryService.getCategoriesByStore(store.id),
+          couponService.getCouponsByStore(store.id)
         ]);
         
         console.log('[LaunchCart - DashboardContext]: Fetching orders...');
@@ -75,7 +82,8 @@ export function DashboardProvider({ children }) {
         console.log('[LaunchCart - DashboardContext]: Fetched counts:', {
           productsRaw: safeProdData.length,
           categoriesRaw: safeCatData.length,
-          ordersRaw: ordData?.length || 0
+          ordersRaw: ordData?.length || 0,
+          couponsRaw: couponData?.length || 0
         });
 
         const mappedCategories = safeCatData.map(c => {
@@ -98,6 +106,7 @@ export function DashboardProvider({ children }) {
         console.log('[LaunchCart - DashboardContext]: Successfully mapped products and categories.');
         setProducts(mappedProducts);
         setCategories(mappedCategories);
+        setCoupons(couponData || []);
         setOrders(ordData || []);
 
         // Derive customers from orders
@@ -259,6 +268,47 @@ export function DashboardProvider({ children }) {
     }
   };
 
+  // Coupon Actions
+  const addCoupon = async (couponData) => {
+    if (!store) return;
+    try {
+      const newCoupon = await couponService.createCoupon({
+        ...couponData,
+        store_id: store.id
+      });
+      setCoupons(prev => [newCoupon, ...prev]);
+      return newCoupon;
+    } catch (e) {
+      console.error('Error adding coupon:', e);
+      alert('Error adding coupon: ' + e.message);
+      throw e;
+    }
+  };
+
+  const updateCoupon = async (id, updatedData) => {
+    try {
+      const updatedCoupon = await couponService.updateCoupon(id, updatedData);
+      setCoupons(prev => prev.map(c => c.id === id ? { ...c, ...updatedCoupon } : c));
+      return updatedCoupon;
+    } catch (e) {
+      console.error('Error updating coupon:', e);
+      alert('Error updating coupon: ' + e.message);
+      throw e;
+    }
+  };
+
+  const deleteCoupon = async (id) => {
+    try {
+      await couponService.deleteCoupon(id);
+      setCoupons(prev => prev.filter(c => c.id !== id));
+      return true;
+    } catch (e) {
+      console.error('Error deleting coupon:', e);
+      alert('Error deleting coupon: ' + e.message);
+      throw e;
+    }
+  };
+
   return (
     <DashboardContext.Provider value={{
       categories,
@@ -269,13 +319,18 @@ export function DashboardProvider({ children }) {
       setOrders,
       customers,
       setCustomers,
+      coupons,
+      setCoupons,
       loading,
       addCategory,
       updateCategory,
       deleteCategory,
       addProduct,
       updateProduct,
-      deleteProduct
+      deleteProduct,
+      addCoupon,
+      updateCoupon,
+      deleteCoupon
     }}>
       {children}
     </DashboardContext.Provider>

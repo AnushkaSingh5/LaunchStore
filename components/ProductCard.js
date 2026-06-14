@@ -14,9 +14,10 @@ export default function ProductCard({ product }) {
   const segments = pathname.split('/');
   const isDemo = segments[1] === 'demo-store';
   const storeSlug = (segments[1] === 'store' || isDemo) ? segments[2] : null;
+  const idOrSlug = product.slug || product.id;
   const productLink = storeSlug 
-    ? (isDemo ? `/demo-store/${storeSlug}/product/${product.id}` : `/store/${storeSlug}/product/${product.id}`) 
-    : `/product/${product.id}`;
+    ? (isDemo ? `/demo-store/${storeSlug}/product/${idOrSlug}` : `/store/${storeSlug}/product/${idOrSlug}`) 
+    : `/product/${idOrSlug}`;
 
   const handleBuyNow = (e) => {
     e.preventDefault();
@@ -29,12 +30,20 @@ export default function ProductCard({ product }) {
   };
 
   return (
-    <div className="product-card dashboard-card">
+    <div className={`product-card dashboard-card ${product.stock === 0 ? 'unavailable' : ''}`}>
       <div className="product-visual-wrapper">
         <Link href={productLink} className="product-visual">
           <img src={product.image} alt={product.name} onError={(e) => { e.target.style.display = 'none'; }} />
-          {product.trending && <span className="product-badge accent">Trending</span>}
-          {product.featured && !product.trending && <span className="product-badge secondary">New</span>}
+          {product.stock === 0 ? (
+            <span className="product-badge out-of-stock">Out of Stock</span>
+          ) : product.stock > 0 && product.stock < 10 ? (
+            <span className="product-badge low-stock">Only {product.stock} left</span>
+          ) : (
+            <>
+              {product.trending && <span className="product-badge accent">Trending</span>}
+              {product.featured && !product.trending && <span className="product-badge secondary">New</span>}
+            </>
+          )}
         </Link>
         
         <div className="visual-actions">
@@ -49,16 +58,18 @@ export default function ProductCard({ product }) {
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill={isWishlisted ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
           </button>
           
-          <button 
-            className="action-circle add-btn"
-            onClick={(e) => {
-              e.preventDefault();
-              addToCart(product);
-            }}
-            title="Quick Add to Cart"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-          </button>
+          {product.stock !== 0 && (
+            <button 
+              className="action-circle add-btn"
+              onClick={(e) => {
+                e.preventDefault();
+                addToCart(product);
+              }}
+              title="Quick Add to Cart"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            </button>
+          )}
         </div>
       </div>
 
@@ -75,12 +86,21 @@ export default function ProductCard({ product }) {
         </Link>
         <div className="product-footer">
           <span className="product-price">₹{product.price.toLocaleString()}</span>
-          <button 
-            className="buy-btn"
-            onClick={handleBuyNow}
-          >
-            Buy
-          </button>
+          {product.stock === 0 ? (
+            <button 
+              className="buy-btn disabled-btn"
+              disabled
+            >
+              Out of Stock
+            </button>
+          ) : (
+            <button 
+              className="buy-btn"
+              onClick={handleBuyNow}
+            >
+              Buy
+            </button>
+          )}
         </div>
       </div>
 
@@ -316,6 +336,26 @@ export default function ProductCard({ product }) {
             width: 14px;
             height: 14px;
           }
+        }
+        .product-card.unavailable {
+          opacity: 0.75;
+        }
+        .product-card.unavailable .product-visual img {
+          filter: grayscale(80%);
+        }
+        .product-badge.out-of-stock {
+          background: #ef4444;
+          color: white;
+        }
+        .product-badge.low-stock {
+          background: #f59e0b;
+          color: white;
+        }
+        .disabled-btn {
+          opacity: 0.6;
+          cursor: not-allowed;
+          background: #64748b !important;
+          color: #cbd5e1 !important;
         }
       `}</style>
     </div>

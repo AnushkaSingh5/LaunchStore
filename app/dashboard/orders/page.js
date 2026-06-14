@@ -10,6 +10,16 @@ import { orderService } from '@/services/orderService';
 
 export default function OrdersPage() {
   const { orders: contextOrders, loading } = useDashboard();
+  const getPaymentStatusColor = (paymentStatus) => {
+    const status = (paymentStatus || '').toLowerCase();
+    switch (status) {
+      case 'paid': return { bg: '#f0fdf4', text: '#15803d', dot: '#22c55e' };
+      case 'failed': return { bg: '#fef2f2', text: '#b91c1c', dot: '#ef4444' };
+      case 'pending_payment':
+      case 'pending':
+      default: return { bg: '#fffbeb', text: '#b45309', dot: '#f59e0b' };
+    }
+  };
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [orderDetails, setOrderDetails] = useState(null);
@@ -67,7 +77,7 @@ export default function OrdersPage() {
     date: o.created_at,
     total: parseFloat(o.total_amount || 0),
     status: o.status,
-    payment: 'Paid',
+    payment: o.payment_status || 'Pending',
     shipping_address: o.shipping_address,
   }));
 
@@ -75,11 +85,29 @@ export default function OrdersPage() {
     const matchesSearch = String(order.id || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
                          String(order.customer || '').toLowerCase().includes(searchQuery.toLowerCase());
     
-    const matchesStatus = filters.status.length === 0 || filters.status.includes(order.status);
+    const matchesStatus = filters.status.length === 0 || filters.status.some(s => {
+      const orderStatusLower = order.status.toLowerCase();
+      const sLower = s.toLowerCase();
+      if (sLower === 'pending') {
+        return orderStatusLower === 'pending' || orderStatusLower === 'pending_payment' || orderStatusLower === 'awaiting_payment';
+      }
+      if (sLower === 'processing') {
+        return orderStatusLower === 'processing' || orderStatusLower === 'confirmed';
+      }
+      return orderStatusLower === sLower;
+    });
     
-    // In a real app, payment status would be part of the order object
-    // Mocking it for now
-    const matchesPayment = filters.paymentStatus.length === 0; 
+    const matchesPayment = filters.paymentStatus.length === 0 || filters.paymentStatus.some(p => {
+      const orderPaymentLower = order.payment.toLowerCase();
+      const pLower = p.toLowerCase();
+      if (pLower === 'paid') {
+        return orderPaymentLower === 'paid';
+      }
+      if (pLower === 'unpaid' || pLower === 'pending') {
+        return orderPaymentLower === 'unpaid' || orderPaymentLower === 'pending' || orderPaymentLower === 'pending_payment';
+      }
+      return orderPaymentLower === pLower;
+    }); 
 
     let matchesAmount = true;
     if (filters.amount === '₹0 - ₹100') matchesAmount = order.total <= 100;
@@ -121,14 +149,20 @@ export default function OrdersPage() {
     });
   };
 
-  const getStatusColor = (status) => {
+  const getStatusColor = (statusVal) => {
+    const status = (statusVal || '').toLowerCase();
     switch (status) {
-      case 'Delivered': return { bg: '#f0fdf4', text: '#15803d', dot: '#22c55e' };
-      case 'Shipped': return { bg: '#eff6ff', text: '#1d4ed8', dot: '#3b82f6' };
-      case 'Pending': return { bg: '#fffbeb', text: '#b45309', dot: '#f59e0b' };
-      case 'Cancelled': return { bg: '#fef2f2', text: '#b91c1c', dot: '#ef4444' };
-      case 'Processing': return { bg: '#f5f3ff', text: '#6d28d9', dot: '#8b5cf6' };
-      case 'Refunded': return { bg: '#f1f5f9', text: '#475569', dot: '#94a3b8' };
+      case 'delivered': return { bg: '#f0fdf4', text: '#15803d', dot: '#22c55e' };
+      case 'shipped': return { bg: '#eff6ff', text: '#1d4ed8', dot: '#3b82f6' };
+      case 'pending': 
+      case 'pending_payment':
+      case 'awaiting_payment':
+        return { bg: '#fffbeb', text: '#b45309', dot: '#f59e0b' };
+      case 'cancelled': return { bg: '#fef2f2', text: '#b91c1c', dot: '#ef4444' };
+      case 'processing':
+      case 'confirmed':
+        return { bg: '#f5f3ff', text: '#6d28d9', dot: '#8b5cf6' };
+      case 'refunded': return { bg: '#f1f5f9', text: '#475569', dot: '#94a3b8' };
       default: return { bg: '#f1f5f9', text: '#475569', dot: '#94a3b8' };
     }
   };
@@ -163,10 +197,10 @@ export default function OrdersPage() {
 
   // Calculate dynamic summary counts from context
   const totalOrdersCount = orders.length;
-  const pendingOrdersCount = orders.filter(o => o.status === 'Pending' || o.status === 'Processing').length;
-  const shippedOrdersCount = orders.filter(o => o.status === 'Shipped').length;
-  const deliveredOrdersCount = orders.filter(o => o.status === 'Delivered').length;
-  const cancelledOrdersCount = orders.filter(o => o.status === 'Cancelled' || o.status === 'Refunded').length;
+  const paidOrdersCount = orders.filter(o => o.payment.toLowerCase() === 'paid').length;
+  const pendingPaymentsCount = orders.filter(o => o.payment.toLowerCase() === 'pending' || o.payment.toLowerCase() === 'pending_payment').length;
+  const failedPaymentsCount = orders.filter(o => o.payment.toLowerCase() === 'failed').length;
+  const cancelledOrdersCount = orders.filter(o => o.status.toLowerCase() === 'cancelled' || o.status.toLowerCase() === 'refunded').length;
 
   // Calculate dynamic monthly trends to replace hardcoded values
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
@@ -196,40 +230,40 @@ export default function OrdersPage() {
   const totalGrowthText = getGrowthText(currentPeriodOrders.length, previousPeriodOrders.length);
   const totalGrowthClass = getGrowthClass(currentPeriodOrders.length, previousPeriodOrders.length);
 
-  const pendingGrowthText = getGrowthText(
-    currentPeriodOrders.filter(o => o.status === 'Pending' || o.status === 'Processing').length,
-    previousPeriodOrders.filter(o => o.status === 'Pending' || o.status === 'Processing').length
+  const paidGrowthText = getGrowthText(
+    currentPeriodOrders.filter(o => o.payment.toLowerCase() === 'paid').length,
+    previousPeriodOrders.filter(o => o.payment.toLowerCase() === 'paid').length
   );
-  const pendingGrowthClass = getGrowthClass(
-    currentPeriodOrders.filter(o => o.status === 'Pending' || o.status === 'Processing').length,
-    previousPeriodOrders.filter(o => o.status === 'Pending' || o.status === 'Processing').length
-  );
-
-  const shippedGrowthText = getGrowthText(
-    currentPeriodOrders.filter(o => o.status === 'Shipped').length,
-    previousPeriodOrders.filter(o => o.status === 'Shipped').length
-  );
-  const shippedGrowthClass = getGrowthClass(
-    currentPeriodOrders.filter(o => o.status === 'Shipped').length,
-    previousPeriodOrders.filter(o => o.status === 'Shipped').length
+  const paidGrowthClass = getGrowthClass(
+    currentPeriodOrders.filter(o => o.payment.toLowerCase() === 'paid').length,
+    previousPeriodOrders.filter(o => o.payment.toLowerCase() === 'paid').length
   );
 
-  const deliveredGrowthText = getGrowthText(
-    currentPeriodOrders.filter(o => o.status === 'Delivered').length,
-    previousPeriodOrders.filter(o => o.status === 'Delivered').length
+  const pendingPaymentsGrowthText = getGrowthText(
+    currentPeriodOrders.filter(o => o.payment.toLowerCase() === 'pending' || o.payment.toLowerCase() === 'pending_payment').length,
+    previousPeriodOrders.filter(o => o.payment.toLowerCase() === 'pending' || o.payment.toLowerCase() === 'pending_payment').length
   );
-  const deliveredGrowthClass = getGrowthClass(
-    currentPeriodOrders.filter(o => o.status === 'Delivered').length,
-    previousPeriodOrders.filter(o => o.status === 'Delivered').length
+  const pendingPaymentsGrowthClass = getGrowthClass(
+    currentPeriodOrders.filter(o => o.payment.toLowerCase() === 'pending' || o.payment.toLowerCase() === 'pending_payment').length,
+    previousPeriodOrders.filter(o => o.payment.toLowerCase() === 'pending' || o.payment.toLowerCase() === 'pending_payment').length
+  );
+
+  const failedPaymentsGrowthText = getGrowthText(
+    currentPeriodOrders.filter(o => o.payment.toLowerCase() === 'failed').length,
+    previousPeriodOrders.filter(o => o.payment.toLowerCase() === 'failed').length
+  );
+  const failedPaymentsGrowthClass = getGrowthClass(
+    currentPeriodOrders.filter(o => o.payment.toLowerCase() === 'failed').length,
+    previousPeriodOrders.filter(o => o.payment.toLowerCase() === 'failed').length
   );
 
   const cancelledGrowthText = getGrowthText(
-    currentPeriodOrders.filter(o => o.status === 'Cancelled' || o.status === 'Refunded').length,
-    previousPeriodOrders.filter(o => o.status === 'Cancelled' || o.status === 'Refunded').length
+    currentPeriodOrders.filter(o => o.status.toLowerCase() === 'cancelled' || o.status.toLowerCase() === 'refunded').length,
+    previousPeriodOrders.filter(o => o.status.toLowerCase() === 'cancelled' || o.status.toLowerCase() === 'refunded').length
   );
   const cancelledGrowthClass = getGrowthClass(
-    currentPeriodOrders.filter(o => o.status === 'Cancelled' || o.status === 'Refunded').length,
-    previousPeriodOrders.filter(o => o.status === 'Cancelled' || o.status === 'Refunded').length
+    currentPeriodOrders.filter(o => o.status.toLowerCase() === 'cancelled' || o.status.toLowerCase() === 'refunded').length,
+    previousPeriodOrders.filter(o => o.status.toLowerCase() === 'cancelled' || o.status.toLowerCase() === 'refunded').length
   );
 
   return (
@@ -262,43 +296,43 @@ export default function OrdersPage() {
         </div>
         <div className="summary-card">
           <div className="card-top">
-            <div className="icon-wrapper" style={{ background: '#fffbeb', color: '#f59e0b' }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-            </div>
-            <div className="card-info">
-              <span className="value">{pendingOrdersCount}</span>
-              <span className="label">Pending</span>
-            </div>
-          </div>
-          <div className={`trend ${pendingGrowthClass}`}>{pendingGrowthText}</div>
-        </div>
-        <div className="summary-card">
-          <div className="card-top">
-            <div className="icon-wrapper" style={{ background: '#eff6ff', color: '#3b82f6' }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
-            </div>
-            <div className="card-info">
-              <span className="value">{shippedOrdersCount}</span>
-              <span className="label">Shipped</span>
-            </div>
-          </div>
-          <div className={`trend ${shippedGrowthClass}`}>{shippedGrowthText}</div>
-        </div>
-        <div className="summary-card">
-          <div className="card-top">
             <div className="icon-wrapper" style={{ background: '#f0fdf4', color: '#22c55e' }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
             </div>
             <div className="card-info">
-              <span className="value">{deliveredOrdersCount}</span>
-              <span className="label">Delivered</span>
+              <span className="value">{paidOrdersCount}</span>
+              <span className="label">Paid Orders</span>
             </div>
           </div>
-          <div className={`trend ${deliveredGrowthClass}`}>{deliveredGrowthText}</div>
+          <div className={`trend ${paidGrowthClass}`}>{paidGrowthText}</div>
+        </div>
+        <div className="summary-card">
+          <div className="card-top">
+            <div className="icon-wrapper" style={{ background: '#fffbeb', color: '#f59e0b' }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            </div>
+            <div className="card-info">
+              <span className="value">{pendingPaymentsCount}</span>
+              <span className="label">Pending Payments</span>
+            </div>
+          </div>
+          <div className={`trend ${pendingPaymentsGrowthClass}`}>{pendingPaymentsGrowthText}</div>
         </div>
         <div className="summary-card">
           <div className="card-top">
             <div className="icon-wrapper" style={{ background: '#fef2f2', color: '#ef4444' }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+            </div>
+            <div className="card-info">
+              <span className="value">{failedPaymentsCount}</span>
+              <span className="label">Failed Payments</span>
+            </div>
+          </div>
+          <div className={`trend ${failedPaymentsGrowthClass}`}>{failedPaymentsGrowthText}</div>
+        </div>
+        <div className="summary-card">
+          <div className="card-top">
+            <div className="icon-wrapper" style={{ background: '#f1f5f9', color: '#475569' }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
             </div>
             <div className="card-info">
@@ -409,10 +443,31 @@ export default function OrdersPage() {
                 </div>
                 <div className="col-total"><strong>₹{order.total.toFixed(2)}</strong></div>
                 <div className="col-status">
-                  <span className="status-pill" style={{ background: status.bg, color: status.text }}>
-                    <span className="dot" style={{ background: status.dot }}></span>
-                    {order.status}
-                  </span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <span className="status-pill" style={{ background: status.bg, color: status.text }}>
+                      <span className="dot" style={{ background: status.dot }}></span>
+                      {order.status}
+                    </span>
+                    <span className="status-pill" style={{ 
+                      background: getPaymentStatusColor(order.payment).bg, 
+                      color: getPaymentStatusColor(order.payment).text,
+                      fontSize: '11px',
+                      padding: '2px 8px',
+                      borderRadius: '99px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      fontWeight: '700'
+                    }}>
+                      <span className="dot" style={{ 
+                        background: getPaymentStatusColor(order.payment).dot,
+                        width: '5px',
+                        height: '5px',
+                        borderRadius: '50%',
+                        marginRight: '4px'
+                      }}></span>
+                      {order.payment}
+                    </span>
+                  </div>
                 </div>
                 <div className="col-actions">
                   <div className="action-btns">
@@ -1632,24 +1687,44 @@ export default function OrdersPage() {
             <div className="info-item payment">
               <span className="info-label">Payment Status</span>
               <div className="info-val-box">
-                <span className="status-pill" style={{ background: '#f0fdf4', color: '#15803d', padding: '6px 12px' }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" style={{ marginRight: '6px' }}><polyline points="20 6 9 17 4 12"></polyline></svg>
-                  Paid
+                <span className="status-pill" style={{ 
+                  background: getPaymentStatusColor(selectedOrder?.payment).bg, 
+                  color: getPaymentStatusColor(selectedOrder?.payment).text, 
+                  padding: '6px 12px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  fontWeight: '700',
+                  borderRadius: '99px'
+                }}>
+                  <span className="dot" style={{ 
+                    background: getPaymentStatusColor(selectedOrder?.payment).dot,
+                    width: '6px',
+                    height: '6px',
+                    borderRadius: '50%',
+                    marginRight: '6px'
+                  }}></span>
+                  {selectedOrder?.payment}
                 </span>
               </div>
             </div>
             <div className="info-divider"></div>
             <div className="info-item status">
               <span className="info-label">Update Status</span>
-              <div className="val-select-wrapper">
-                <select value={selectedOrder?.status} onChange={(e) => handleStatusChange(e.target.value)}>
-                  <option value="Pending">Pending</option>
-                  <option value="Shipped">Shipped</option>
-                  <option value="Delivered">Delivered</option>
-                  <option value="Cancelled">Cancelled</option>
-                </select>
-                <div className="select-arrow"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
-              </div>
+              {selectedOrder?.payment.toLowerCase() === 'paid' ? (
+                <div className="val-select-wrapper">
+                  <select value={selectedOrder?.status} onChange={(e) => handleStatusChange(e.target.value)}>
+                    <option value="Pending">Pending</option>
+                    <option value="Shipped">Shipped</option>
+                    <option value="Delivered">Delivered</option>
+                    <option value="Cancelled">Cancelled</option>
+                  </select>
+                  <div className="select-arrow"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
+                </div>
+              ) : (
+                <div style={{ fontSize: '12px', fontWeight: '700', color: '#ef4444', background: '#fef2f2', padding: '6px 12px', borderRadius: '8px', border: '1px solid #fee2e2' }}>
+                  Processing Disabled (Awaiting Payment)
+                </div>
+              )}
             </div>
           </div>
 

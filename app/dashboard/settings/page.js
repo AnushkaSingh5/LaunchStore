@@ -17,7 +17,12 @@ export default function SettingsPage() {
     banner: '',
     showCategories: true,
     showFeatured: true,
-    defaultSort: 'newest'
+    defaultSort: 'newest',
+    seoTitle: '',
+    seoDescription: '',
+    ogTitle: '',
+    ogDescription: '',
+    canonicalUrl: ''
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -35,7 +40,12 @@ export default function SettingsPage() {
           banner: store.banner_url || '',
           showCategories: store.theme_settings?.showCategories ?? true,
           showFeatured: store.theme_settings?.showFeatured ?? true,
-          defaultSort: store.theme_settings?.defaultSort ?? 'newest'
+          defaultSort: store.theme_settings?.defaultSort ?? 'newest',
+          seoTitle: store.seo_title || '',
+          seoDescription: store.seo_description || '',
+          ogTitle: store.og_title || '',
+          ogDescription: store.og_description || '',
+          canonicalUrl: store.canonical_url || ''
         });
         setLoading(false);
       }, 0);
@@ -62,7 +72,12 @@ export default function SettingsPage() {
           showCategories: settings.showCategories,
           showFeatured: settings.showFeatured,
           defaultSort: settings.defaultSort
-        }
+        },
+        seo_title: settings.seoTitle,
+        seo_description: settings.seoDescription,
+        og_title: settings.ogTitle,
+        og_description: settings.ogDescription,
+        canonical_url: settings.canonicalUrl
       });
       await refreshStore();
       alert('Settings saved successfully!');
@@ -268,6 +283,88 @@ export default function SettingsPage() {
               <svg className="select-caret" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </div>
           </div>
+        </div>
+
+        {/* SEO & Search Visibility Card */}
+        <div className="settings-card">
+          <div className="card-header">
+            <div className="section-icon" style={{ background: '#dcfce7', color: '#166534' }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="12" y1="8" x2="8" y2="12"></line></svg>
+            </div>
+            <h3>SEO & Search Visibility</h3>
+          </div>
+
+          <div className="form-grid">
+            <div className="form-group">
+              <label>SEO Title</label>
+              <input
+                type="text"
+                value={settings.seoTitle}
+                onChange={(e) => handleChange('seoTitle', e.target.value)}
+                placeholder="Enter custom title tag for search engines"
+              />
+              <span className="help-text">Recommended length: 50-60 characters. Current: {settings.seoTitle.length}</span>
+            </div>
+            <div className="form-group">
+              <label>Canonical URL</label>
+              <input
+                type="text"
+                value={settings.canonicalUrl}
+                onChange={(e) => handleChange('canonicalUrl', e.target.value)}
+                placeholder="https://example.com"
+              />
+              <span className="help-text">Leave blank to use default store storefront URL.</span>
+            </div>
+          </div>
+
+          <div className="form-group" style={{ marginBottom: '24px' }}>
+            <label>SEO Description</label>
+            <textarea
+              value={settings.seoDescription}
+              onChange={(e) => handleChange('seoDescription', e.target.value)}
+              placeholder="Enter description snippet that appears in search results"
+              rows="3"
+            />
+            <span className="help-text">Recommended length: 150-160 characters. Current: {settings.seoDescription.length}</span>
+          </div>
+
+          <div className="form-grid" style={{ borderTop: '1px solid #f1f5f9', paddingTop: '24px', marginTop: '24px' }}>
+            <div className="form-group">
+              <label>Open Graph (Social Sharing) Title</label>
+              <input
+                type="text"
+                value={settings.ogTitle}
+                onChange={(e) => handleChange('ogTitle', e.target.value)}
+                placeholder="Title when shared on Facebook, Twitter, WhatsApp"
+              />
+            </div>
+            <div className="form-group">
+              <label>Open Graph Description</label>
+              <textarea
+                value={settings.ogDescription}
+                onChange={(e) => handleChange('ogDescription', e.target.value)}
+                placeholder="Description when shared on social media"
+                rows="2"
+              />
+            </div>
+          </div>
+
+          {/* Real-time Google Search Preview */}
+          <div className="google-preview-container">
+            <h4>Google Search Preview</h4>
+            <div className="google-preview-box">
+              <div className="google-url">
+                {settings.canonicalUrl || `https://launchcart.com/store/${store?.slug || 'store-slug'}`}
+              </div>
+              <div className="google-title">
+                {settings.seoTitle || settings.storeName || 'Store Name'}
+              </div>
+              <div className="google-description">
+                {settings.seoDescription || settings.description || 'No description provided. Add an SEO description to help people find your store.'}
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -584,6 +681,62 @@ export default function SettingsPage() {
           transform: translateY(-50%);
           color: #64748b;
           pointer-events: none;
+        }
+
+        .google-preview-container {
+          margin-top: 24px;
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
+          border-radius: 12px;
+          padding: 20px;
+        }
+        .google-preview-container h4 {
+          font-size: 11px;
+          font-weight: 800;
+          color: #64748b;
+          margin: 0 0 12px 0;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+        .google-preview-box {
+          background: #fff;
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+          padding: 16px;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+          max-width: 600px;
+          text-align: left;
+        }
+        .google-url {
+          font-size: 12px;
+          color: #202124;
+          margin-bottom: 4px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .google-title {
+          font-size: 19px;
+          color: #1a0dab;
+          font-weight: 400;
+          margin-bottom: 4px;
+          line-height: 1.3;
+          cursor: pointer;
+        }
+        .google-title:hover {
+          text-decoration: underline;
+        }
+        .google-description {
+          font-size: 14px;
+          color: #4d5156;
+          line-height: 1.55;
+          word-wrap: break-word;
+        }
+
+        .help-text {
+          font-size: 11px;
+          color: #94a3b8;
+          margin-top: 4px;
         }
 
         @media (max-width: 768px) {

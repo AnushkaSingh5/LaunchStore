@@ -27,7 +27,14 @@ export default function AdminOrders() {
     { field: 'customer', label: 'Customer' },
     { field: 'store', label: 'Store' },
     { field: 'total', label: 'Total Amount', render: (row) => `₹${row.total.toLocaleString()}` },
-    { field: 'paymentMethod', label: 'Payment' },
+    { field: 'paymentMethod', label: 'Payment', render: (row) => (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+        <span style={{ fontWeight: 600 }}>{row.paymentMethod}</span>
+        <span className={`status-pill ${(row.paymentStatus || 'Pending').toLowerCase()}`} style={{ fontSize: '10px', padding: '2px 6px' }}>
+          {row.paymentStatus || 'Pending'}
+        </span>
+      </div>
+    )},
     { field: 'status', label: 'Status', render: (row) => (
       <span className={`status-pill ${row.status.toLowerCase()}`}>{row.status}</span>
     )},
@@ -92,7 +99,8 @@ export default function AdminOrders() {
               <h4>Shipping & Payment</h4>
               <div className="detail-grid">
                 <div className="detail-item"><strong>Payment Method:</strong> <span>{selectedOrder.paymentMethod}</span></div>
-                <div className="detail-item"><strong>Shipping Address:</strong> <span>{selectedOrder.address || 'Standard Shipping'}</span></div>
+                <div className="detail-item"><strong>Payment Status:</strong> <span className={`status-pill ${(selectedOrder.paymentStatus || 'Pending').toLowerCase()}`}>{selectedOrder.paymentStatus || 'Pending'}</span></div>
+                <div className="detail-item" style={{ gridColumn: 'span 2', marginTop: '8px' }}><strong>Shipping Address:</strong> <span>{selectedOrder.address || 'Standard Shipping'}</span></div>
               </div>
             </div>
           </div>
@@ -116,6 +124,9 @@ export default function AdminOrders() {
         .status-pill.shipped { background: #dbeafe; color: #1e40af; }
         .status-pill.processing { background: #fef3c7; color: #92400e; }
         .status-pill.cancelled { background: #fee2e2; color: #b91c1c; }
+        .status-pill.paid { background: #dcfce7; color: #166534; }
+        .status-pill.pending { background: #fef3c7; color: #92400e; }
+        .status-pill.failed { background: #fee2e2; color: #b91c1c; }
       `}</style>
     </div>
   );

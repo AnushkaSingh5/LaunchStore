@@ -175,6 +175,16 @@ export default function ProductDetailsClient({ slug, id }) {
             <h1 className="title">{product.name}</h1>
             <p className="price">₹{product.price.toLocaleString()}</p>
 
+            <div className="stock-status-wrapper" style={{ marginBottom: '20px' }}>
+              {product.stock === 0 ? (
+                <span className="stock-badge-detail out-of-stock">Out of Stock</span>
+              ) : product.stock < 10 ? (
+                <span className="stock-badge-detail low-stock">Low Stock (Only {product.stock} items left)</span>
+              ) : (
+                <span className="stock-badge-detail in-stock">In Stock ({product.stock} items available)</span>
+              )}
+            </div>
+
             <div className="rating">
               <div className="stars">★★★★★</div>
               <span className="reviews">(128 reviews)</span>
@@ -186,16 +196,41 @@ export default function ProductDetailsClient({ slug, id }) {
 
             <div className="actions">
               <div className="quantity-selector">
-                <button onClick={() => setQuantity(Math.max(1, quantity - 1))}>-</button>
-                <span>{quantity}</span>
-                <button onClick={() => setQuantity(quantity + 1)}>+</button>
+                <button 
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  disabled={product.stock === 0}
+                >
+                  -
+                </button>
+                <span>{product.stock === 0 ? 0 : quantity}</span>
+                <button 
+                  onClick={() => {
+                    if (product.stock !== undefined && quantity >= product.stock) {
+                      alert(`Only ${product.stock} items available.`);
+                      return;
+                    }
+                    setQuantity(quantity + 1);
+                  }}
+                  disabled={product.stock === 0}
+                >
+                  +
+                </button>
               </div>
-              <button
-                className="add-to-cart-btn"
-                onClick={handleBuyNow}
-              >
-                Buy Now
-              </button>
+              {product.stock === 0 ? (
+                <button
+                  className="add-to-cart-btn disabled-btn"
+                  disabled
+                >
+                  Out of Stock
+                </button>
+              ) : (
+                <button
+                  className="add-to-cart-btn"
+                  onClick={handleBuyNow}
+                >
+                  Buy Now
+                </button>
+              )}
             </div>
 
             <div className="features">
@@ -442,6 +477,34 @@ export default function ProductDetailsClient({ slug, id }) {
           .quantity-selector {
             justify-content: space-between;
           }
+        }
+
+        .stock-badge-detail {
+          display: inline-block;
+          font-size: 13px;
+          font-weight: 700;
+          padding: 6px 12px;
+          border-radius: 8px;
+        }
+        .stock-badge-detail.out-of-stock {
+          background: #fee2e2;
+          color: #ef4444;
+        }
+        .stock-badge-detail.low-stock {
+          background: #fffbeb;
+          color: #f59e0b;
+        }
+        .stock-badge-detail.in-stock {
+          background: #dcfce7;
+          color: #22c55e;
+        }
+        .disabled-btn {
+          opacity: 0.6;
+          cursor: not-allowed !important;
+          background: #cbd5e1 !important;
+          color: #64748b !important;
+          box-shadow: none !important;
+          transform: none !important;
         }
       `}</style>
     </div>

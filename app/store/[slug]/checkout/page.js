@@ -10,6 +10,9 @@ import { checkoutService } from '@/services/checkoutService';
 import { customerService } from '@/services/customerService';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { paymentFactory } from '@/services/payment/PaymentFactory';
+import { orderService } from '@/services/orderService';
+import { couponService } from '@/services/couponService';
 
 export default function StoreCheckoutPage({ params }) {
   const { slug } = use(params);
@@ -33,9 +36,17 @@ export default function StoreCheckoutPage({ params }) {
   const [success, setSuccess] = useState(false);
   const [placedOrder, setPlacedOrder] = useState(null);
   const [loadingDetails, setLoadingDetails] = useState(true);
+  const [showMockModal, setShowMockModal] = useState(false);
+  const [mockPaymentData, setMockPaymentData] = useState(null);
 
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState('');
+
+  // Coupon States
+  const [couponCodeInput, setCouponCodeInput] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [couponError, setCouponError] = useState('');
+  const [discountAmount, setDiscountAmount] = useState(0);
 
   // Authenticate customer role and pre-fill details
   useEffect(() => {
@@ -249,7 +260,64 @@ export default function StoreCheckoutPage({ params }) {
   
   const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const tax = cartTotal * 0.08;
-  const total = cartTotal + tax; // Free shipping
+  
+  const isCouponValidForTotal = !appliedCoupon || (
+    (!appliedCoupon.minimum_order_amount || cartTotal >= appliedCoupon.minimum_order_amount)
+  );
+  
+  const discount = (appliedCoupon && isCouponValidForTotal) ? (
+    appliedCoupon.discount_type === 'percentage'
+      ? parseFloat((cartTotal * (appliedCoupon.discount_value / 100)).toFixed(2))
+      : parseFloat(appliedCoupon.discount_value)
+  ) : 0;
+  
+  const total = Math.max(0, cartTotal + tax - discount);
+
+  const handleApplyCoupon = async (e) => {
+    if (e) e.preventDefault();
+    setCouponError('');
+    
+    if (!couponCodeInput.trim()) {
+      setCouponError('Please enter a coupon code.');
+      return;
+    }
+
+    if (!storeDetails?.id) {
+      setCouponError('Store details are not loaded yet.');
+      return;
+    }
+
+    try {
+      const res = await couponService.validateCoupon({
+        storeId: storeDetails.id,
+        code: couponCodeInput,
+        subtotal: cartTotal
+      });
+
+      if (!res.isValid) {
+        setCouponError(res.message || 'Invalid coupon.');
+        setAppliedCoupon(null);
+        setDiscountAmount(0);
+      } else {
+        const coupon = res.coupon;
+        setAppliedCoupon(coupon);
+        const calculatedDiscount = coupon.discount_type === 'percentage'
+          ? parseFloat((cartTotal * (coupon.discount_value / 100)).toFixed(2))
+          : parseFloat(coupon.discount_value);
+        setDiscountAmount(calculatedDiscount);
+        setCouponError('');
+      }
+    } catch (err) {
+      setCouponError('Error validating coupon. Please try again.');
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setDiscountAmount(0);
+    setCouponCodeInput('');
+    setCouponError('');
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -275,10 +343,16 @@ export default function StoreCheckoutPage({ params }) {
     }
 
     try {
+      const couponData = appliedCoupon && isCouponValidForTotal ? {
+        coupon_id: appliedCoupon.id,
+        coupon_code: appliedCoupon.code,
+        discount_amount: discount
+      } : null;
+
       const response = await checkoutService.processCheckout(cart, {
         ...form,
         id: profile?.id
-      });
+      }, couponData);
       if (response.success && response.orders?.length > 0) {
         setPlacedOrder(response.orders[0]);
 
@@ -317,12 +391,140 @@ export default function StoreCheckoutPage({ params }) {
           console.warn('⚠️ [Checkout] Failed to auto-save address to address book:', addrErr?.message || addrErr);
         }
 
-        await clearCart();
-        setSuccess(true);
+        // Trigger payment flow
+        const provider = paymentFactory.getProvider('Razorpay');
+        const paymentOrder = await provider.createPaymentOrder(
+          response.orders[0].id,
+          response.orders[0].total_amount,
+          {
+            name: form.name,
+            email: form.email,
+            phone: form.phone
+          }
+        );
+
+        if (paymentOrder.mock) {
+          setMockPaymentData({
+            orderId: response.orders[0].id,
+            totalAmount: response.orders[0].total_amount,
+            paymentOrderId: paymentOrder.id,
+            provider
+          });
+          setShowMockModal(true);
+          setLoading(false);
+          return;
+        }
+
+        const scriptLoaded = await provider.loadScript();
+        if (!scriptLoaded) {
+          alert('Failed to load payment gateway script. Please try again or check your connection.');
+          setLoading(false);
+          return;
+        }
+
+        const options = {
+          key: provider.keyId,
+          amount: paymentOrder.amount,
+          currency: paymentOrder.currency,
+          name: storeDetails.name,
+          description: `Order #${response.orders[0].id.slice(0, 8).toUpperCase()}`,
+          order_id: paymentOrder.id,
+          handler: async function (paymentRes) {
+            setLoading(true);
+            try {
+              const verified = await provider.verifyPaymentSignature(paymentRes);
+              if (verified) {
+                await orderService.updateOrderPayment(response.orders[0].id, {
+                  paymentStatus: 'paid',
+                  paymentProvider: 'Razorpay',
+                  paymentId: paymentRes.razorpay_payment_id,
+                  paymentOrderId: paymentRes.razorpay_order_id,
+                  status: 'confirmed'
+                });
+                await clearCart();
+                router.push(`/store/${slug}/checkout/success?orderId=${response.orders[0].id}`);
+              } else {
+                alert('Signature verification failed. Payment was not authenticated.');
+                router.push(`/store/${slug}/checkout/failed?orderId=${response.orders[0].id}`);
+              }
+            } catch (verErr) {
+              console.error('Error during signature verification:', verErr);
+              router.push(`/store/${slug}/checkout/failed?orderId=${response.orders[0].id}&error=${encodeURIComponent(verErr.message)}`);
+            } finally {
+              setLoading(false);
+            }
+          },
+          prefill: {
+            name: form.name,
+            email: form.email,
+            contact: form.phone
+          },
+          theme: {
+            color: '#8b5cf6'
+          },
+          modal: {
+            ondismiss: function () {
+              console.log('Payment window closed by user.');
+              router.push(`/store/${slug}/checkout/failed?orderId=${response.orders[0].id}`);
+            }
+          }
+        };
+
+        const rzp = new window.Razorpay(options);
+        rzp.open();
       }
     } catch (err) {
       console.warn('⚠️ [Checkout] Failed to process checkout:', err);
       alert('Failed to place order: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMockSuccess = async (provider) => {
+    setLoading(true);
+    setShowMockModal(false);
+    try {
+      const mockDetails = {
+        razorpay_order_id: mockPaymentData.paymentOrderId,
+        razorpay_payment_id: `pay_mock_${Date.now()}`,
+        razorpay_signature: `sig_mock_${Date.now()}`
+      };
+      const verified = await provider.verifyPaymentSignature(mockDetails);
+      if (verified) {
+        await orderService.updateOrderPayment(mockPaymentData.orderId, {
+          paymentStatus: 'paid',
+          paymentProvider: 'Razorpay',
+          paymentId: mockDetails.razorpay_payment_id,
+          paymentOrderId: mockDetails.razorpay_order_id,
+          status: 'confirmed'
+        });
+        await clearCart();
+        router.push(`/store/${slug}/checkout/success?orderId=${mockPaymentData.orderId}`);
+      } else {
+        router.push(`/store/${slug}/checkout/failed?orderId=${mockPaymentData.orderId}`);
+      }
+    } catch (err) {
+      console.error('Mock payment error:', err);
+      router.push(`/store/${slug}/checkout/failed?orderId=${mockPaymentData.orderId}&error=${encodeURIComponent(err.message)}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMockFailure = async (provider) => {
+    setLoading(true);
+    setShowMockModal(false);
+    try {
+      await orderService.updateOrderPayment(mockPaymentData.orderId, {
+        paymentStatus: 'failed',
+        paymentProvider: 'Razorpay',
+        status: 'awaiting_payment'
+      });
+      router.push(`/store/${slug}/checkout/failed?orderId=${mockPaymentData.orderId}`);
+    } catch (err) {
+      console.error('Mock failure error:', err);
+      router.push(`/store/${slug}/checkout/failed?orderId=${mockPaymentData.orderId}`);
     } finally {
       setLoading(false);
     }
@@ -642,11 +844,42 @@ export default function StoreCheckoutPage({ params }) {
                 ))}
               </div>
 
+              {/* Coupon Form */}
+              <div className="coupon-section">
+                {!appliedCoupon ? (
+                  <form onSubmit={handleApplyCoupon} className="coupon-form">
+                    <input
+                      type="text"
+                      placeholder="Promo Code"
+                      value={couponCodeInput}
+                      onChange={(e) => setCouponCodeInput(e.target.value.toUpperCase())}
+                      className="coupon-input"
+                    />
+                    <button type="submit" className="coupon-apply-btn">Apply</button>
+                  </form>
+                ) : (
+                  <div className="applied-coupon-badge">
+                    <span className="coupon-icon">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v2zM12 7v10M9 12h6"></path></svg>
+                    </span>
+                    <span className="coupon-text">{appliedCoupon.code} applied</span>
+                    <button type="button" onClick={handleRemoveCoupon} className="remove-coupon-btn">&times;</button>
+                  </div>
+                )}
+                {couponError && <p className="coupon-error-msg">{couponError}</p>}
+              </div>
+
               <div className="summary-totals">
                 <div className="sum-row">
                   <span>Subtotal</span>
                   <span>₹{cartTotal.toLocaleString()}</span>
                 </div>
+                {appliedCoupon && isCouponValidForTotal && (
+                  <div className="sum-row discount">
+                    <span>Discount ({appliedCoupon.discount_type === 'percentage' ? `${appliedCoupon.discount_value}%` : 'Flat'})</span>
+                    <span className="discount-amount">-₹{discount.toLocaleString()}</span>
+                  </div>
+                )}
                 <div className="sum-row">
                   <span>Tax (8%)</span>
                   <span>₹{tax.toLocaleString()}</span>
@@ -987,7 +1220,255 @@ export default function StoreCheckoutPage({ params }) {
             grid-template-columns: 1fr;
           }
         }
+
+        /* Mock Modal Styling */
+        .mock-modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(15, 23, 42, 0.75);
+          backdrop-filter: blur(12px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 9999;
+          font-family: 'Outfit', sans-serif;
+          padding: 20px;
+        }
+        .mock-modal-card {
+          background: #1e293b;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 24px;
+          padding: 36px;
+          max-width: 460px;
+          width: 100%;
+          color: #fff;
+          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+          display: flex;
+          flex-direction: column;
+          gap: 24px;
+          animation: modalAppear 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes modalAppear {
+          from { transform: scale(0.95); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
+        }
+        .mock-chip {
+          background: #fbbf24;
+          color: #78350f;
+          font-size: 10px;
+          font-weight: 800;
+          padding: 4px 10px;
+          border-radius: 99px;
+          letter-spacing: 0.5px;
+          display: inline-block;
+          margin-bottom: 12px;
+        }
+        .mock-modal-header h2 {
+          font-size: 22px;
+          font-weight: 800;
+          margin: 0 0 6px 0;
+        }
+        .mock-order-ref {
+          color: #94a3b8;
+          font-size: 13px;
+          margin: 0;
+        }
+        .mock-amount-box {
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          border-radius: 16px;
+          padding: 20px;
+          text-align: center;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+        .mock-amount-label {
+          font-size: 12px;
+          color: #94a3b8;
+          font-weight: 600;
+          text-transform: uppercase;
+        }
+        .mock-amount-val {
+          font-size: 32px;
+          font-weight: 800;
+          color: #38bdf8;
+        }
+        .mock-warning-note {
+          font-size: 13px;
+          color: #94a3b8;
+          line-height: 1.6;
+          margin: 16px 0 0 0;
+          text-align: center;
+        }
+        .mock-modal-footer {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        .mock-btn-success, .mock-btn-failed {
+          padding: 14px;
+          border-radius: 12px;
+          font-weight: 700;
+          font-size: 14px;
+          cursor: pointer;
+          transition: all 0.2s;
+          border: none;
+          width: 100%;
+        }
+        .mock-btn-success {
+          background: #10b981;
+          color: #fff;
+        }
+        .mock-btn-success:hover {
+          background: #059669;
+          transform: translateY(-1px);
+        }
+        .mock-btn-failed {
+          background: transparent;
+          color: #f43f5e;
+          border: 1.5px solid #f43f5e;
+        }
+        .mock-btn-failed:hover {
+          background: rgba(244, 63, 94, 0.05);
+          transform: translateY(-1px);
+        }
+        
+        /* Coupon Section Styles */
+        .coupon-section {
+          margin-top: 20px;
+          margin-bottom: 20px;
+          border-top: 1px solid var(--secondary);
+          padding-top: 20px;
+        }
+        .coupon-form {
+          display: flex;
+          gap: 10px;
+        }
+        .coupon-input {
+          flex: 1;
+          height: 42px;
+          border: 1.5px solid var(--secondary);
+          border-radius: 10px;
+          padding: 0 14px;
+          font-size: 14px;
+          font-family: monospace;
+          font-weight: 700;
+          text-transform: uppercase;
+          background: var(--bg-main);
+          color: var(--text-main);
+          outline: none;
+          transition: all 0.2s;
+        }
+        .coupon-input:focus {
+          border-color: var(--primary);
+          background: var(--white);
+        }
+        .coupon-apply-btn {
+          height: 42px;
+          padding: 0 18px;
+          background: var(--primary);
+          color: var(--white);
+          border: none;
+          border-radius: 10px;
+          font-weight: 700;
+          font-size: 13px;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .coupon-apply-btn:hover {
+          opacity: 0.9;
+        }
+        .applied-coupon-badge {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          background: #f5f3ff;
+          border: 1px solid #e0e7ff;
+          padding: 8px 14px;
+          border-radius: 10px;
+          color: #6366f1;
+        }
+        .coupon-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .coupon-text {
+          font-size: 13px;
+          font-weight: 700;
+          letter-spacing: -0.1px;
+          flex: 1;
+        }
+        .remove-coupon-btn {
+          background: transparent;
+          border: none;
+          color: #94a3b8;
+          font-size: 18px;
+          font-weight: 700;
+          cursor: pointer;
+          padding: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: color 0.15s;
+        }
+        .remove-coupon-btn:hover {
+          color: #ef4444;
+        }
+        .coupon-error-msg {
+          font-size: 12px;
+          color: #ef4444;
+          font-weight: 600;
+          margin: 6px 0 0 0;
+        }
+        .discount-amount {
+          color: #10b981;
+          font-weight: 700;
+        }
       `}</style>
+
+      {showMockModal && mockPaymentData && (
+        <div className="mock-modal-overlay">
+          <div className="mock-modal-card">
+            <div className="mock-modal-header">
+              <span className="mock-chip">SANDBOX MODE</span>
+              <h2>Mock Payment Gateway</h2>
+              <p className="mock-order-ref">Order ID: #{mockPaymentData.orderId.slice(0, 8).toUpperCase()}</p>
+            </div>
+            
+            <div className="mock-modal-body">
+              <div className="mock-amount-box">
+                <span className="mock-amount-label">Total Amount to Pay</span>
+                <span className="mock-amount-val">₹{parseFloat(mockPaymentData.totalAmount || 0).toFixed(2)}</span>
+              </div>
+              <p className="mock-warning-note">
+                This is a simulated checkout. Real credentials are not configured. You can simulate either a successful or failed payment authorization.
+              </p>
+            </div>
+            
+            <div className="mock-modal-footer">
+              <button 
+                onClick={() => handleMockSuccess(mockPaymentData.provider)} 
+                className="mock-btn-success"
+                disabled={loading}
+              >
+                Simulate Successful Payment
+              </button>
+              <button 
+                onClick={() => handleMockFailure(mockPaymentData.provider)} 
+                className="mock-btn-failed"
+                disabled={loading}
+              >
+                Simulate Failed Payment
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { orderService } from './orderService';
+import { supabaseClient } from '@/lib/supabase';
 
 export const checkoutService = {
   /**
@@ -50,9 +51,30 @@ export const checkoutService = {
   /**
    * Group cart items by their store_id, place distinct orders per merchant, and combine results.
    */
-  processCheckout: async (cartItems, customerInfo) => {
+  processCheckout: async (cartItems, customerInfo, couponData = null) => {
     if (!cartItems || cartItems.length === 0) {
       throw new Error('Cannot checkout with an empty cart.');
+    }
+
+    // Live Database Stock Check
+    if (supabaseClient) {
+      const productIds = cartItems.map(item => item.id);
+      const { data: dbProducts, error: dbError } = await supabaseClient
+        .from('products')
+        .select('id, stock, name')
+        .in('id', productIds);
+
+      if (!dbError && dbProducts) {
+        for (const item of cartItems) {
+          const dbProd = dbProducts.find(p => p.id === item.id);
+          if (!dbProd) {
+            throw new Error(`Product ${item.name} not found.`);
+          }
+          if (dbProd.stock < item.quantity) {
+            throw new Error('Some products are no longer available in requested quantity.');
+          }
+        }
+      }
     }
 
     // Group items by store_id
@@ -73,7 +95,8 @@ export const checkoutService = {
       const items = storeGroups[storeId];
       const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
       const tax = subtotal * 0.08;
-      const totalAmount = subtotal + tax; // Free shipping
+      const discount = couponData ? parseFloat(couponData.discount_amount) || 0 : 0;
+      const totalAmount = Math.max(0, subtotal + tax - discount); // Free shipping
 
       const orderData = {
         store_id: storeId === 'unknown' ? null : storeId,
@@ -83,7 +106,10 @@ export const checkoutService = {
         customer_phone: customerInfo.phone,
         shipping_address: shippingAddressFormatted,
         total_amount: totalAmount,
-        items
+        items,
+        coupon_id: couponData?.coupon_id || null,
+        coupon_code: couponData?.coupon_code || null,
+        discount_amount: discount
       };
 
       const result = await orderService.createOrder(orderData);

@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useDashboard } from '@/context/DashboardContext';
 import { useAuth } from '@/context/AuthContext';
+import { authService } from '@/services/authService';
+import { storeService } from '@/services/storeService';
 
 const Sparkline = ({ color, path }) => (
   <svg width="60" height="24" viewBox="0 0 60 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -90,13 +92,74 @@ const getDynamicChartData = (ordersList, timeframe) => {
 
 export default function DashboardOverview() {
   const router = useRouter();
-  const { products, orders, customers, loading } = useDashboard();
-  const { profile } = useAuth();
+  const { products, categories, orders, customers, loading } = useDashboard();
+  const { profile, store, refreshProfile, refreshStore } = useAuth();
   const creatorName = profile?.name || 'Creator';
   
   const [timeframe, setTimeframe] = useState('Last 7 Days');
   const [isTimeframeOpen, setIsTimeframeOpen] = useState(false);
   const [chartData, setChartData] = useState([]);
+
+  const [onboardingProgress, setOnboardingProgress] = useState(0);
+  const [checklist, setChecklist] = useState({
+    createStore: true,
+    addCategory: false,
+    addProduct: false,
+    publishStore: false,
+  });
+
+  useEffect(() => {
+    if (store && categories && products) {
+      const hasCategory = categories.length > 0;
+      const hasProduct = products.length > 0;
+      const isPublished = store.status === 'approved';
+      
+      setChecklist({
+        createStore: true,
+        addCategory: hasCategory,
+        addProduct: hasProduct,
+        publishStore: isPublished,
+      });
+
+      let completedCount = 1; // store creation is complete since store !== null
+      if (hasCategory) completedCount += 1;
+      if (hasProduct) completedCount += 1;
+      if (isPublished) completedCount += 1;
+
+      const progress = (completedCount / 4) * 100;
+      setOnboardingProgress(progress);
+
+      // Auto-complete onboarding if all 4 checklist items are satisfied and profile onboarding_completed is false
+      if (completedCount === 4 && profile && !profile.onboarding_completed) {
+        const completeOnboarding = async () => {
+          try {
+            console.log('🔄 [LaunchCart - Dashboard]: Auto-completing onboarding...');
+            await authService.updateProfile(profile.id, {
+              onboarding_completed: true,
+              onboarding_step: 5
+            });
+            await refreshProfile();
+            console.log('✅ [LaunchCart - Dashboard]: Onboarding complete.');
+          } catch (e) {
+            console.error('Error auto-completing onboarding:', e);
+          }
+        };
+        completeOnboarding();
+      }
+    }
+  }, [store, categories, products, profile, refreshProfile]);
+
+  const handlePublishFromDashboard = async () => {
+    if (!store) return;
+    try {
+      await storeService.updateStore(store.id, { status: 'approved' });
+      await refreshStore();
+      await refreshProfile();
+    } catch (e) {
+      console.error('Error publishing store:', e);
+      alert('Error publishing store: ' + e.message);
+    }
+  };
 
   useEffect(() => {
     if (orders) {
@@ -218,6 +281,75 @@ export default function DashboardOverview() {
       <div className="header-subtitle">
         <p>Welcome back, <strong>{creatorName}!</strong> Here&apos;s what&apos;s happening in your store.</p>
       </div>
+
+      {profile && !profile.onboarding_completed && (
+        <div className="onboarding-checklist-card">
+          <div className="checklist-header">
+            <div>
+              <h3>Setup your LaunchCart store</h3>
+              <p>Complete these steps to launch your business and start selling.</p>
+            </div>
+            <div className="checklist-progress">
+              <span className="percentage">{Math.round(onboardingProgress)}% Complete</span>
+              <div className="progress-bar-container">
+                <div className="progress-bar-fill" style={{ width: `${onboardingProgress}%` }}></div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="checklist-items">
+            {/* Item 1 */}
+            <div className="checklist-item done">
+              <div className="status-indicator">✓</div>
+              <div className="item-content">
+                <h4>Create store details</h4>
+                <p>Name, logo, banner and custom domain slug configured.</p>
+              </div>
+            </div>
+
+            {/* Item 2 */}
+            <div className={`checklist-item ${checklist.addCategory ? 'done' : ''}`}>
+              <div className="status-indicator">{checklist.addCategory ? '✓' : '2'}</div>
+              <div className="item-content">
+                <h4>Add first category</h4>
+                <p>Group products together into a collection.</p>
+                {!checklist.addCategory && (
+                  <button onClick={() => router.push('/dashboard/categories')} className="action-btn">
+                    Create Category
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Item 3 */}
+            <div className={`checklist-item ${checklist.addProduct ? 'done' : ''}`}>
+              <div className="status-indicator">{checklist.addProduct ? '✓' : '3'}</div>
+              <div className="item-content">
+                <h4>Add first product</h4>
+                <p>Add images, pricing and inventory levels.</p>
+                {!checklist.addProduct && (
+                  <button onClick={() => router.push('/dashboard/products')} className="action-btn">
+                    Add Product
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Item 4 */}
+            <div className={`checklist-item ${checklist.publishStore ? 'done' : ''}`}>
+              <div className="status-indicator">{checklist.publishStore ? '✓' : '4'}</div>
+              <div className="item-content">
+                <h4>Publish store storefront</h4>
+                <p>Make your online store visible to the public.</p>
+                {!checklist.publishStore && (
+                  <button onClick={handlePublishFromDashboard} className="action-btn publish">
+                    Publish Store
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>        </div>
+      )}
 
       <div className="stats-grid">
         <div className="stat-card">
@@ -940,6 +1072,134 @@ export default function DashboardOverview() {
           .tip-left {
             flex-direction: column;
           }
+        }
+
+        .onboarding-checklist-card {
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          border-radius: 20px;
+          padding: 24px;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+          margin-bottom: 24px;
+        }
+        .checklist-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          border-bottom: 1px solid #f1f5f9;
+          padding-bottom: 16px;
+          flex-wrap: wrap;
+          gap: 16px;
+        }
+        .checklist-header h3 {
+          font-size: 18px;
+          font-weight: 800;
+          color: #0f172a;
+          margin-bottom: 4px;
+        }
+        .checklist-header p {
+          font-size: 13px;
+          color: #64748b;
+        }
+        .checklist-progress {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 6px;
+          min-width: 150px;
+        }
+        .checklist-progress .percentage {
+          font-size: 12px;
+          font-weight: 700;
+          color: #8b5cf6;
+        }
+        .progress-bar-container {
+          width: 100%;
+          height: 6px;
+          background: #f1f5f9;
+          border-radius: 3px;
+          overflow: hidden;
+        }
+        .progress-bar-fill {
+          height: 100%;
+          background: linear-gradient(90deg, #6366f1, #8b5cf6);
+          transition: width 0.4s ease;
+        }
+        .checklist-items {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+        .checklist-item {
+          display: flex;
+          gap: 16px;
+          align-items: flex-start;
+        }
+        .status-indicator {
+          width: 28px;
+          height: 28px;
+          border-radius: 50%;
+          background: #f1f5f9;
+          border: 1px solid #cbd5e1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 12px;
+          font-weight: 700;
+          color: #64748b;
+          flex-shrink: 0;
+        }
+        .checklist-item.done .status-indicator {
+          background: #ecfdf5;
+          border-color: #a7f3d0;
+          color: #059669;
+        }
+        .item-content {
+          flex: 1;
+        }
+        .item-content h4 {
+          font-size: 14px;
+          font-weight: 700;
+          color: #1e293b;
+          margin-bottom: 2px;
+        }
+        .checklist-item.done .item-content h4 {
+          text-decoration: line-through;
+          color: #64748b;
+        }
+        .item-content p {
+          font-size: 12px;
+          color: #64748b;
+          margin-bottom: 8px;
+        }
+        .action-btn {
+          padding: 6px 12px;
+          font-size: 11px;
+          font-weight: 700;
+          border-radius: 6px;
+          cursor: pointer;
+          background: #ffffff;
+          border: 1px solid #cbd5e1;
+          color: #475569;
+          transition: all 0.2s;
+        }
+        .action-btn:hover {
+          border-color: #8b5cf6;
+          color: #8b5cf6;
+          background: #f5f3ff;
+        }
+        .action-btn.publish {
+          background: #8b5cf6;
+          border-color: #8b5cf6;
+          color: #ffffff;
+        }
+        .action-btn.publish:hover {
+          background: #7c3aed;
+          border-color: #7c3aed;
+          color: #ffffff;
         }
       `}</style>
     </div>

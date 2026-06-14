@@ -57,9 +57,9 @@ export default function SignupPage() {
       }
 
       console.log('✅ [LaunchCart - MerchantSignup]: Signup and auto-login successful.');
-      setSuccessMsg('Account verified successfully! Entering dashboard...');
+      setSuccessMsg('Account verified successfully! Starting onboarding...');
       setTimeout(() => {
-        router.push('/dashboard');
+        router.push('/onboarding');
       }, 1000);
     } catch (err) {
       console.error(err);

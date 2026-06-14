@@ -40,7 +40,12 @@ export default function ProductsPage() {
     price: '',
     stock: '',
     category: '',
-    status: 'Published'
+    status: 'Published',
+    seo_title: '',
+    seo_description: '',
+    og_title: '',
+    og_description: '',
+    canonical_url: ''
   });
 
   const imageInputRef = useRef(null);
@@ -53,7 +58,12 @@ export default function ProductsPage() {
       price: product.price,
       stock: product.stock,
       category: product.category,
-      status: product.status
+      status: product.status,
+      seo_title: product.seo_title || '',
+      seo_description: product.seo_description || '',
+      og_title: product.og_title || '',
+      og_description: product.og_description || '',
+      canonical_url: product.canonical_url || ''
     });
     setProductImages(product.images || [product.image]);
     setIsModalOpen(true);
@@ -70,7 +80,12 @@ export default function ProductsPage() {
       price: parseFloat(formData.price),
       stock: parseInt(formData.stock) || 0,
       image: productImages[0] || 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=800',
-      images: productImages
+      images: productImages,
+      seo_title: formData.seo_title || null,
+      seo_description: formData.seo_description || null,
+      og_title: formData.og_title || null,
+      og_description: formData.og_description || null,
+      canonical_url: formData.canonical_url || null
     };
 
     if (editingProduct) {
@@ -110,7 +125,12 @@ export default function ProductsPage() {
       price: '',
       stock: '',
       category: '',
-      status: 'Published'
+      status: 'Published',
+      seo_title: '',
+      seo_description: '',
+      og_title: '',
+      og_description: '',
+      canonical_url: ''
     });
     setProductImages([]);
   };
@@ -359,9 +379,19 @@ export default function ProductsPage() {
                   <td>{category}</td>
                   <td className="price-cell">₹{price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                   <td>
-                    <span style={{ color: stock === 0 ? '#ef4444' : 'inherit', fontWeight: stock === 0 ? 600 : 400 }}>
-                      {stock === 0 ? 'Out of Stock' : stock}
-                    </span>
+                    {stock === 0 ? (
+                      <span className="stock-badge-pill out-of-stock">
+                        Out Of Stock
+                      </span>
+                    ) : stock < 10 ? (
+                      <span className="stock-badge-pill low-stock">
+                        Low Stock ({stock})
+                      </span>
+                    ) : (
+                      <span className="stock-badge-pill in-stock">
+                        In Stock ({stock})
+                      </span>
+                    )}
                   </td>
                   <td>
                     <span className={`status-pill ${status.toLowerCase()}`}>
@@ -538,6 +568,81 @@ export default function ProductsPage() {
               </div>
             )}
           </div>
+
+          {/* SEO Optimization Section */}
+          <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '16px', marginTop: '16px' }}>
+            <h3 style={{ fontSize: '14px', fontWeight: '800', color: '#1e293b', marginBottom: '12px' }}>SEO Optimization</h3>
+            
+            <div className="form-row">
+              <div className="form-group">
+                <label>SEO Title</label>
+                <input 
+                  type="text" 
+                  placeholder="e.g. Premium Leather Sofa - Buy Online" 
+                  value={formData.seo_title}
+                  onChange={(e) => setFormData({...formData, seo_title: e.target.value})}
+                />
+                <span className="help-text">Current: {formData.seo_title.length} chars</span>
+              </div>
+              <div className="form-group">
+                <label>Canonical URL</label>
+                <input 
+                  type="text" 
+                  placeholder="https://example.com/product" 
+                  value={formData.canonical_url}
+                  onChange={(e) => setFormData({...formData, canonical_url: e.target.value})}
+                />
+              </div>
+            </div>
+
+            <div className="form-group" style={{ marginTop: '8px' }}>
+              <label>SEO Description</label>
+              <textarea 
+                placeholder="Description snippet that appears in search results..." 
+                rows="2"
+                value={formData.seo_description}
+                onChange={(e) => setFormData({...formData, seo_description: e.target.value})}
+              ></textarea>
+              <span className="help-text">Current: {formData.seo_description.length} chars</span>
+            </div>
+
+            <div className="form-row" style={{ marginTop: '8px' }}>
+              <div className="form-group">
+                <label>Open Graph Title</label>
+                <input 
+                  type="text" 
+                  placeholder="Social share title" 
+                  value={formData.og_title}
+                  onChange={(e) => setFormData({...formData, og_title: e.target.value})}
+                />
+              </div>
+              <div className="form-group">
+                <label>Open Graph Description</label>
+                <textarea 
+                  placeholder="Social share description" 
+                  rows="2"
+                  value={formData.og_description}
+                  onChange={(e) => setFormData({...formData, og_description: e.target.value})}
+                ></textarea>
+              </div>
+            </div>
+
+            {/* Google Search Preview for Product */}
+            <div className="google-preview-container" style={{ marginTop: '16px' }}>
+              <h4>Google Search Preview</h4>
+              <div className="google-preview-box">
+                <div className="google-url">
+                  {formData.canonical_url || `https://launchcart.com/store/store-slug/product/${editingProduct?.slug || 'product-slug'}`}
+                </div>
+                <div className="google-title">
+                  {formData.seo_title || formData.name || 'Product Name'}
+                </div>
+                <div className="google-description">
+                  {formData.seo_description || formData.description || 'No description provided. Add an SEO description to help people find your product.'}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </Modal>
 
@@ -680,6 +785,30 @@ export default function ProductsPage() {
           display: flex;
           flex-direction: column;
           gap: 24px;
+        }
+
+        .stock-badge-pill {
+          display: inline-flex;
+          align-items: center;
+          font-size: 10px;
+          font-weight: 700;
+          padding: 4px 10px;
+          border-radius: 99px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          white-space: nowrap;
+        }
+        .stock-badge-pill.out-of-stock {
+          background: #fee2e2;
+          color: #ef4444;
+        }
+        .stock-badge-pill.low-stock {
+          background: #fffbeb;
+          color: #f59e0b;
+        }
+        .stock-badge-pill.in-stock {
+          background: #dcfce7;
+          color: #22c55e;
         }
 
         .header-row {
@@ -1561,6 +1690,61 @@ export default function ProductsPage() {
 
         .save-submit-btn:hover {
           background: #4f46e5;
+        }
+
+        .google-preview-container {
+          margin-top: 24px;
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
+          border-radius: 12px;
+          padding: 20px;
+        }
+        .google-preview-container h4 {
+          font-size: 11px;
+          font-weight: 800;
+          color: #64748b;
+          margin: 0 0 12px 0;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+        .google-preview-box {
+          background: #fff;
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+          padding: 16px;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+          max-width: 600px;
+          text-align: left;
+        }
+        .google-url {
+          font-size: 12px;
+          color: #202124;
+          margin-bottom: 4px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .google-title {
+          font-size: 19px;
+          color: #1a0dab;
+          font-weight: 400;
+          margin-bottom: 4px;
+          line-height: 1.3;
+          cursor: pointer;
+        }
+        .google-title:hover {
+          text-decoration: underline;
+        }
+        .google-description {
+          font-size: 14px;
+          color: #4d5156;
+          line-height: 1.55;
+          word-wrap: break-word;
+        }
+        .optional {
+          font-size: 11px;
+          color: #94a3b8;
+          font-weight: normal;
         }
       `}</style>
     </div>

@@ -47,10 +47,20 @@ export default function CustomerOrdersPage() {
 
   const getStatusClass = (status) => {
     switch (status?.toLowerCase()) {
-      case 'delivered': return 'status-delivered';
-      case 'shipped': return 'status-shipped';
-      case 'pending': return 'status-pending';
-      case 'cancelled': return 'status-cancelled';
+      case 'delivered':
+      case 'paid':
+        return 'status-delivered';
+      case 'shipped':
+      case 'confirmed':
+      case 'processing':
+        return 'status-shipped';
+      case 'pending':
+      case 'pending_payment':
+      case 'awaiting_payment':
+        return 'status-pending';
+      case 'cancelled':
+      case 'failed':
+        return 'status-cancelled';
       default: return '';
     }
   };
@@ -98,9 +108,14 @@ export default function CustomerOrdersPage() {
                 <span className="order-store">{order.store?.name || 'Online Store'}</span>
                 <span className="order-amount">₹{parseFloat(order.total_amount || 0).toFixed(2)}</span>
                 <span className="order-status">
-                  <span className={`status-pill ${getStatusClass(order.status)}`}>
-                    {order.status}
-                  </span>
+                  <div style={{ display: 'inline-flex', flexDirection: 'column', gap: '4px', alignItems: 'center' }}>
+                    <span className={`status-pill ${getStatusClass(order.status)}`}>
+                      {order.status}
+                    </span>
+                    <span className={`status-pill ${getStatusClass(order.payment_status || 'Pending')}`} style={{ fontSize: '10px', padding: '2px 8px' }}>
+                      {order.payment_status || 'Pending'}
+                    </span>
+                  </div>
                 </span>
                 <span className="order-actions">
                   <button 
@@ -152,6 +167,14 @@ export default function CustomerOrdersPage() {
                   <p>
                     <span className={`status-pill ${getStatusClass(selectedOrder.status)}`}>
                       {selectedOrder.status}
+                    </span>
+                  </p>
+                </div>
+                <div>
+                  <span className="label">Payment Status</span>
+                  <p>
+                    <span className={`status-pill ${getStatusClass(selectedOrder.payment_status || 'Pending')}`}>
+                      {selectedOrder.payment_status || 'Pending'}
                     </span>
                   </p>
                 </div>

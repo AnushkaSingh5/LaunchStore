@@ -145,8 +145,13 @@ export function StoreProvider({ children }) {
       newQty = existing.quantity + quantity;
     }
 
+    if (product.stock !== undefined && product.stock === 0) {
+      alert('This product is out of stock.');
+      return;
+    }
+
     if (product.stock !== undefined && newQty > product.stock) {
-      alert(`Only ${product.stock} items in stock.`);
+      alert(`Only ${product.stock} items available.`);
       return;
     }
 
@@ -189,7 +194,7 @@ export function StoreProvider({ children }) {
     if (newQty < 1) return;
 
     if (item.stock !== undefined && newQty > item.stock) {
-      alert(`Only ${item.stock} items in stock.`);
+      alert(`Only ${item.stock} items available.`);
       return;
     }
 

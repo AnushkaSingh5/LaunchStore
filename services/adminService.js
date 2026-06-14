@@ -244,6 +244,7 @@ export const adminService = {
             category: p.category_name || 'Uncategorized',
             price: parseFloat(p.price || 0),
             status: p.status || 'Published',
+            stock: parseInt(p.stock) || 0,
             image: p.image_url || 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=800'
           }));
         }
@@ -266,6 +267,7 @@ export const adminService = {
         category: p.category?.name || 'Uncategorized',
         price: parseFloat(p.price || 0),
         status: p.status || 'Published',
+        stock: parseInt(p.stock) || 0,
         image: p.image_url || 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=800'
       }));
     } catch (e) {
@@ -328,7 +330,8 @@ export const adminService = {
             email: o.customer_email,
             store: o.store_name || 'Unknown Store',
             total: parseFloat(o.total_amount || 0),
-            paymentMethod: 'Credit Card',
+            paymentMethod: o.payment_provider || 'Razorpay',
+            paymentStatus: o.payment_status || 'Pending',
             status: o.status || 'Pending',
             date: toLocalDateString(o.created_at),
             time: o.created_at ? new Date(o.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A',
@@ -353,7 +356,8 @@ export const adminService = {
         email: o.customer_email,
         store: o.store?.name || 'Unknown Store',
         total: parseFloat(o.total_amount || 0),
-        paymentMethod: 'Credit Card',
+        paymentMethod: o.payment_provider || 'Razorpay',
+        paymentStatus: o.payment_status || 'Pending',
         status: o.status || 'Pending',
         date: toLocalDateString(o.created_at),
         time: o.created_at ? new Date(o.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A',

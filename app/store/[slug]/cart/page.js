@@ -129,6 +129,7 @@ export default function CartPage({ params }) {
     item => item.store_id === storeDetails?.id || item.store_slug === slug
   );
   const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const hasInventoryErrors = cart.some(item => item.stock === 0 || item.quantity > item.stock);
 
   const shipping = cart.length > 0 ? 0 : 0; // Free shipping for now
   const tax = cartTotal * 0.08;
@@ -171,6 +172,11 @@ export default function CartPage({ params }) {
                       <h3>{item.name}</h3>
                       <p className="category">{item.category}</p>
                       <p className="price">₹{item.price.toLocaleString()}</p>
+                      {item.stock === 0 ? (
+                        <p className="stock-warning out-of-stock">Out of Stock</p>
+                      ) : item.quantity > item.stock ? (
+                        <p className="stock-warning low-stock">Only {item.stock} items available.</p>
+                      ) : null}
                     </div>
                   </div>
 
@@ -187,9 +193,15 @@ export default function CartPage({ params }) {
                   </div>
 
                   <div className="item-action">
-                    <Link href={`/store/${slug}/checkout`} className="row-buy-btn">
-                      Buy
-                    </Link>
+                    {item.stock === 0 || item.quantity > item.stock ? (
+                      <button className="row-buy-btn disabled-btn" disabled>
+                        Buy
+                      </button>
+                    ) : (
+                      <Link href={`/store/${slug}/checkout`} className="row-buy-btn">
+                        Buy
+                      </Link>
+                    )}
                   </div>
                 </div>
               ))}
@@ -221,9 +233,15 @@ export default function CartPage({ params }) {
                 <span>₹{total.toLocaleString()}</span>
               </div>
 
-              <Link href={`/store/${slug}/checkout`} className="checkout-btn" style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}>
-                Proceed to Checkout
-              </Link>
+              {hasInventoryErrors ? (
+                <button className="checkout-btn disabled-btn" disabled style={{ width: '100%', border: 'none', cursor: 'not-allowed' }}>
+                  Proceed to Checkout
+                </button>
+              ) : (
+                <Link href={`/store/${slug}/checkout`} className="checkout-btn" style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}>
+                  Proceed to Checkout
+                </Link>
+              )}
 
               <div className="payment-icons">
                 <span>Secure payments via</span>
@@ -607,6 +625,31 @@ export default function CartPage({ params }) {
           .cart-summary {
             padding: 24px 15px;
           }
+        }
+
+        .stock-warning {
+          font-size: 11px;
+          font-weight: 700;
+          margin-top: 6px;
+          display: inline-block;
+          padding: 2px 8px;
+          border-radius: 6px;
+        }
+        .stock-warning.out-of-stock {
+          background: #fee2e2;
+          color: #ef4444;
+        }
+        .stock-warning.low-stock {
+          background: #fffbeb;
+          color: #f59e0b;
+        }
+        .disabled-btn {
+          opacity: 0.6;
+          cursor: not-allowed !important;
+          background: #cbd5e1 !important;
+          color: #64748b !important;
+          box-shadow: none !important;
+          transform: none !important;
         }
       `}</style>
     </div>
