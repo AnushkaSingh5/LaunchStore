@@ -24,20 +24,33 @@ export default function StoresManagement() {
   const { stores = [], approveStore, rejectStore, disableStore, loading } = useAdmin();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStore, setSelectedStore] = useState(null);
-
-  const filteredStores = loading ? [] : stores.filter(s => 
-    s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    s.ownerName.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const [currentTab, setCurrentTab] = useState('All');
+  const [rejectingStoreId, setRejectingStoreId] = useState(null);
+  const [rejectReason, setRejectReason] = useState('');
+  const [disablingStoreId, setDisablingStoreId] = useState(null);
+  const [disableReason, setDisableReason] = useState('');
 
   // Dynamic Metrics
   const totalStores = loading ? 0 : stores.length;
   const activeStores = loading ? 0 : stores.filter(s => s.status === 'Active').length;
   const pendingStores = loading ? 0 : stores.filter(s => s.status === 'Pending').length;
   const disabledStores = loading ? 0 : stores.filter(s => s.status === 'Disabled').length;
+  const rejectedStores = loading ? 0 : stores.filter(s => s.status === 'Rejected').length;
 
   const activePercent = totalStores ? ((activeStores / totalStores) * 100).toFixed(1) : 0;
   const disabledPercent = totalStores ? ((disabledStores / totalStores) * 100).toFixed(1) : 0;
+
+  const filteredByTab = currentTab === 'All' ? stores : stores.filter(s => s.status === currentTab);
+
+  const filteredStores = loading ? [] : filteredByTab.filter(s => {
+    const query = searchQuery.toLowerCase();
+    return (
+      (s.name || '').toLowerCase().includes(query) ||
+      (s.ownerName || '').toLowerCase().includes(query) ||
+      (s.email || '').toLowerCase().includes(query) ||
+      (s.slug || '').toLowerCase().includes(query)
+    );
+  });
 
   const columns = [
     { 
@@ -81,7 +94,7 @@ export default function StoresManagement() {
       render: (row) => (
         <span className={`status-pill ${row.status.toLowerCase()}`}>
           <span className={`status-dot ${row.status.toLowerCase()}`}></span>
-          {row.status}
+          {row.status === 'Active' ? 'Approved' : row.status}
         </span>
       )
     },
@@ -98,14 +111,17 @@ export default function StoresManagement() {
       {row.status === 'Pending' && (
         <>
           <button className="btn-action btn-approve" onClick={() => approveStore(row.id)}>Approve</button>
-          <button className="btn-action btn-reject" onClick={() => rejectStore(row.id)}>Reject</button>
+          <button className="btn-action btn-reject" onClick={() => setRejectingStoreId(row.id)}>Reject</button>
         </>
       )}
       {row.status === 'Active' && (
-        <button className="btn-action btn-disable" onClick={() => disableStore(row.id)}>Disable</button>
+        <button className="btn-action btn-disable" onClick={() => setDisablingStoreId(row.id)}>Disable</button>
       )}
       {row.status === 'Disabled' && (
         <button className="btn-action btn-enable" onClick={() => approveStore(row.id)}>Enable</button>
+      )}
+      {row.status === 'Rejected' && (
+        <button className="btn-action btn-enable" onClick={() => approveStore(row.id)}>Approve</button>
       )}
     </div>
   );
@@ -121,7 +137,7 @@ export default function StoresManagement() {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
           <input 
             type="text"
-            placeholder="Search stores or owners..." 
+            placeholder="Search name, owner, email or slug..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -175,6 +191,30 @@ export default function StoresManagement() {
       </div>
 
       <div className="table-card">
+        <div className="filter-tabs">
+          {['All', 'Pending', 'Active', 'Rejected', 'Disabled'].map(tab => {
+            let countVal = 0;
+            if (tab === 'All') countVal = stores.length;
+            else if (tab === 'Active') countVal = activeStores;
+            else if (tab === 'Pending') countVal = pendingStores;
+            else if (tab === 'Rejected') countVal = rejectedStores;
+            else if (tab === 'Disabled') countVal = disabledStores;
+
+            const label = tab === 'Active' ? 'Approved' : tab;
+
+            return (
+              <button
+                key={tab}
+                className={`tab-btn ${currentTab === tab ? 'active' : ''}`}
+                onClick={() => setCurrentTab(tab)}
+              >
+                <span>{label}</span>
+                <span className="tab-count">{countVal}</span>
+              </button>
+            );
+          })}
+        </div>
+
         <Table columns={columns} data={filteredStores} actions={actions} loading={loading} />
         
         <div className="table-footer">
@@ -200,10 +240,248 @@ export default function StoresManagement() {
       >
         {selectedStore && (
           <div className="modal-content-inner">
-             <p>Details modal can be styled later. For now, testing table layout.</p>
-             <button onClick={() => setSelectedStore(null)} className="btn-action btn-details">Close</button>
+             <div className="store-modal-header">
+               <div className="store-modal-banner">
+                 {selectedStore.bannerUrl ? (
+                   <img src={selectedStore.bannerUrl} alt="Store Banner" className="modal-banner-img" />
+                 ) : (
+                   <div className="modal-banner-placeholder" style={{ backgroundColor: getAvatarColor(selectedStore.name) }}></div>
+                 )}
+               </div>
+               <div className="store-modal-logo-wrap">
+                 {selectedStore.logoUrl ? (
+                   <img src={selectedStore.logoUrl} alt="Store Logo" className="modal-logo-img" />
+                 ) : (
+                   <div className="modal-logo-placeholder" style={{ backgroundColor: getAvatarColor(selectedStore.name) }}>
+                     {getInitials(selectedStore.name)}
+                   </div>
+                 )}
+               </div>
+             </div>
+
+             <div className="store-modal-body">
+               <div className="store-title-status">
+                 <div>
+                   <h3>{selectedStore.name}</h3>
+                   <span className="store-slug">/store/{selectedStore.slug}</span>
+                 </div>
+                 <span className={`status-pill ${selectedStore.status.toLowerCase()}`}>
+                   <span className={`status-dot ${selectedStore.status.toLowerCase()}`}></span>
+                   {selectedStore.status === 'Active' ? 'Approved' : selectedStore.status}
+                 </span>
+               </div>
+
+               {selectedStore.description && (
+                 <div className="store-desc-section">
+                   <h4>Description</h4>
+                   <p>{selectedStore.description}</p>
+                 </div>
+               )}
+
+               {selectedStore.statusReason && (
+                 <div className={`store-reason-alert ${selectedStore.status.toLowerCase()}`}>
+                   <strong>Reason for status ({selectedStore.status === 'Active' ? 'Approved' : selectedStore.status}):</strong>
+                   <p>{selectedStore.statusReason}</p>
+                 </div>
+               )}
+
+               <div className="store-info-grid">
+                 <div className="info-section">
+                   <h4>Creator Info</h4>
+                   <div className="info-row">
+                     <span className="info-label">Name</span>
+                     <span className="info-val">{selectedStore.ownerName}</span>
+                   </div>
+                   <div className="info-row">
+                     <span className="info-label">Email</span>
+                     <span className="info-val">{selectedStore.email}</span>
+                   </div>
+                   <div className="info-row">
+                     <span className="info-label">Registered</span>
+                     <span className="info-val">{selectedStore.createdDate}</span>
+                   </div>
+                 </div>
+
+                 <div className="info-section">
+                   <h4>Telemetry / Stats</h4>
+                   <div className="info-row">
+                     <span className="info-label">Categories</span>
+                     <span className="info-val font-bold">{selectedStore.categoriesCount || 0}</span>
+                   </div>
+                   <div className="info-row">
+                     <span className="info-label">Products</span>
+                     <span className="info-val font-bold">{selectedStore.productsCount || 0}</span>
+                   </div>
+                   <div className="info-row">
+                     <span className="info-label">Orders</span>
+                     <span className="info-val font-bold">{selectedStore.ordersCount || 0}</span>
+                   </div>
+                   <div className="info-row">
+                     <span className="info-label">Revenue</span>
+                     <span className="info-val font-bold text-green">₹{(selectedStore.revenue || 0).toLocaleString()}</span>
+                   </div>
+                 </div>
+               </div>
+             </div>
+
+             <div className="store-modal-footer">
+               <div className="moderation-controls">
+                 {selectedStore.status === 'Pending' && (
+                   <>
+                     <button 
+                       className="btn-action btn-approve" 
+                       onClick={async () => {
+                         await approveStore(selectedStore.id);
+                         setSelectedStore(null);
+                       }}
+                     >
+                       Approve Store
+                     </button>
+                     <button 
+                       className="btn-action btn-reject" 
+                       onClick={() => setRejectingStoreId(selectedStore.id)}
+                     >
+                       Reject...
+                     </button>
+                   </>
+                 )}
+                 {selectedStore.status === 'Active' && (
+                   <button 
+                     className="btn-action btn-disable" 
+                     onClick={() => setDisablingStoreId(selectedStore.id)}
+                   >
+                     Disable Store...
+                   </button>
+                 )}
+                 {selectedStore.status === 'Disabled' && (
+                   <button 
+                     className="btn-action btn-enable" 
+                     onClick={async () => {
+                       await approveStore(selectedStore.id);
+                       setSelectedStore(null);
+                     }}
+                   >
+                     Enable Store
+                   </button>
+                 )}
+                 {selectedStore.status === 'Rejected' && (
+                   <button 
+                     className="btn-action btn-approve" 
+                     onClick={async () => {
+                       await approveStore(selectedStore.id);
+                       setSelectedStore(null);
+                     }}
+                   >
+                     Approve Store
+                   </button>
+                 )}
+               </div>
+               <button onClick={() => setSelectedStore(null)} className="btn-action btn-details">Close</button>
+             </div>
           </div>
         )}
+      </Modal>
+
+      <Modal
+        isOpen={!!rejectingStoreId}
+        onClose={() => {
+          setRejectingStoreId(null);
+          setRejectReason('');
+        }}
+        title="Reject Store Application"
+      >
+        <div className="reason-modal-content">
+          <p className="reason-modal-desc">
+            Please provide a clear reason for rejecting this store. The creator will see this reason in their dashboard and can update their store to resubmit.
+          </p>
+          <div className="reason-form-group">
+            <label htmlFor="reject-reason">Rejection Reason</label>
+            <textarea
+              id="reject-reason"
+              placeholder="e.g. Missing a valid store banner, logo, or description..."
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              rows={4}
+            />
+          </div>
+          <div className="reason-modal-actions">
+            <button 
+              className="btn-action btn-details" 
+              onClick={() => {
+                setRejectingStoreId(null);
+                setRejectReason('');
+              }}
+            >
+              Cancel
+            </button>
+            <button 
+              className="btn-action btn-reject" 
+              onClick={async () => {
+                if (!rejectReason.trim()) {
+                  alert('Please enter a rejection reason.');
+                  return;
+                }
+                await rejectStore(rejectingStoreId, rejectReason.trim());
+                setRejectingStoreId(null);
+                setRejectReason('');
+                setSelectedStore(null);
+              }}
+            >
+              Reject Store
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={!!disablingStoreId}
+        onClose={() => {
+          setDisablingStoreId(null);
+          setDisableReason('');
+        }}
+        title="Disable Store"
+      >
+        <div className="reason-modal-content">
+          <p className="reason-modal-desc text-danger">
+            Warning: Disabling this store will immediately block public storefront access. Please specify the reason for suspension.
+          </p>
+          <div className="reason-form-group">
+            <label htmlFor="disable-reason">Suspension Reason</label>
+            <textarea
+              id="disable-reason"
+              placeholder="e.g. Violation of platform terms of service, unpaid fees, user reports..."
+              value={disableReason}
+              onChange={(e) => setDisableReason(e.target.value)}
+              rows={4}
+            />
+          </div>
+          <div className="reason-modal-actions">
+            <button 
+              className="btn-action btn-details" 
+              onClick={() => {
+                setDisablingStoreId(null);
+                setDisableReason('');
+              }}
+            >
+              Cancel
+            </button>
+            <button 
+              className="btn-action btn-reject" 
+              onClick={async () => {
+                if (!disableReason.trim()) {
+                  alert('Please enter a suspension reason.');
+                  return;
+                }
+                await disableStore(disablingStoreId, disableReason.trim());
+                setDisablingStoreId(null);
+                setDisableReason('');
+                setSelectedStore(null);
+              }}
+            >
+              Disable Store
+            </button>
+          </div>
+        </div>
       </Modal>
 
       <style jsx global>{`
@@ -322,6 +600,50 @@ export default function StoresManagement() {
           border: 1px solid #f8fafc;
         }
 
+        /* Filter Tabs */
+        .filter-tabs {
+          display: flex;
+          gap: 8px;
+          margin-bottom: 24px;
+          border-bottom: 1px solid #f1f5f9;
+          padding-bottom: 12px;
+        }
+        .tab-btn {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 8px 16px;
+          border-radius: 12px;
+          border: 1px solid transparent;
+          background: transparent;
+          color: #64748b;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .tab-btn:hover {
+          background: #f8fafc;
+          color: #1e293b;
+        }
+        .tab-btn.active {
+          background: #f1f5f9;
+          color: #1e293b;
+          border-color: #e2e8f0;
+        }
+        .tab-count {
+          font-size: 11px;
+          font-weight: 700;
+          background: #e2e8f0;
+          color: #475569;
+          padding: 2px 6px;
+          border-radius: 20px;
+        }
+        .tab-btn.active .tab-count {
+          background: #8b5cf6;
+          color: #fff;
+        }
+
         /* Footer Pagination */
         .table-footer {
           display: flex;
@@ -368,6 +690,215 @@ export default function StoresManagement() {
           color: #94a3b8;
           font-weight: 600;
           padding: 0 4px;
+        }
+
+        /* Modal Details Styling */
+        .store-modal-header {
+          position: relative;
+          margin: -24px -24px 40px -24px; /* offset modal padding */
+          height: 140px;
+        }
+        .store-modal-banner {
+          width: 100%;
+          height: 100%;
+          border-top-left-radius: 14px; /* match modal container */
+          border-top-right-radius: 14px;
+          overflow: hidden;
+        }
+        .modal-banner-img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+        .modal-banner-placeholder {
+          width: 100%;
+          height: 100%;
+          opacity: 0.15;
+        }
+        .store-modal-logo-wrap {
+          position: absolute;
+          bottom: -30px;
+          left: 24px;
+          width: 68px;
+          height: 68px;
+          border-radius: 16px;
+          border: 4px solid #fff;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+          background: #fff;
+          overflow: hidden;
+        }
+        .modal-logo-img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+        .modal-logo-placeholder {
+          width: 100%;
+          height: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #fff;
+          font-weight: 800;
+          font-size: 20px;
+        }
+
+        .store-modal-body {
+          display: flex;
+          flex-direction: column;
+          gap: 24px;
+        }
+        .store-title-status {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+        }
+        .store-title-status h3 {
+          font-size: 20px;
+          font-weight: 800;
+          color: #1e293b;
+          margin: 0 0 4px 0;
+        }
+        .store-slug {
+          font-size: 13px;
+          color: #64748b;
+          font-family: monospace;
+        }
+
+        .store-desc-section h4, .info-section h4 {
+          font-size: 12px;
+          font-weight: 700;
+          color: #94a3b8;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          margin: 0 0 10px 0;
+        }
+        .store-desc-section p {
+          font-size: 14px;
+          line-height: 1.6;
+          color: #334155;
+          margin: 0;
+        }
+
+        .store-reason-alert {
+          padding: 14px 18px;
+          border-radius: 12px;
+          font-size: 13px;
+          line-height: 1.5;
+        }
+        .store-reason-alert strong {
+          display: block;
+          margin-bottom: 4px;
+        }
+        .store-reason-alert p {
+          margin: 0;
+        }
+        .store-reason-alert.rejected {
+          background: #fef2f2;
+          border: 1px solid #fca5a5;
+          color: #991b1b;
+        }
+        .store-reason-alert.disabled {
+          background: #fff5f5;
+          border: 1px solid #fee2e2;
+          color: #991b1b;
+        }
+        .store-reason-alert.pending {
+          background: #fffbeb;
+          border: 1px solid #fef3c7;
+          color: #92400e;
+        }
+
+        .store-info-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 24px;
+          background: #f8fafc;
+          padding: 20px;
+          border-radius: 16px;
+          border: 1px solid #f1f5f9;
+        }
+        .info-section {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        .info-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          font-size: 13px;
+        }
+        .info-label {
+          color: #64748b;
+          font-weight: 500;
+        }
+        .info-val {
+          color: #1e293b;
+          font-weight: 600;
+        }
+        .info-val.font-bold {
+          font-weight: 700;
+        }
+        .info-val.text-green {
+          color: #10b981;
+        }
+
+        .store-modal-footer {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-top: 32px;
+          padding-top: 20px;
+          border-top: 1px solid #f1f5f9;
+        }
+        .moderation-controls {
+          display: flex;
+          gap: 8px;
+        }
+
+        /* Reason form styles */
+        .reason-modal-content {
+          padding: 8px 0;
+        }
+        .reason-modal-desc {
+          font-size: 14px;
+          color: #64748b;
+          line-height: 1.5;
+          margin: 0 0 20px 0;
+        }
+        .reason-modal-desc.text-danger {
+          color: #ef4444;
+          font-weight: 500;
+        }
+        .reason-form-group {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          margin-bottom: 24px;
+        }
+        .reason-form-group label {
+          font-size: 13px;
+          font-weight: 600;
+          color: #475569;
+        }
+        .reason-form-group textarea {
+          padding: 12px;
+          border: 1px solid #cbd5e1;
+          border-radius: 10px;
+          font-size: 14px;
+          font-family: inherit;
+          resize: none;
+          outline: none;
+          transition: border-color 0.2s;
+        }
+        .reason-form-group textarea:focus {
+          border-color: #8b5cf6;
+        }
+        .reason-modal-actions {
+          display: flex;
+          justify-content: flex-end;
+          gap: 10px;
         }
 
         /* Modal placeholder */
@@ -466,6 +997,9 @@ export default function StoresManagement() {
         
         .status-pill.disabled { background: #fef2f2; color: #ef4444; }
         .status-dot.disabled { background: #ef4444; }
+
+        .status-pill.rejected { background: #fef2f2; color: #ef4444; }
+        .status-dot.rejected { background: #ef4444; }
 
         /* Action Buttons */
         .action-buttons {

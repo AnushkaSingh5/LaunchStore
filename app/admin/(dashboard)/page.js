@@ -163,6 +163,11 @@ export default function AdminOverview() {
   const failedOrdersThisWeek = ordersThisWeek.filter(o => (o.paymentStatus || '').toLowerCase() === 'failed').length;
   const failedChangePct = failedOrdersCount ? ((failedOrdersThisWeek / failedOrdersCount) * 100).toFixed(0) : 0;
 
+  const pendingStoresCount = stores.filter(s => s.status === 'Pending').length;
+  const approvedStoresCount = stores.filter(s => s.status === 'Active').length;
+  const rejectedStoresCount = stores.filter(s => s.status === 'Rejected').length;
+  const disabledStoresCount = stores.filter(s => s.status === 'Disabled').length;
+
   const stats = [
     { 
       title: 'Total Stores', 
@@ -173,6 +178,46 @@ export default function AdminOverview() {
       trend: 'up',
       subChange: `+${newStoresThisWeek} this week`,
       chartData: analytics?.miniCharts?.stores
+    },
+    { 
+      title: 'Pending Stores', 
+      value: pendingStoresCount.toLocaleString(), 
+      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>, 
+      color: '#f59e0b', 
+      change: '', 
+      trend: '',
+      subChange: 'Awaiting review',
+      chartData: analytics?.miniCharts?.pending
+    },
+    { 
+      title: 'Approved Stores', 
+      value: approvedStoresCount.toLocaleString(), 
+      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"></circle><path d="M8 12l2 2 4-4"></path></svg>, 
+      color: '#10b981', 
+      change: '', 
+      trend: '',
+      subChange: 'Live on platform',
+      chartData: analytics?.miniCharts?.growth
+    },
+    { 
+      title: 'Rejected Stores', 
+      value: rejectedStoresCount.toLocaleString(), 
+      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>, 
+      color: '#ef4444', 
+      change: '', 
+      trend: '',
+      subChange: 'Moderation rejected',
+      chartData: []
+    },
+    { 
+      title: 'Disabled Stores', 
+      value: disabledStoresCount.toLocaleString(), 
+      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>, 
+      color: '#6b7280', 
+      change: '', 
+      trend: '',
+      subChange: 'Suspended stores',
+      chartData: []
     },
     { 
       title: 'Total Revenue', 
@@ -193,36 +238,6 @@ export default function AdminOverview() {
       trend: 'up',
       subChange: `+${ordersCountThisWeek} this week`,
       chartData: analytics?.miniCharts?.orders
-    },
-    { 
-      title: 'Paid Orders', 
-      value: paidOrdersCount.toLocaleString(), 
-      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>, 
-      color: '#10b981', 
-      change: `${paidChangePct}%`, 
-      trend: 'up',
-      subChange: `+${paidOrdersThisWeek} this week`,
-      chartData: analytics?.miniCharts?.paid
-    },
-    { 
-      title: 'Pending Payments', 
-      value: pendingOrdersCount.toLocaleString(), 
-      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>, 
-      color: '#fbbf24', 
-      change: `${pendingChangePct}%`, 
-      trend: 'up',
-      subChange: `+${pendingOrdersThisWeek} this week`,
-      chartData: analytics?.miniCharts?.pending
-    },
-    { 
-      title: 'Failed Payments', 
-      value: failedOrdersCount.toLocaleString(), 
-      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>, 
-      color: '#ef4444', 
-      change: `${failedChangePct}%`, 
-      trend: 'up',
-      subChange: `+${failedOrdersThisWeek} this week`,
-      chartData: analytics?.miniCharts?.failed
     },
   ];
 
@@ -339,7 +354,7 @@ export default function AdminOverview() {
         }
         .stats-grid {
           display: grid;
-          grid-template-columns: repeat(3, 1fr);
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
           gap: 24px;
         }
         .analytics-overview {

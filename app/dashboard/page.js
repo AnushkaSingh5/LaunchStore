@@ -7,6 +7,7 @@ import { useDashboard } from '@/context/DashboardContext';
 import { useAuth } from '@/context/AuthContext';
 import { authService } from '@/services/authService';
 import { storeService } from '@/services/storeService';
+import { payoutService } from '@/services/payoutService';
 
 const Sparkline = ({ color, path }) => (
   <svg width="60" height="24" viewBox="0 0 60 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -108,11 +109,32 @@ export default function DashboardOverview() {
     publishStore: false,
   });
 
+  const [earningsSummary, setEarningsSummary] = useState({
+    totalEarnings: 0,
+    pendingEarnings: 0,
+    availableEarnings: 0,
+    lifetimeOrders: 0
+  });
+
+  useEffect(() => {
+    if (store) {
+      const fetchEarnings = async () => {
+        try {
+          const summary = await payoutService.getCreatorEarningsSummary(store.creator_id, store.id);
+          setEarningsSummary(summary);
+        } catch (e) {
+          console.error('Error fetching earnings in dashboard overview:', e);
+        }
+      };
+      fetchEarnings();
+    }
+  }, [store]);
+
   useEffect(() => {
     if (store && categories && products) {
       const hasCategory = categories.length > 0;
       const hasProduct = products.length > 0;
-      const isPublished = store.status === 'approved';
+      const isPublished = store.status === 'approved' || store.status === 'pending';
       
       setChecklist({
         createStore: true,
@@ -152,12 +174,26 @@ export default function DashboardOverview() {
   const handlePublishFromDashboard = async () => {
     if (!store) return;
     try {
-      await storeService.updateStore(store.id, { status: 'approved' });
+      await storeService.updateStore(store.id, { status: 'pending', status_reason: null });
       await refreshStore();
       await refreshProfile();
+      alert('Your store has been submitted for review!');
     } catch (e) {
       console.error('Error publishing store:', e);
       alert('Error publishing store: ' + e.message);
+    }
+  };
+
+  const handleResubmitStore = async () => {
+    if (!store) return;
+    try {
+      await storeService.updateStore(store.id, { status: 'pending', status_reason: null });
+      await refreshStore();
+      await refreshProfile();
+      alert('Your store has been resubmitted for review!');
+    } catch (e) {
+      console.error('Error resubmitting store:', e);
+      alert('Failed to resubmit store: ' + e.message);
     }
   };
 
@@ -278,9 +314,48 @@ export default function DashboardOverview() {
 
   return (
     <div className="overview-page">
-      <div className="header-subtitle">
+      <div className="header-subtitle" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
         <p>Welcome back, <strong>{creatorName}!</strong> Here&apos;s what&apos;s happening in your store.</p>
+        {store && (
+          <span className={`store-status-badge ${store.status}`}>
+            <span className="badge-dot"></span>
+            {store.status === 'approved' && 'Live & Approved'}
+            {store.status === 'pending' && 'Pending Review'}
+            {store.status === 'rejected' && 'Rejected'}
+            {store.status === 'disabled' && 'Disabled'}
+          </span>
+        )}
       </div>
+
+      {store && (
+        <div className={`store-status-banner-card ${store.status}`}>
+          <div className="banner-icon">
+            {store.status === 'approved' && '🎉'}
+            {store.status === 'pending' && '⏳'}
+            {store.status === 'rejected' && '❌'}
+            {store.status === 'disabled' && '🚫'}
+          </div>
+          <div className="banner-info">
+            <h4>
+              {store.status === 'approved' && 'Your store is now live.'}
+              {store.status === 'pending' && 'Your store is currently under review.'}
+              {store.status === 'rejected' && 'Your store was rejected.'}
+              {store.status === 'disabled' && 'Your store has been disabled.'}
+            </h4>
+            <p>
+              {store.status === 'approved' && `Congratulations! Your online store "${store.name}" is approved, active, and accessible to the public.`}
+              {store.status === 'pending' && `Your store "${store.name}" has been submitted for moderation. Public visitors see a "Store is under review" page until approved.`}
+              {store.status === 'rejected' && `Reason: ${store.status_reason || 'Missing required information. Please review your settings and resubmit.'}`}
+              {store.status === 'disabled' && `Reason: ${store.status_reason || 'Violation of platform policies. Please contact support if you believe this is an error.'}`}
+            </p>
+          </div>
+          {store.status === 'rejected' && (
+            <button onClick={handleResubmitStore} className="resubmit-action-btn">
+              Resubmit for Approval
+            </button>
+          )}
+        </div>
+      )}
 
       {profile && !profile.onboarding_completed && (
         <div className="onboarding-checklist-card">
@@ -414,6 +489,67 @@ export default function DashboardOverview() {
             </div>
           </div>
           <span className={`stat-change ${customersChangeClass}`}>{customersChangeText}</span>
+        </div>
+      </div>
+
+      <div className="dashboard-section-header" style={{ marginTop: '32px', marginBottom: '16px' }}>
+        <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#1e293b', margin: 0 }}>Earnings & Payouts</h3>
+        <p style={{ fontSize: '14px', color: '#64748b', margin: '4px 0 0 0' }}>Manage your revenue balance and payout eligibility.</p>
+      </div>
+
+      <div className="stats-grid" style={{ marginBottom: '32px' }}>
+        <div className="stat-card">
+          <div className="stat-card-inner">
+            <div className="icon-wrapper" style={{ background: '#ecfdf5', color: '#10b981' }}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+            </div>
+            <div className="stat-info">
+              <h3>Total Earnings</h3>
+              <p className="stat-value">₹{earningsSummary.totalEarnings.toLocaleString()}</p>
+            </div>
+          </div>
+          <span className="stat-change positive">Lifetime sales revenue</span>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-card-inner">
+            <div className="icon-wrapper" style={{ background: '#fffbeb', color: '#f59e0b' }}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            </div>
+            <div className="stat-info">
+              <h3>Pending Earnings</h3>
+              <p className="stat-value">₹{earningsSummary.pendingEarnings.toLocaleString()}</p>
+            </div>
+          </div>
+          <span className="stat-change warning">7-day holding period</span>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-card-inner">
+            <div className="icon-wrapper" style={{ background: '#f5f3ff', color: '#8b5cf6' }}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+            </div>
+            <div className="stat-info">
+              <h3>Available Earnings</h3>
+              <p className="stat-value">₹{earningsSummary.availableEarnings.toLocaleString()}</p>
+            </div>
+          </div>
+          <span className="stat-change positive" style={{ color: '#8b5cf6', cursor: 'pointer', fontWeight: 700 }} onClick={() => router.push('/dashboard/earnings')}>
+            Ready for Payout →
+          </span>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-card-inner">
+            <div className="icon-wrapper" style={{ background: '#eff6ff', color: '#3b82f6' }}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+            </div>
+            <div className="stat-info">
+              <h3>Lifetime Orders</h3>
+              <p className="stat-value">{earningsSummary.lifetimeOrders}</p>
+            </div>
+          </div>
+          <span className="stat-change neutral">Completed orders</span>
         </div>
       </div>
 
@@ -1200,6 +1336,104 @@ export default function DashboardOverview() {
           background: #7c3aed;
           border-color: #7c3aed;
           color: #ffffff;
+        }
+
+        /* Store Status Badge */
+        .store-status-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 6px 12px;
+          border-radius: 12px;
+          font-size: 12px;
+          font-weight: 700;
+        }
+        .store-status-badge.approved { background: #ecfdf5; color: #10b981; }
+        .store-status-badge.pending { background: #fffbeb; color: #f59e0b; }
+        .store-status-badge.rejected { background: #fef2f2; color: #ef4444; }
+        .store-status-badge.disabled { background: #f3f4f6; color: #6b7280; }
+        
+        .badge-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+        }
+        .store-status-badge.approved .badge-dot { background: #10b981; }
+        .store-status-badge.pending .badge-dot { background: #f59e0b; }
+        .store-status-badge.rejected .badge-dot { background: #ef4444; }
+        .store-status-badge.disabled .badge-dot { background: #6b7280; }
+
+        /* Store Status Banner Card */
+        .store-status-banner-card {
+          display: flex;
+          align-items: flex-start;
+          gap: 16px;
+          padding: 18px 24px;
+          border-radius: 16px;
+          border: 1px solid;
+          margin-bottom: 24px;
+        }
+        .store-status-banner-card.approved {
+          background: #ecfdf5;
+          border-color: #a7f3d0;
+          color: #065f46;
+        }
+        .store-status-banner-card.pending {
+          background: #fffbeb;
+          border-color: #fde68a;
+          color: #92400e;
+        }
+        .store-status-banner-card.rejected {
+          background: #fef2f2;
+          border-color: #fca5a5;
+          color: #991b1b;
+        }
+        .store-status-banner-card.disabled {
+          background: #f9fafb;
+          border-color: #e5e7eb;
+          color: #374151;
+        }
+        
+        .banner-icon {
+          font-size: 24px;
+          flex-shrink: 0;
+          margin-top: 2px;
+        }
+        
+        .banner-info {
+          flex: 1;
+        }
+        
+        .banner-info h4 {
+          font-size: 15px;
+          font-weight: 700;
+          margin: 0 0 4px 0;
+          color: inherit;
+        }
+        
+        .banner-info p {
+          font-size: 13px;
+          line-height: 1.5;
+          margin: 0;
+          color: inherit;
+          opacity: 0.9;
+        }
+        
+        .resubmit-action-btn {
+          align-self: center;
+          padding: 8px 16px;
+          background: #ef4444;
+          color: #fff;
+          border: none;
+          border-radius: 8px;
+          font-size: 12px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: background 0.2s;
+          white-space: nowrap;
+        }
+        .resubmit-action-btn:hover {
+          background: #dc2626;
         }
       `}</style>
     </div>

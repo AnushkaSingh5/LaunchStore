@@ -1,5 +1,6 @@
 import { supabaseClient } from '@/lib/supabase';
 import { couponService } from './couponService';
+import { payoutService } from './payoutService';
 
 // Memory cache for offline mock orders
 let mockOrders = [];
@@ -142,15 +143,45 @@ export const orderService = {
     if (!supabaseClient) {
       const order = mockOrders.find(o => o.id === orderId);
       if (order) {
+        const oldPaymentStatus = order.payment_status;
+        const oldStatus = order.status;
+
         if (paymentStatus) order.payment_status = paymentStatus;
         if (paymentProvider) order.payment_provider = paymentProvider;
         if (paymentId) order.payment_id = paymentId;
         if (paymentOrderId) order.payment_order_id = paymentOrderId;
         if (status) order.status = status;
-        if (paymentStatus === 'paid' || paymentStatus === 'Paid') {
+
+        if ((paymentStatus === 'paid' || paymentStatus === 'Paid') && oldPaymentStatus !== 'paid' && oldPaymentStatus !== 'Paid') {
           order.paid_at = new Date().toISOString();
           if (order.coupon_id) {
             await couponService.incrementCouponUsage(order.coupon_id);
+          }
+          
+          // Generate mock creator earnings
+          const mockEarnings = payoutService._getMockEarnings();
+          const alreadyExists = mockEarnings.some(e => e.order_id === order.id);
+          if (!alreadyExists) {
+            mockEarnings.push({
+              id: `earn-mock-${Date.now().toString().slice(-6)}`,
+              creator_id: order.creator_id || 'mock-creator-uid',
+              store_id: order.store_id || 'mock-store-id',
+              order_id: order.id,
+              order_amount: order.total_amount,
+              platform_fee: 0.00,
+              creator_amount: order.total_amount,
+              status: 'pending',
+              created_at: new Date().toISOString()
+            });
+          }
+        }
+
+        if (status && (status === 'Cancelled' || status === 'refunded') && oldStatus !== 'Cancelled' && oldStatus !== 'refunded') {
+          // Reverse mock creator earnings if cancelled/refunded
+          const mockEarnings = payoutService._getMockEarnings();
+          const idx = mockEarnings.findIndex(e => e.order_id === orderId && e.status !== 'paid');
+          if (idx !== -1) {
+            mockEarnings.splice(idx, 1);
           }
         }
       }
@@ -307,7 +338,17 @@ export const orderService = {
     if (!supabaseClient) {
       const order = mockOrders.find(o => o.id === orderId);
       if (order) {
+        const oldStatus = order.status;
         order.status = newStatus;
+
+        if ((newStatus === 'Cancelled' || newStatus === 'refunded') && oldStatus !== 'Cancelled' && oldStatus !== 'refunded') {
+          // Reverse mock creator earnings if cancelled/refunded
+          const mockEarnings = payoutService._getMockEarnings();
+          const idx = mockEarnings.findIndex(e => e.order_id === orderId && e.status !== 'paid');
+          if (idx !== -1) {
+            mockEarnings.splice(idx, 1);
+          }
+        }
       }
       return order || true;
     }

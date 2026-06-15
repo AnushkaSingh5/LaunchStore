@@ -10,6 +10,9 @@ import Footer from '@/components/Footer';
 import { useStore } from '@/context/StoreContext';
 import { useLoading } from '@/components/TopLoader';
 import PageLoader from '@/components/PageLoader';
+import { useAuth } from '@/context/AuthContext';
+import { productService } from '@/services/productService';
+import { categoryService } from '@/services/categoryService';
 
 export default function StoreClient({ slug, initialStoreDetails, initialProducts, initialCategories }) {
   const { selectedCategory, setSelectedCategory, searchQuery } = useStore();
@@ -18,12 +21,46 @@ export default function StoreClient({ slug, initialStoreDetails, initialProducts
   const [categories, setCategories] = useState(initialCategories || []);
   const [storeDetails, setStoreDetails] = useState(initialStoreDetails);
   const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
+
+  const currentUserId = user?.id;
+  const isCreator = currentUserId && currentUserId === storeDetails?.creator_id;
 
   useEffect(() => {
     setStoreDetails(initialStoreDetails);
     setProducts(initialProducts || []);
     setCategories(initialCategories || []);
   }, [initialStoreDetails, initialProducts, initialCategories]);
+
+  // Dynamically load products/categories on the client side if the store is not approved and the creator is previewing it
+  useEffect(() => {
+    if (storeDetails && storeDetails.status !== 'approved' && isCreator && products.length === 0) {
+      const loadPreviewData = async () => {
+        try {
+          const [prodData, catData] = await Promise.all([
+            productService.getProductsByStore(storeDetails.id, false),
+            categoryService.getCategoriesByStore(storeDetails.id)
+          ]);
+          const safeCatData = catData || [];
+          const mappedProducts = (prodData || []).map(p => {
+            const categoryObj = safeCatData.find(c => c.id === p.category_id);
+            return {
+              ...p,
+              category: categoryObj ? (categoryObj.name || categoryObj.title) : 'Uncategorized'
+            };
+          });
+          setProducts(mappedProducts);
+          setCategories([
+            { id: 'all', title: 'All', image: 'https://images.unsplash.com/photo-1494438639946-1ebd1d20bf85?auto=format&fit=crop&q=80&w=800' },
+            ...safeCatData
+          ]);
+        } catch (e) {
+          console.error('[LaunchCart - StoreClient] Failed to load preview data:', e);
+        }
+      };
+      loadPreviewData();
+    }
+  }, [storeDetails, isCreator, products.length]);
 
   if (!storeDetails) {
     return (
@@ -89,13 +126,45 @@ export default function StoreClient({ slug, initialStoreDetails, initialProducts
     );
   }
 
-  if (storeDetails && storeDetails.status && ['rejected', 'disabled'].includes(storeDetails.status)) {
+  // For visitors, block access to non-approved stores
+  if (storeDetails && storeDetails.status !== 'approved' && !isCreator) {
+    const isPending = storeDetails.status === 'pending';
+    const isRejected = storeDetails.status === 'rejected';
+    const isDisabled = storeDetails.status === 'disabled';
+
+    let title = "Store is under review";
+    let icon = "⏳";
+    let color = "#fb7185";
+    let buttonColor = "#8b5cf6";
+    let description = `The online store "${storeDetails.name}" is currently under review by platform administrators. Please check back later!`;
+
+    if (isPending) {
+      title = "Store is under review";
+      icon = "⏳";
+      color = "#f59e0b";
+      buttonColor = "#f59e0b";
+      description = `The store "${storeDetails.name}" has been created and is currently waiting for admin review.`;
+    } else if (isRejected) {
+      title = "Store Unavailable";
+      icon = "🔒";
+      color = "#ef4444";
+      buttonColor = "#ef4444";
+      description = `The store "${storeDetails.name}" is currently unavailable. Please contact the owner or try again later.`;
+    } else if (isDisabled) {
+      title = "Store Disabled";
+      icon = "🚫";
+      color = "#6b7280";
+      buttonColor = "#374151";
+      description = `The store "${storeDetails.name}" has been disabled by platform administrators.`;
+    }
+
     return (
       <div className="pending-store-screen">
         <div className="glass-card">
-          <h2>Store Setup In Progress 🛠️</h2>
-          <p>The online store <strong>{storeDetails.name}</strong> is currently pending platform approval or is under maintenance. Please check back later!</p>
-          <Link href="/" className="back-link">Return to Home</Link>
+          <div className="icon-badge" style={{ color: color }}>{icon}</div>
+          <h2>{title}</h2>
+          <p>{description}</p>
+          <Link href="/" className="back-link" style={{ backgroundColor: buttonColor }}>Return to Home</Link>
         </div>
         <style jsx>{`
           .pending-store-screen {
@@ -103,49 +172,60 @@ export default function StoreClient({ slug, initialStoreDetails, initialProducts
             display: flex;
             align-items: center;
             justify-content: center;
-            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            background: linear-gradient(135deg, #0f172a 0%, #020617 100%);
             padding: 20px;
+            font-family: 'Outfit', sans-serif;
           }
           .glass-card {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(16px);
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 24px;
-            padding: 40px;
-            max-width: 480px;
+            border-radius: 28px;
+            padding: 48px;
+            max-width: 500px;
             text-align: center;
             color: #fff;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+          }
+          .icon-badge {
+            font-size: 56px;
+            margin-bottom: 24px;
+            animation: pulse 2s infinite alternate;
+          }
+          @keyframes pulse {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.08); }
           }
           .glass-card h2 {
-            font-size: 24px;
-            font-weight: 800;
+            font-size: 26px;
+            font-weight: 850;
             margin-bottom: 16px;
-            background: linear-gradient(135deg, #a78bfa, #818cf8);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+            color: #f8fafc;
           }
           .glass-card p {
             font-size: 14px;
             color: #94a3b8;
             line-height: 1.6;
-            margin-bottom: 28px;
+            margin-bottom: 32px;
           }
           .back-link {
             display: inline-block;
-            padding: 12px 24px;
-            background: #8b5cf6;
+            padding: 14px 28px;
             color: #fff;
-            border-radius: 12px;
+            border-radius: 14px;
             font-weight: 700;
             text-decoration: none;
             transition: all 0.2s;
-            border: none;
             cursor: pointer;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.2);
           }
           .back-link:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
           }
         `}</style>
       </div>
@@ -165,6 +245,21 @@ export default function StoreClient({ slug, initialStoreDetails, initialProducts
 
   return (
     <main className="dashboard-store">
+      {storeDetails && storeDetails.status !== 'approved' && isCreator && (
+        <div className={`preview-warning-banner ${storeDetails.status}`}>
+          <div className="banner-content">
+            <span className="banner-badge">Preview Mode</span>
+            <span className="banner-message">
+              {storeDetails.status === 'pending' && "⏳ Your store is pending admin review. Public visitors see a 'Store is under review' screen."}
+              {storeDetails.status === 'rejected' && `❌ Your store request was rejected. Reason: ${storeDetails.status_reason || 'N/A'}.`}
+              {storeDetails.status === 'disabled' && `🚫 Your store is disabled. Reason: ${storeDetails.status_reason || 'N/A'}.`}
+            </span>
+          </div>
+          {(storeDetails.status === 'rejected' || storeDetails.status === 'disabled') && (
+            <Link href="/dashboard" className="banner-action-link">Resubmit / Manage in Dashboard &rarr;</Link>
+          )}
+        </div>
+      )}
       <Navbar storeName={storeDetails?.name} logoUrl={storeDetails?.logo_url || storeDetails?.logo} />
       <Hero 
         bannerUrl={storeDetails?.banner_url || storeDetails?.banner}
@@ -508,6 +603,53 @@ export default function StoreClient({ slug, initialStoreDetails, initialProducts
           100% {
             transform: translateX(100%);
           }
+        }
+        .preview-warning-banner {
+          width: 100%;
+          padding: 12px 24px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          font-size: 13px;
+          font-weight: 600;
+          z-index: 9999;
+          font-family: 'Outfit', sans-serif;
+          box-sizing: border-box;
+        }
+        .preview-warning-banner.pending {
+          background: #fffbeb;
+          border-bottom: 1px solid #fef3c7;
+          color: #d97706;
+        }
+        .preview-warning-banner.rejected {
+          background: #fef2f2;
+          border-bottom: 1px solid #fee2e2;
+          color: #dc2626;
+        }
+        .preview-warning-banner.disabled {
+          background: #f3f4f6;
+          border-bottom: 1px solid #e5e7eb;
+          color: #4b5563;
+        }
+        .banner-content {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+        .banner-badge {
+          padding: 4px 8px;
+          background: rgba(0,0,0,0.06);
+          border-radius: 6px;
+          font-size: 11px;
+          font-weight: 700;
+          text-transform: uppercase;
+        }
+        .banner-action-link {
+          color: inherit;
+          text-decoration: underline;
+          font-weight: 700;
+          white-space: nowrap;
         }
       `}</style>
     </main>

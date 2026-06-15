@@ -238,12 +238,12 @@ export default function OnboardingPage() {
     }
   };
 
-  // Submit Step 5: Publish Store
+  // Submit Step 5: Publish Store (Submits store for review)
   const handlePublishStore = async () => {
     setIsSubmitting(true);
     try {
-      // 1. Approve store
-      await storeService.updateStore(store.id, { status: 'approved' });
+      // 1. Submit store for review (status = 'pending')
+      await storeService.updateStore(store.id, { status: 'pending', status_reason: null });
       // 2. Mark profile onboarding complete
       await authService.updateProfile(user.id, {
         onboarding_completed: true,
@@ -254,8 +254,8 @@ export default function OnboardingPage() {
       await refreshStore();
       setIsLive(true);
     } catch (err) {
-      console.error('Failed to publish store:', err);
-      alert('Failed to publish store. Please try again.');
+      console.error('Failed to submit store for review:', err);
+      alert('Failed to submit store. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -283,22 +283,22 @@ export default function OnboardingPage() {
 
   const progressPercentage = currentStep * 20;
 
-  // Render finish success screen if store is published
+  // Render finish success screen if store is submitted
   if (isLive) {
     return (
       <div className="onboarding-container">
         <div className="glow-bg"></div>
         <div className="onboarding-card success-card fade-in">
           <div className="success-icon-animation">
-            <div className="check-icon">🎉</div>
+            <div className="check-icon">⏳</div>
           </div>
-          <h2>Your Store is Live!</h2>
+          <h2>Store Submitted for Review!</h2>
           <p className="success-subtitle">
-            Congratulations! <strong>{storeName}</strong> is published and ready to accept orders.
+            Congratulations! <strong>{storeName}</strong> has been successfully configured and submitted for admin moderation. Your store will become publicly live once approved.
           </p>
 
           <div className="link-preview-box">
-            <span className="label">Your storefront link</span>
+            <span className="label">Your storefront link (Private during review)</span>
             <div className="link-row">
               <input type="text" readOnly value={`${window.location.origin}/store/${slug}`} />
               <button onClick={copyToClipboard} className="copy-btn">
@@ -314,7 +314,7 @@ export default function OnboardingPage() {
               rel="noopener noreferrer"
               className="view-store-btn"
             >
-              View Live Store
+              Preview Store
             </a>
             <button onClick={() => router.push('/dashboard')} className="primary-dashboard-btn">
               Go to Dashboard

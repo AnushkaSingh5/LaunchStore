@@ -53,7 +53,7 @@ export default async function StorePage({ params }) {
   try {
     storeDetails = await storeService.getStoreBySlug(slug);
     
-    if (storeDetails && storeDetails.id) {
+    if (storeDetails && storeDetails.id && storeDetails.status === 'approved') {
       const [prodData, catData] = await Promise.all([
         productService.getProductsByStore(storeDetails.id, false),
         categoryService.getCategoriesByStore(storeDetails.id)

@@ -124,22 +124,9 @@ export const storeService = {
         return null;
       }
       const store = data[0];
-      
-      // Public storefront strictly requires the store to be approved by admin moderators,
-      // UNLESS the logged-in user is the creator of the store.
-      let currentUserId = null;
-      try {
-        const { data: sessionData } = await supabaseClient.auth.getSession();
-        currentUserId = sessionData?.session?.user?.id;
-      } catch (sessionErr) {
-        console.warn('[LaunchCart - StoreService]: Could not check current session user:', sessionErr.message);
-      }
-
-      if (store.status !== 'approved' && (!currentUserId || currentUserId !== store.creator_id)) {
-        console.warn(`[LaunchCart] Public storefront access denied. Store status: "${store.status}". Creator ID: "${store.creator_id}", Current User: "${currentUserId}".`);
-        return null;
-      }
-
+      // Return the store details so that the storefront page can read its status
+      // and display the correct blocked screens (Under Review, Unavailable, Disabled) to visitors,
+      // or preview mode to the creator.
       return {
         ...store,
         name: store.name,

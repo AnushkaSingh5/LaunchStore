@@ -179,30 +179,26 @@ export function AdminProvider({ children }) {
     }
   };
 
-  const rejectStore = async (id) => {
+  const rejectStore = async (id, reason) => {
     try {
-      if (confirm('Are you sure you want to reject this store request?')) {
-        const res = await adminService.rejectStore(id);
-        if (res.success) {
-          await loadPlatformData();
-        } else {
-          alert('Failed to reject store: ' + res.error);
-        }
+      const res = await adminService.rejectStore(id, reason);
+      if (res.success) {
+        await loadPlatformData();
+      } else {
+        alert('Failed to reject store: ' + res.error);
       }
     } catch (e) {
       console.error(e);
     }
   };
 
-  const disableStore = async (id) => {
+  const disableStore = async (id, reason) => {
     try {
-      if (confirm('Are you sure you want to disable this merchant store?')) {
-        const res = await adminService.disableStore(id);
-        if (res.success) {
-          await loadPlatformData();
-        } else {
-          alert('Failed to disable store: ' + res.error);
-        }
+      const res = await adminService.disableStore(id, reason);
+      if (res.success) {
+        await loadPlatformData();
+      } else {
+        alert('Failed to disable store: ' + res.error);
       }
     } catch (e) {
       console.error(e);

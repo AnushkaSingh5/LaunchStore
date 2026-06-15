@@ -39,18 +39,21 @@ export const adminService = {
           .rpc('admin_get_stores', { p_admin_email: email });
 
         if (!storesError && storesData) {
-          // Fetch products and orders via RPCs to populate counts
-          const [prodRes, ordRes] = await Promise.all([
+          // Fetch products, orders, and categories in parallel
+          const [prodRes, ordRes, catRes] = await Promise.all([
             supabaseClient.rpc('admin_get_products', { p_admin_email: email }),
-            supabaseClient.rpc('admin_get_orders', { p_admin_email: email })
+            supabaseClient.rpc('admin_get_orders', { p_admin_email: email }),
+            supabaseClient.from('categories').select('id, store_id')
           ]);
 
           const productsList = prodRes.data || [];
           const ordersList = ordRes.data || [];
+          const categoriesList = catRes.data || [];
 
           return storesData.map(store => {
             const storeProds = productsList.filter(p => p.store_id === store.id);
             const storeOrds = ordersList.filter(o => o.store_id === store.id);
+            const storeCats = categoriesList.filter(c => c.store_id === store.id);
             const totalRevenue = storeOrds.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
 
             let uiStatus = 'Pending';
@@ -61,11 +64,17 @@ export const adminService = {
             return {
               id: store.id,
               name: store.name,
+              slug: store.slug,
+              description: store.description,
+              logoUrl: store.logo_url,
+              bannerUrl: store.banner_url,
+              statusReason: store.status_reason,
               ownerName: store.creator_name || 'Unknown Creator',
               email: store.creator_email || 'N/A',
               status: uiStatus,
               createdDate: toLocalDateString(store.created_at),
               productsCount: storeProds.length,
+              categoriesCount: storeCats.length,
               ordersCount: storeOrds.length,
               revenue: totalRevenue,
               growth: 0
@@ -84,17 +93,20 @@ export const adminService = {
 
       if (storesError) throw storesError;
 
-      const [prodRes, ordRes] = await Promise.all([
+      const [prodRes, ordRes, catRes] = await Promise.all([
         supabaseClient.from('products').select('id, store_id'),
-        supabaseClient.from('orders').select('id, store_id, total_amount')
+        supabaseClient.from('orders').select('id, store_id, total_amount'),
+        supabaseClient.from('categories').select('id, store_id')
       ]);
 
       const productsList = prodRes.data || [];
       const ordersList = ordRes.data || [];
+      const categoriesList = catRes.data || [];
 
       return (storesData || []).map(store => {
         const storeProds = productsList.filter(p => p.store_id === store.id);
         const storeOrds = ordersList.filter(o => o.store_id === store.id);
+        const storeCats = categoriesList.filter(c => c.store_id === store.id);
         const totalRevenue = storeOrds.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
 
         let uiStatus = 'Pending';
@@ -105,11 +117,17 @@ export const adminService = {
         return {
           id: store.id,
           name: store.name,
+          slug: store.slug,
+          description: store.description,
+          logoUrl: store.logo_url,
+          bannerUrl: store.banner_url,
+          statusReason: store.status_reason,
           ownerName: store.creator?.name || 'Unknown Creator',
           email: store.creator?.email || 'N/A',
           status: uiStatus,
           createdDate: toLocalDateString(store.created_at),
           productsCount: storeProds.length,
+          categoriesCount: storeCats.length,
           ordersCount: storeOrds.length,
           revenue: totalRevenue,
           growth: 0
@@ -142,12 +160,33 @@ export const adminService = {
       }
 
       // 2. Direct fallback
+      const { data: storeData } = await supabaseClient
+        .from('stores')
+        .select('status')
+        .eq('id', id)
+        .single();
+      const prevStatus = storeData?.status || 'pending';
+
       const { error } = await supabaseClient
         .from('stores')
-        .update({ status: 'approved' })
+        .update({ status: 'approved', status_reason: null })
         .eq('id', id);
 
       if (error) throw error;
+
+      try {
+        await supabaseClient
+          .from('store_status_audit_logs')
+          .insert([{
+            store_id: id,
+            previous_status: prevStatus,
+            new_status: 'approved',
+            reason: null
+          }]);
+      } catch (logErr) {
+        console.warn('Failed to insert audit log in fallback:', logErr);
+      }
+
       return { success: true };
     } catch (e) {
       console.error('[LaunchCart - AdminService] Error approving store:', e);
@@ -158,15 +197,16 @@ export const adminService = {
   /**
    * Reject a store (change status to 'rejected')
    */
-  rejectStore: async (id) => {
+  rejectStore: async (id, reason) => {
     if (!supabaseClient) throw new Error('Supabase client is not initialized.');
     try {
       const email = getAdminEmail();
+      const activeReason = reason || 'Incomplete store information';
 
       // 1. Try secure admin RPC first
       try {
         const { data, error: rpcError } = await supabaseClient
-          .rpc('admin_reject_store', { p_admin_email: email, p_store_id: id });
+          .rpc('admin_reject_store', { p_admin_email: email, p_store_id: id, p_reason: activeReason });
 
         if (!rpcError) {
           return { success: true };
@@ -176,12 +216,33 @@ export const adminService = {
       }
 
       // 2. Direct fallback
+      const { data: storeData } = await supabaseClient
+        .from('stores')
+        .select('status')
+        .eq('id', id)
+        .single();
+      const prevStatus = storeData?.status || 'pending';
+
       const { error } = await supabaseClient
         .from('stores')
-        .update({ status: 'rejected' })
+        .update({ status: 'rejected', status_reason: activeReason })
         .eq('id', id);
 
       if (error) throw error;
+
+      try {
+        await supabaseClient
+          .from('store_status_audit_logs')
+          .insert([{
+            store_id: id,
+            previous_status: prevStatus,
+            new_status: 'rejected',
+            reason: activeReason
+          }]);
+      } catch (logErr) {
+        console.warn('Failed to insert audit log in fallback:', logErr);
+      }
+
       return { success: true };
     } catch (e) {
       console.error('[LaunchCart - AdminService] Error rejecting store:', e);
@@ -192,15 +253,16 @@ export const adminService = {
   /**
    * Disable a store (change status to 'disabled')
    */
-  disableStore: async (id) => {
+  disableStore: async (id, reason) => {
     if (!supabaseClient) throw new Error('Supabase client is not initialized.');
     try {
       const email = getAdminEmail();
+      const activeReason = reason || 'Violation of platform policies';
 
       // 1. Try secure admin RPC first
       try {
         const { data, error: rpcError } = await supabaseClient
-          .rpc('admin_disable_store', { p_admin_email: email, p_store_id: id });
+          .rpc('admin_disable_store', { p_admin_email: email, p_store_id: id, p_reason: activeReason });
 
         if (!rpcError) {
           return { success: true };
@@ -210,12 +272,33 @@ export const adminService = {
       }
 
       // 2. Direct fallback
+      const { data: storeData } = await supabaseClient
+        .from('stores')
+        .select('status')
+        .eq('id', id)
+        .single();
+      const prevStatus = storeData?.status || 'approved';
+
       const { error } = await supabaseClient
         .from('stores')
-        .update({ status: 'disabled' })
+        .update({ status: 'disabled', status_reason: activeReason })
         .eq('id', id);
 
       if (error) throw error;
+
+      try {
+        await supabaseClient
+          .from('store_status_audit_logs')
+          .insert([{
+            store_id: id,
+            previous_status: prevStatus,
+            new_status: 'disabled',
+            reason: activeReason
+          }]);
+      } catch (logErr) {
+        console.warn('Failed to insert audit log in fallback:', logErr);
+      }
+
       return { success: true };
     } catch (e) {
       console.error('[LaunchCart - AdminService] Error disabling store:', e);
