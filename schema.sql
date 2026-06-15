@@ -672,5 +672,50 @@ CREATE POLICY "Allow creator deletes of own coupons" ON public.coupons FOR DELET
 CREATE POLICY "Allow admin updates of all coupons" ON public.coupons FOR UPDATE USING (public.is_admin());
 CREATE POLICY "Allow admin deletes of all coupons" ON public.coupons FOR DELETE USING (public.is_admin());
 
+-- 1. Create check trigger function to secure public updates
+CREATE OR REPLACE FUNCTION public.check_coupon_update_fields()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- If user is the store creator or an admin, allow all changes
+  IF EXISTS (
+    SELECT 1 FROM public.stores
+    WHERE stores.id = OLD.store_id AND stores.creator_id = auth.uid()
+  ) OR (SELECT public.is_admin()) THEN
+    RETURN NEW;
+  END IF;
+
+  -- Otherwise, it is a guest checkout incrementing usage. Enforce restrictions:
+  IF NEW.id <> OLD.id OR
+     NEW.store_id <> OLD.store_id OR
+     NEW.code <> OLD.code OR
+     NEW.discount_type <> OLD.discount_type OR
+     NEW.discount_value <> OLD.discount_value OR
+     NEW.max_uses <> OLD.max_uses OR
+     NEW.minimum_order_amount IS DISTINCT FROM OLD.minimum_order_amount OR
+     NEW.expiry_date IS DISTINCT FROM OLD.expiry_date OR
+     NEW.is_active <> OLD.is_active OR
+     NEW.created_at <> OLD.created_at OR
+     NOT (NEW.current_uses = OLD.current_uses + 1 OR NEW.current_uses = OLD.current_uses)
+  THEN
+    RAISE EXCEPTION 'Permission denied: Guests can only increment current_uses.';
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 2. Bind trigger to coupons table
+DROP TRIGGER IF EXISTS tr_check_coupon_update_fields ON public.coupons;
+CREATE TRIGGER tr_check_coupon_update_fields
+  BEFORE UPDATE ON public.coupons
+  FOR EACH ROW EXECUTE FUNCTION public.check_coupon_update_fields();
+
+-- 3. Simplified RLS policy allowing public updates (trigger enforces security)
+DROP POLICY IF EXISTS "Allow public update of coupon usage count" ON public.coupons;
+CREATE POLICY "Allow public update of coupon usage count" ON public.coupons 
+FOR UPDATE 
+USING (true) 
+WITH CHECK (true);
+
 
 

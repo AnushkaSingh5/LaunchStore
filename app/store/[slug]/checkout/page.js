@@ -47,6 +47,7 @@ export default function StoreCheckoutPage({ params }) {
   const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [couponError, setCouponError] = useState('');
   const [discountAmount, setDiscountAmount] = useState(0);
+  const [availableCoupons, setAvailableCoupons] = useState([]);
 
   // Authenticate customer role and pre-fill details
   useEffect(() => {
@@ -147,6 +148,34 @@ export default function StoreCheckoutPage({ params }) {
     };
     fetchStore();
   }, [slug]);
+
+  // Fetch available store coupons
+  useEffect(() => {
+    if (!storeDetails?.id) return;
+    const fetchCoupons = async () => {
+      try {
+        const allCoupons = await couponService.getCouponsByStore(storeDetails.id);
+        const active = (allCoupons || []).filter(c => {
+          const isNotExpired = !c.expiry_date || new Date(c.expiry_date) >= new Date();
+          const hasUsesRemaining = !c.max_uses || (c.current_uses || 0) < c.max_uses;
+          return c.is_active && isNotExpired && hasUsesRemaining;
+        });
+        setAvailableCoupons(active);
+      } catch (err) {
+        console.error('Error fetching available store coupons:', err);
+      }
+    };
+    fetchCoupons();
+  }, [storeDetails?.id]);
+
+  const handleSelectCoupon = (cop) => {
+    setAppliedCoupon(cop);
+    const calculatedDiscount = cop.discount_type === 'percentage'
+      ? parseFloat((cartTotal * (cop.discount_value / 100)).toFixed(2))
+      : parseFloat(cop.discount_value);
+    setDiscountAmount(calculatedDiscount);
+    setCouponError('');
+  };
 
   console.log('🛒 [Checkout] Render state:', { 
     slug, 
@@ -844,19 +873,64 @@ export default function StoreCheckoutPage({ params }) {
                 ))}
               </div>
 
-              {/* Coupon Form */}
+              {/* Coupon Form & Available Coupons */}
               <div className="coupon-section">
                 {!appliedCoupon ? (
-                  <form onSubmit={handleApplyCoupon} className="coupon-form">
-                    <input
-                      type="text"
-                      placeholder="Promo Code"
-                      value={couponCodeInput}
-                      onChange={(e) => setCouponCodeInput(e.target.value.toUpperCase())}
-                      className="coupon-input"
-                    />
-                    <button type="submit" className="coupon-apply-btn">Apply</button>
-                  </form>
+                  <>
+                    <form onSubmit={handleApplyCoupon} className="coupon-form">
+                      <input
+                        type="text"
+                        placeholder="Promo Code"
+                        value={couponCodeInput}
+                        onChange={(e) => setCouponCodeInput(e.target.value.toUpperCase())}
+                        className="coupon-input"
+                      />
+                      <button type="submit" className="coupon-apply-btn">Apply</button>
+                    </form>
+                    
+                    {availableCoupons.length > 0 && (
+                      <div className="available-coupons-container">
+                        <span className="available-title">Available Offers:</span>
+                        <div className="coupons-grid">
+                          {availableCoupons.map((cop) => {
+                            const isEligible = cartTotal >= (cop.minimum_order_amount || 0);
+                            const minDiff = cop.minimum_order_amount - cartTotal;
+                            
+                            return (
+                              <div 
+                                key={cop.id} 
+                                className={`coupon-offer-card ${isEligible ? 'eligible' : 'locked'}`}
+                                onClick={() => {
+                                  if (isEligible) {
+                                    setCouponCodeInput(cop.code);
+                                    handleSelectCoupon(cop);
+                                  }
+                                }}
+                              >
+                                <div className="offer-header">
+                                  <span className="offer-code">{cop.code}</span>
+                                  <span className="offer-val">
+                                    {cop.discount_type === 'percentage' ? `${cop.discount_value}% OFF` : `₹${cop.discount_value} OFF`}
+                                  </span>
+                                </div>
+                                <div className="offer-footer">
+                                  {cop.minimum_order_amount > 0 ? (
+                                    isEligible ? (
+                                      <span className="offer-terms">Min order ₹{cop.minimum_order_amount} met!</span>
+                                    ) : (
+                                      <span className="offer-terms-locked">Add ₹{Math.ceil(minDiff)} more to unlock</span>
+                                    )
+                                  ) : (
+                                    <span className="offer-terms">No minimum order required</span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <div className="applied-coupon-badge">
                     <span className="coupon-icon">
@@ -1428,6 +1502,90 @@ export default function StoreCheckoutPage({ params }) {
         .discount-amount {
           color: #10b981;
           font-weight: 700;
+        }
+        
+        /* Available Coupons Styling */
+        .available-coupons-container {
+          margin-top: 14px;
+        }
+        .available-title {
+          font-size: 11px;
+          font-weight: 700;
+          color: var(--text-sub);
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          display: block;
+          margin-bottom: 8px;
+        }
+        .coupons-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+          gap: 10px;
+        }
+        .coupon-offer-card {
+          border: 1.5px dashed var(--secondary);
+          border-radius: 12px;
+          padding: 10px 12px;
+          background: var(--bg-main);
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+        .coupon-offer-card.eligible {
+          border-color: #8b5cf6;
+          background: rgba(139, 92, 246, 0.02);
+          cursor: pointer;
+        }
+        .coupon-offer-card.eligible:hover {
+          border-style: solid;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 10px rgba(139, 92, 246, 0.1);
+          background: rgba(139, 92, 246, 0.05);
+        }
+        .coupon-offer-card.locked {
+          opacity: 0.65;
+          cursor: not-allowed;
+          background: #f8fafc;
+        }
+        .offer-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        .offer-code {
+          font-family: monospace;
+          font-weight: 700;
+          color: #6366f1;
+          font-size: 13px;
+        }
+        .coupon-offer-card.locked .offer-code {
+          color: #94a3b8;
+        }
+        .offer-val {
+          font-size: 11px;
+          font-weight: 800;
+          padding: 2px 6px;
+          border-radius: 6px;
+          background: #ecfdf5;
+          color: #10b981;
+        }
+        .coupon-offer-card.locked .offer-val {
+          background: #e2e8f0;
+          color: #64748b;
+        }
+        .offer-footer {
+          font-size: 10px;
+          font-weight: 600;
+        }
+        .offer-terms {
+          color: #64748b;
+        }
+        .coupon-offer-card.eligible .offer-terms {
+          color: #10b981;
+        }
+        .offer-terms-locked {
+          color: #f43f5e;
         }
       `}</style>
 
