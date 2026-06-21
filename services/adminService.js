@@ -63,6 +63,7 @@ export const adminService = {
 
             return {
               id: store.id,
+              creatorId: store.creator_id,
               name: store.name,
               slug: store.slug,
               description: store.description,
@@ -116,6 +117,7 @@ export const adminService = {
 
         return {
           id: store.id,
+          creatorId: store.creator_id,
           name: store.name,
           slug: store.slug,
           description: store.description,

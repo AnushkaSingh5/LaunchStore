@@ -17,6 +17,8 @@ const icons = {
   Payments: <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>,
   Coupons: <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v2zM12 7v10M9 12h6"></path></svg>,
   Earnings: <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>,
+  Profile: <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>,
+  Wallet: <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"></path><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"></path><path d="M18 12a2 2 0 0 0 0 4h4v-4z"></path></svg>,
 };
 
 export default function Sidebar({ isOpen, onClose, isCollapsed, onToggle }) {
@@ -77,6 +79,8 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggle }) {
     { label: 'Orders', path: '/dashboard/orders', icon: icons.Orders, color: '#a855f7' },
     { label: 'Customers', path: '/dashboard/customers', icon: icons.Customers, color: '#3b82f6' },
     { label: 'Earnings', path: '/dashboard/earnings', icon: icons.Earnings, color: '#10b981' },
+    { label: 'Wallet', path: '/dashboard/wallet', icon: icons.Wallet, color: '#f59e0b' },
+    { label: 'Profile', path: '/dashboard/profile', icon: icons.Profile, color: '#06b6d4' },
     { label: 'Payments & Shipping', path: '/dashboard/payments', icon: icons.Payments, color: '#6366f1' },
   ];
 
@@ -110,17 +114,17 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggle }) {
               alignItems: 'center',
               justifyContent: 'center',
               gap: '8px',
-              padding: '8px 12px',
+              padding: '6px 12px',
               background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
               color: '#fff',
-              borderRadius: '12px',
+              borderRadius: '8px',
               fontWeight: '700',
-              fontSize: '14px',
+              fontSize: '13px',
               textDecoration: 'none',
               boxShadow: '0 4px 12px rgba(139, 92, 246, 0.25)',
               transition: 'all 0.2s ease',
-              width: 'calc(100% - 32px)',
-              margin: '0 auto 8px auto',
+              width: 'calc(100% - 24px)',
+              margin: '0 auto 4px auto',
               textAlign: 'center'
             }}
             onMouseEnter={(e) => {
