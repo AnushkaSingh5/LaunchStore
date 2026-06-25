@@ -114,17 +114,17 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggle }) {
               alignItems: 'center',
               justifyContent: 'center',
               gap: '8px',
-              padding: '6px 12px',
+              padding: '8px 12px',
               background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
               color: '#fff',
-              borderRadius: '8px',
+              borderRadius: '12px',
               fontWeight: '700',
-              fontSize: '13px',
+              fontSize: '14px',
               textDecoration: 'none',
               boxShadow: '0 4px 12px rgba(139, 92, 246, 0.25)',
               transition: 'all 0.2s ease',
-              width: 'calc(100% - 24px)',
-              margin: '0 auto 4px auto',
+              width: 'calc(100% - 32px)',
+              margin: '0 auto 8px auto',
               textAlign: 'center'
             }}
             onMouseEnter={(e) => {
