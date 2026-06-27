@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { storeService } from '@/services/storeService';
@@ -11,7 +11,9 @@ import PageLoader from '@/components/PageLoader';
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { user, profile, store, loading, refreshStore, refreshProfile } = useAuth();
+  const { user, profile, store, loading, storeLoading, refreshStore, refreshProfile } = useAuth();
+
+  const initialStepLoadedRef = useRef(false);
 
   // Wizard Step State (1 to 5)
   const [currentStep, setCurrentStep] = useState(1);
@@ -54,16 +56,33 @@ export default function OnboardingPage() {
 
   // Load existing profile onboarding step and store details on mount
   useEffect(() => {
-    if (profile) {
-      if (profile.onboarding_completed) {
+    if (!loading && !storeLoading && profile) {
+      if (profile.onboarding_completed && store) {
+        console.log('🔄 [LaunchCart - Onboarding]: Onboarding complete and store exists, redirecting to dashboard...');
         router.push('/dashboard');
         return;
       }
-      if (profile.onboarding_step > 0 && profile.onboarding_step <= 5) {
-        setCurrentStep(profile.onboarding_step);
+      
+      // If profile says onboarding is completed but we have no store, reset it in DB
+      if (profile.onboarding_completed && !store) {
+        console.log('🔄 [LaunchCart - Onboarding]: Profile completed onboarding but no store exists. Resetting database state...');
+        authService.updateProfile(user.id, { onboarding_completed: false, onboarding_step: 1 })
+          .then(() => refreshProfile())
+          .catch(err => console.error('Failed to reset onboarding state:', err));
+        return;
+      }
+      
+      if (!initialStepLoadedRef.current) {
+        initialStepLoadedRef.current = true;
+        // If no store exists yet, force start from Step 1 (Welcome) to configure details
+        if (!store) {
+          setCurrentStep(1);
+        } else if (profile.onboarding_step > 0 && profile.onboarding_step <= 5) {
+          setCurrentStep(profile.onboarding_step);
+        }
       }
     }
-  }, [profile, router]);
+  }, [profile, store, loading, storeLoading, router]);
 
   // Pre-populate store details if store already exists
   useEffect(() => {
@@ -110,14 +129,19 @@ export default function OnboardingPage() {
     });
   };
 
-  // Step transitions and DB state sync
+  // Step transitions and DB state sync (Optimistic UI updates)
   const updateOnboardingStep = async (step) => {
+    setCurrentStep(step);
     try {
-      await authService.updateProfile(user.id, { onboarding_step: step });
-      await refreshProfile();
-      setCurrentStep(step);
+      if (user?.id) {
+        await authService.updateProfile(user.id, { 
+          onboarding_step: step,
+          onboarding_completed: false
+        });
+        await refreshProfile();
+      }
     } catch (err) {
-      console.error('Error updating onboarding step:', err);
+      console.error('Error updating onboarding step in DB:', err);
     }
   };
 
@@ -169,8 +193,8 @@ export default function OnboardingPage() {
         });
       }
 
-      await refreshStore();
       await updateOnboardingStep(3);
+      await refreshStore();
     } catch (err) {
       console.error('Failed to save store details:', err);
       alert('Failed to save store details. Please try again.');

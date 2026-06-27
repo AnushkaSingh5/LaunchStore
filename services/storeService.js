@@ -221,9 +221,18 @@ export const storeService = {
       attempt++;
       try {
         console.log(`[LaunchCart - Storage] Uploading logo (Attempt ${attempt}/${maxAttempts})...`);
-        const { data, error } = await supabaseClient.storage
+        const uploadPromise = supabaseClient.storage
           .from('store-assets')
           .upload(filePath, file, { upsert: true });
+
+        const uploadTimeout = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Storage upload timed out')), 6000);
+        });
+
+        const { data, error } = await Promise.race([
+          uploadPromise,
+          uploadTimeout
+        ]);
           
         if (error) {
           console.warn(`[LaunchCart - Storage] Logo upload attempt ${attempt} error:`, error.message || error);
@@ -265,8 +274,10 @@ export const storeService = {
                             err.status === 403 ||
                             err.statusCode === 403;
         
-        if (isBucketErr) {
-          console.warn('[LaunchCart - Storage] Storage bucket exception. Falling back to compressed Base64 data URL immediately.');
+        const isTimeout = err.message?.includes('timed out') || err.message?.includes('timeout');
+
+        if (isBucketErr || isTimeout) {
+          console.warn('[LaunchCart - Storage] Storage bucket exception/timeout. Falling back to compressed Base64 data URL immediately.');
           const base64Url = await compressImage(file, 200, 200);
           console.log("Upload Success:", base64Url);
           return base64Url;
@@ -299,9 +310,18 @@ export const storeService = {
       attempt++;
       try {
         console.log(`[LaunchCart - Storage] Uploading banner (Attempt ${attempt}/${maxAttempts})...`);
-        const { data, error } = await supabaseClient.storage
+        const uploadPromise = supabaseClient.storage
           .from('store-assets')
           .upload(filePath, file, { upsert: true });
+
+        const uploadTimeout = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Storage upload timed out')), 6000);
+        });
+
+        const { data, error } = await Promise.race([
+          uploadPromise,
+          uploadTimeout
+        ]);
           
         if (error) {
           console.warn(`[LaunchCart - Storage] Banner upload attempt ${attempt} error:`, error.message || error);
@@ -343,8 +363,10 @@ export const storeService = {
                             err.status === 403 ||
                             err.statusCode === 403;
         
-        if (isBucketErr) {
-          console.warn('[LaunchCart - Storage] Storage bucket exception. Falling back to compressed Base64 data URL immediately.');
+        const isTimeout = err.message?.includes('timed out') || err.message?.includes('timeout');
+
+        if (isBucketErr || isTimeout) {
+          console.warn('[LaunchCart - Storage] Storage bucket exception/timeout. Falling back to compressed Base64 data URL immediately.');
           const base64Url = await compressImage(file, 800, 500);
           console.log("Upload Success:", base64Url);
           return base64Url;

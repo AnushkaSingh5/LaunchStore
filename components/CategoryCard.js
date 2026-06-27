@@ -2,122 +2,235 @@
 
 import { useStore } from '@/context/StoreContext';
 
-export default function CategoryCard({ category }) {
+export default function CategoryCard({ category, productCount }) {
   const { selectedCategory, setSelectedCategory } = useStore();
   const isActive = selectedCategory === category.title;
 
+  const displayCount = productCount !== undefined ? productCount : (category.count || 0);
+
+  // SVG Icons mapper based on category title/icon name
+  const getCategoryIcon = (iconName = '', title = '') => {
+    const term = `${iconName || ''} ${title || ''}`.toLowerCase();
+    
+    // Living Room / Armchair
+    if (term.includes('living') || term.includes('armchair') || term.includes('salon')) {
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 9V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v3"></path><path d="M3 11v5a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2Z"></path><path d="M6 18v2"></path><path d="M18 18v2"></path></svg>
+      );
+    }
+    // Bedroom / Bed
+    if (term.includes('bedroom') || term.includes('bed') || term.includes('sleep')) {
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 4v16"></path><path d="M2 11h20"></path><path d="M6 11V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v5"></path><path d="M22 4v16"></path></svg>
+      );
+    }
+    // Bathroom / Bath
+    if (term.includes('bathroom') || term.includes('bath') || term.includes('shower') || term.includes('sink')) {
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6 6.5 3.5a1.5 1.5 0 0 0-2.12 0L3.5 4.38a1.5 1.5 0 0 0 0 2.12L6 9"></path><path d="M3 16a9 9 0 0 0 18 0v-4H3v4Z"></path><path d="M12 9v3"></path><path d="M19 12v6"></path><path d="M5 12v6"></path></svg>
+      );
+    }
+    // Kitchen / Chef
+    if (term.includes('kitchen') || term.includes('chef') || term.includes('cooking') || term.includes('utensils')) {
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20"></path><path d="M5 6.6A10.9 10.9 0 0 0 3 13a9 9 0 0 0 18 0 10.9 10.9 0 0 0-2-6.4M6.7 19.5 9 13.5"></path><path d="m17.3 19.5-2.3-6"></path><path d="m10 7-3-3"></path><path d="m14 7 3-3"></path></svg>
+      );
+    }
+    // Decor / Accessories / Flower
+    if (term.includes('decor') || term.includes('flower') || term.includes('vase') || term.includes('art')) {
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 7.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z"></path><path d="M12 21.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z"></path><path d="M19 12a2.5 2.5 0 1 0-5 0 2.5 2.5 0 0 0 5 0Z"></path><path d="M10 12a2.5 2.5 0 1 0-5 0 2.5 2.5 0 0 0 5 0Z"></path><path d="M12 7.5v9"></path><path d="M7.5 12h9"></path></svg>
+      );
+    }
+    // Apparel / Shirts
+    if (term.includes('apparel') || term.includes('shirt') || term.includes('clothing') || term.includes('tops')) {
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20.38 3.46 16 7.83V5c0-1.1-.9-2-2-2H10c-1.1 0-2 .9-2 2v2.83L3.62 3.46a1 1 0 0 0-1.57.83v14a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1v-14a1 1 0 0 0-1.67-.83Z"></path></svg>
+      );
+    }
+    // Footwear / Shoes
+    if (term.includes('footwear') || term.includes('shoes') || term.includes('boots')) {
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 16v-2a4 4 0 1 1 8 0v2"></path><path d="M3 20h18a1 1 0 0 0 1-1v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1a1 1 0 0 0 1 1Z"></path></svg>
+      );
+    }
+    // Accessories / Watch
+    if (term.includes('accessories') || term.includes('watch') || term.includes('jewelry')) {
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="7"></circle><polyline points="12 9 12 12 13.5 13.5"></polyline><path d="M16.51 5.5h-9M16.51 18.5h-9"></path></svg>
+      );
+    }
+    // Audio / Headphones
+    if (term.includes('audio') || term.includes('headphone') || term.includes('speaker')) {
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"></path><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3v5Z"></path><path d="M3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3v5Z"></path></svg>
+      );
+    }
+    // Smart Tech / Camera / Tech
+    if (term.includes('tech') || term.includes('camera') || term.includes('charging') || term.includes('keyboard')) {
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+      );
+    }
+    // Fresh Produce / Food / Fruits / Vegetables
+    if (term.includes('food') || term.includes('produce') || term.includes('fruits') || term.includes('vegetables') || term.includes('grocery') || term.includes('bakery')) {
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2Zm0 15a5 5 0 1 1 0-10 5 5 0 0 1 0 10Z"></path></svg>
+      );
+    }
+    // Default Grid Icon
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+    );
+  };
+
   return (
     <div 
-      className={`category-tile dashboard-card ${isActive ? 'active' : ''}`}
+      className={`category-arched-card ${isActive ? 'active' : ''}`}
       onClick={() => setSelectedCategory(category.title)}
     >
-      <div className="tile-image">
-        <img src={category.image} alt={category.title} onError={(e) => { e.target.style.display = 'none'; }} />
-        <div className="tile-overlay"></div>
+      <div className="arched-image-wrapper">
+        <img 
+          src={category.image} 
+          alt={category.title} 
+          className="arched-img"
+          onError={(e) => { 
+            e.target.src = 'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&q=80&w=600'; 
+          }} 
+        />
+        <div className="icon-overlay-circle">
+          {getCategoryIcon(category.icon, category.title)}
+        </div>
       </div>
-      <div className="tile-content">
-        <h3 className="tile-title">{category.title}</h3>
-        <span className="tile-link">{isActive ? 'Viewing' : 'Explore'}</span>
+      <div className="card-info">
+        <h3 className="card-title">{category.title}</h3>
+        <span className="card-count">{displayCount} {displayCount === 1 ? 'Product' : 'Products'}</span>
       </div>
 
       <style jsx>{`
-        .category-tile {
-          position: relative;
+        .category-arched-card {
           cursor: pointer;
-          height: 240px;
           display: flex;
           flex-direction: column;
-          justify-content: flex-end;
-          padding: 24px;
-          overflow: hidden;
-          transition: var(--transition-smooth);
-        }
-
-        .category-tile.active {
-          border: 2px solid var(--accent);
-          transform: scale(1.02);
-        }
-
-        .category-tile:hover {
-          transform: scale(1.02);
-          box-shadow: var(--shadow-md);
-        }
-
-        .tile-image {
-          position: absolute;
-          top: 0;
-          left: 0;
+          align-items: center;
+          background: transparent;
+          transition: all 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+          padding: 8px;
+          border-radius: 20px;
           width: 100%;
-          height: 100%;
-          z-index: 0;
-          background: linear-gradient(135deg, #3b82f6 0%, #1e3a8a 100%);
         }
 
-        .tile-image img {
+        .arched-image-wrapper {
+          position: relative;
+          width: 100%;
+          aspect-ratio: 3.2/4;
+          border-radius: 120px 120px 24px 24px;
+          overflow: hidden;
+          background: #EFECE6;
+          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.02);
+          transition: all 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        .arched-img {
           width: 100%;
           height: 100%;
           object-fit: cover;
-          transition: var(--transition-smooth);
+          transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
         }
 
-        .tile-overlay {
+        .icon-overlay-circle {
           position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: linear-gradient(0deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.1) 60%, transparent 100%);
-          transition: var(--transition-fast);
+          bottom: 20px;
+          left: 50%;
+          transform: translateX(-50%) translateY(0);
+          width: 48px;
+          height: 48px;
+          border-radius: 50%;
+          background: #FAF8F5;
+          color: #232724;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+          border: 1.5px solid rgba(0, 0, 0, 0.03);
+          transition: all 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+          z-index: 2;
         }
 
-        .category-tile:hover .tile-overlay, .category-tile.active .tile-overlay {
-          background: linear-gradient(0deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.2) 60%, transparent 100%);
+        /* Hover States */
+        .category-arched-card:hover .arched-image-wrapper {
+          transform: translateY(-8px);
+          box-shadow: 0 15px 30px rgba(0, 0, 0, 0.06);
         }
 
-        .tile-content {
-          position: relative;
-          z-index: 1;
-          color: var(--white);
+        .category-arched-card:hover .arched-img {
+          transform: scale(1.06);
         }
 
-        .tile-title {
-          font-size: 18px;
-          font-weight: 700;
-          margin-bottom: 4px;
-          transition: var(--transition-fast);
+        .category-arched-card:hover .icon-overlay-circle {
+          background: #232724;
+          color: #FAF8F5;
+          box-shadow: 0 8px 20px rgba(35, 39, 36, 0.25);
         }
 
-        .category-tile:hover .tile-title, .category-tile.active .tile-title {
-          text-decoration: underline;
-          text-underline-offset: 4px;
-          text-decoration-thickness: 2px;
+        /* Active State */
+        .category-arched-card.active .arched-image-wrapper {
+          transform: translateY(-8px);
+          box-shadow: 0 0 0 2.5px #232724, 0 15px 30px rgba(0, 0, 0, 0.06);
         }
 
-        .tile-link {
+        .category-arched-card.active .icon-overlay-circle {
+          background: #232724;
+          color: #FAF8F5;
+        }
+
+        .card-info {
+          text-align: center;
+          margin-top: 20px;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .card-title {
+          font-size: 16px;
+          font-weight: 600;
+          color: #121212;
+          font-family: 'Outfit', sans-serif;
+          transition: color 0.2s ease;
+        }
+
+        .category-arched-card:hover .card-title {
+          color: #232724;
+        }
+
+        .card-count {
           font-size: 12px;
+          color: #706f6c;
           font-weight: 500;
-          opacity: 0.8;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          display: block;
-          transition: var(--transition-fast);
         }
 
         @media (max-width: 768px) {
-          .category-tile {
-            height: 160px;
-            padding: 15px;
-            border-radius: 16px;
+          .arched-image-wrapper {
+            border-radius: 80px 80px 16px 16px;
           }
-          .tile-title {
-            font-size: 15px;
-            margin-bottom: 2px;
+          .icon-overlay-circle {
+            width: 38px;
+            height: 38px;
+            bottom: 12px;
           }
-          .tile-link {
+          .icon-overlay-circle svg {
+            width: 16px;
+            height: 16px;
+          }
+          .card-info {
+            margin-top: 12px;
+          }
+          .card-title {
+            font-size: 14px;
+          }
+          .card-count {
             font-size: 10px;
-          }
-          .category-tile.active {
-            border-width: 2px;
           }
         }
       `}</style>

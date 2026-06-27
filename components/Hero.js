@@ -1,24 +1,112 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
+import { getDefaultStoreData } from '@/lib/defaultStoreData';
+
 export default function Hero({ bannerUrl, storeName, description }) {
-  const displayBanner = bannerUrl || '/hero.png';
-  const displayTitle = storeName || 'Welcome to Our Store';
-  const displaySubtitle = description || 'Discover our curated premium collections.';
+  const pathname = usePathname() || '';
+  const isDemo = pathname.includes('/demo-store');
+  const [headline, setHeadline] = useState('Design Your Space, Define Your Style');
+  const [subheading, setSubheading] = useState('Handpicked pieces that bring beauty, comfort and character to your home.');
+  const [banner, setBanner] = useState('https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&q=80&w=1200');
+
+  useEffect(() => {
+    // Dynamically choose themed content based on store details
+    const fallback = getDefaultStoreData(storeName || '', description || '');
+    
+    // If the store is "AestheticStore" or matches home-decor, use exact mockup text
+    if ((storeName || '').toLowerCase().includes('aesthetic')) {
+      setHeadline('Design Your Space, Define Your Style');
+      setSubheading('Handpicked pieces that bring beauty, comfort and character to your home.');
+      setBanner(bannerUrl || 'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&q=80&w=1200');
+    } else {
+      // Determine themed defaults
+      if (fallback.niche === 'fashion') {
+        setHeadline(storeName ? `Curated Style at ${storeName}` : 'Express Your Style, Define Your Look');
+        setSubheading(description || 'Carefully curated garments that bring elegance, comfort and confidence to your wardrobe.');
+        setBanner(bannerUrl || 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&q=80&w=1200');
+      } else if (fallback.niche === 'beauty') {
+        setHeadline(storeName ? `Radiate Beauty with ${storeName}` : 'Reveal Your Glow, Define Your Beauty');
+        setSubheading(description || 'Botanical formulations that bring nourishment, radiance and clarity to your skin.');
+        setBanner(bannerUrl || 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&q=80&w=1200');
+      } else if (fallback.niche === 'electronics') {
+        setHeadline(storeName ? `Future Tech at ${storeName}` : 'Elevate Your Sound, Define Your Beat');
+        setSubheading(description || 'High-performance tech gear that brings precision, comfort and innovation to your daily life.');
+        setBanner(bannerUrl || 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80&w=1200');
+      } else if (fallback.niche === 'food') {
+        setHeadline(storeName ? `A Taste of ${storeName}` : 'Savor the Taste, Define Your Flavor');
+        setSubheading(description || 'Artisanal ingredients and fresh bakes that bring joy, warmth and comfort to your table.');
+        setBanner(bannerUrl || 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=1200');
+      } else if (fallback.niche === 'home-decor') {
+        setHeadline(storeName ? `Elevated Living with ${storeName}` : 'Design Your Space, Define Your Style');
+        setSubheading(description || 'Handpicked pieces that bring beauty, comfort and character to your home.');
+        setBanner(bannerUrl || 'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&q=80&w=1200');
+      } else {
+        // general / default
+        setHeadline(storeName ? `Curated Collection at ${storeName}` : 'Welcome to Our Store');
+        setSubheading(description || 'Curating high-quality products to bring value, utility, and delight to your life.');
+        setBanner(bannerUrl || 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&q=80&w=1200');
+      }
+    }
+  }, [storeName, description, bannerUrl]);
+
+  const handleScroll = (id) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   return (
-    <section className="hero-section">
-      <div className="container">
-        <div className="hero-card dashboard-card overflow-hidden fade-in">
-          <div className="hero-background">
-            <img src={displayBanner} alt={displayTitle} />
-            <div className="overlay"></div>
+    <section className={`hero-section ${isDemo ? 'demo-mode-hero' : ''}`}>
+      <div className="container hero-container">
+        <div className="hero-grid">
+          {/* Left Dark Pane */}
+          <div className="hero-left-pane">
+            <div className="pane-content">
+              <span className="welcome-tag">Premium Collection</span>
+              <h1 className="hero-title">{headline}</h1>
+              <p className="hero-subtitle">{subheading}</p>
+              
+              <div className="hero-actions">
+                <button onClick={() => handleScroll('trending-section')} className="primary-btn">
+                  Shop Collection 
+                  <span className="arrow-icon">→</span>
+                </button>
+                <button onClick={() => handleScroll('categories-section')} className="secondary-btn">
+                  Explore Categories
+                </button>
+              </div>
+            </div>
+
+            {/* Bottom Slider Index */}
+            <div className="slide-indicator">
+              <span className="active-slide">01</span>
+              <span className="slide-line"></span>
+              <span className="total-slides">03</span>
+            </div>
           </div>
-          
-          <div className="hero-content">
-            <span className="welcome-tag">Premium Collection</span>
-            <h1 className="hero-title">{displayTitle}</h1>
-            <p className="hero-subtitle">{displaySubtitle}</p>
-            <div className="hero-actions">
-              <button className="primary-btn">Explore Now</button>
-              <button className="secondary-btn">New Arrivals</button>
+
+          {/* Right Banner Image Pane */}
+          <div className="hero-right-pane">
+            <img src={banner} alt={storeName || 'Store Banner'} className="banner-img" />
+            
+            {/* Overlay customer reviews badge */}
+            <div className="reviews-badge">
+              <div className="avatar-stack">
+                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=60" alt="Customer" className="avatar-img" />
+                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=60" alt="Customer" className="avatar-img" />
+                <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=60" alt="Customer" className="avatar-img" />
+              </div>
+              <div className="reviews-text">
+                <div className="bold-text">2K+ Happy Customers</div>
+                <div className="sub-text">rating our products</div>
+              </div>
+              <div className="rating-score">
+                <span className="star-icon">★</span>
+                <span className="score">4.8</span>
+              </div>
             </div>
           </div>
         </div>
@@ -26,156 +114,295 @@ export default function Hero({ bannerUrl, storeName, description }) {
 
       <style jsx>{`
         .hero-section {
-          padding-top: 140px;
+          padding-top: 120px;
           padding-bottom: 40px;
+          background: #FAF8F5;
         }
 
-        .hero-card {
-          position: relative;
-          height: 540px;
-          display: flex;
-          align-items: center;
-          padding: 60px;
-          border-radius: var(--radius-lg);
+        .hero-section.demo-mode-hero {
+          padding-top: 168px; /* 48px banner + 120px padding */
+        }
+
+        .hero-container {
+          padding: 0 24px;
+        }
+
+        .hero-grid {
+          display: grid;
+          grid-template-columns: 4.5fr 7.5fr;
+          border-radius: 24px;
           overflow: hidden;
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.02);
+          height: 560px; /* Fixed height on desktop to prevent large images from expanding card */
         }
 
-        .hero-background {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          z-index: -1;
-        }
-
-        .hero-background img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          transition: transform 10s ease;
-        }
-
-        .hero-card:hover .hero-background img {
-          transform: scale(1.05);
-        }
-
-        .overlay {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: linear-gradient(90deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.2) 100%);
-        }
-
-        .hero-content {
+        /* Left Pane Styling */
+        .hero-left-pane {
+          background: #232724; /* Premium Dark Forest/Olive */
+          padding: 64px;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          color: #FAF8F5;
           position: relative;
-          z-index: 1;
-          max-width: 580px;
-          color: var(--white);
+        }
+
+        .pane-content {
+          max-width: 440px;
         }
 
         .welcome-tag {
-          display: inline-block;
-          padding: 6px 16px;
-          background: rgba(255, 255, 255, 0.15);
-          backdrop-filter: blur(8px);
-          border-radius: 30px;
-          font-size: 13px;
+          font-size: 11px;
           font-weight: 600;
-          margin-bottom: 24px;
           text-transform: uppercase;
-          letter-spacing: 1px;
+          letter-spacing: 1.5px;
+          color: #A39E93;
+          margin-bottom: 24px;
+          display: block;
         }
 
         .hero-title {
-          font-size: clamp(32px, 5vw, 56px);
+          font-family: 'Outfit', sans-serif;
+          font-size: clamp(32px, 3.8vw, 48px);
           font-weight: 700;
-          line-height: 1.1;
-          margin-bottom: 20px;
-          letter-spacing: -1.5px;
+          line-height: 1.15;
+          margin-bottom: 24px;
+          letter-spacing: -0.5px;
+          color: #FAF8F5;
         }
 
         .hero-subtitle {
-          font-size: 17px;
+          font-size: 14px;
           line-height: 1.6;
+          color: #C1BCB2;
           margin-bottom: 40px;
-          opacity: 0.85;
+          font-weight: 400;
         }
 
         .hero-actions {
           display: flex;
+          align-items: center;
           gap: 16px;
         }
 
         .primary-btn {
-          background: var(--accent);
-          color: var(--white);
-          padding: 14px 32px;
-          border-radius: 12px;
+          background: #FAF8F5;
+          color: #232724;
+          padding: 14px 28px;
+          border-radius: 40px;
+          font-size: 13px;
           font-weight: 600;
-          box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
-          transition: var(--transition-smooth);
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          transition: all 0.25s ease;
         }
 
         .primary-btn:hover {
           transform: translateY(-2px);
-          box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5);
+          box-shadow: 0 8px 20px rgba(255, 255, 255, 0.1);
+          background: #EFECE6;
+        }
+
+        .arrow-icon {
+          font-size: 16px;
+          transition: transform 0.2s ease;
+        }
+
+        .primary-btn:hover .arrow-icon {
+          transform: translateX(3px);
         }
 
         .secondary-btn {
-          background: rgba(255, 255, 255, 0.1);
-          backdrop-filter: blur(10px);
-          color: var(--white);
-          padding: 14px 32px;
-          border-radius: 12px;
-          border: 1px solid rgba(255, 255, 255, 0.3);
+          border: 1px solid rgba(250, 248, 245, 0.3);
+          color: #FAF8F5;
+          padding: 14px 28px;
+          border-radius: 40px;
+          font-size: 13px;
           font-weight: 600;
-          transition: var(--transition-smooth);
+          transition: all 0.25s ease;
         }
 
         .secondary-btn:hover {
-          background: rgba(255, 255, 255, 0.2);
+          border-color: #FAF8F5;
+          background: rgba(250, 248, 245, 0.05);
           transform: translateY(-2px);
+        }
+
+        /* Slide Indicator */
+        .slide-indicator {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          font-size: 12px;
+          font-weight: 500;
+          color: #A39E93;
+          margin-top: 40px;
+        }
+
+        .active-slide {
+          color: #FAF8F5;
+        }
+
+        .slide-line {
+          width: 48px;
+          height: 1px;
+          background: rgba(250, 248, 245, 0.2);
+        }
+
+        /* Right Pane Styling */
+        .hero-right-pane {
+          position: relative;
+          overflow: hidden;
+          height: 100%;
+        }
+
+        .banner-img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+        }
+
+        /* Floating Reviews Badge */
+        .reviews-badge {
+          position: absolute;
+          bottom: 24px;
+          right: 24px;
+          background: rgba(250, 248, 245, 0.9);
+          backdrop-filter: blur(8px);
+          border-radius: 40px;
+          padding: 12px 24px;
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+          border: 1px solid rgba(255, 255, 255, 0.5);
+          animation: floatAnimation 4s ease-in-out infinite alternate;
+        }
+
+        @keyframes floatAnimation {
+          0% { transform: translateY(0); }
+          100% { transform: translateY(-6px); }
+        }
+
+        .avatar-stack {
+          display: flex;
+          align-items: center;
+        }
+
+        .avatar-img {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          object-fit: cover;
+          border: 2px solid #FAF8F5;
+          margin-right: -10px;
+        }
+
+        .avatar-img:last-child {
+          margin-right: 0;
+        }
+
+        .reviews-text {
+          display: flex;
+          flex-direction: column;
+        }
+
+        .bold-text {
+          font-size: 12px;
+          font-weight: 600;
+          color: #121212;
+        }
+
+        .sub-text {
+          font-size: 10px;
+          color: #706f6c;
+        }
+
+        .rating-score {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          border-left: 1px solid rgba(0, 0, 0, 0.08);
+          padding-left: 12px;
+          margin-left: 4px;
+        }
+
+        .star-icon {
+          color: #f59e0b;
+          font-size: 14px;
+        }
+
+        .score {
+          font-size: 12px;
+          font-weight: 700;
+          color: #121212;
+        }
+
+        /* Responsive design */
+        @media (max-width: 1024px) {
+          .hero-grid {
+            grid-template-columns: 1fr;
+            min-height: auto;
+            height: auto; /* Reset to auto height on mobile/tablet */
+          }
+
+          .hero-left-pane {
+            padding: 48px;
+            gap: 40px;
+          }
+
+          .hero-right-pane {
+            height: 360px;
+          }
+        }
+
+        @media (max-width: 900px) {
+          .hero-section.demo-mode-hero {
+            padding-top: 226px; /* 76px banner + 150px padding */
+          }
         }
 
         @media (max-width: 768px) {
           .hero-section {
-            padding-top: 160px; /* Increased padding for the 2-row mobile navbar */
+            padding-top: 160px; /* Adjust for mobile navbar space */
             padding-bottom: 20px;
           }
-          .hero-card {
-            height: auto;
-            padding: 40px 20px;
-            text-align: center;
-            border-radius: 20px;
+
+          .hero-section.demo-mode-hero {
+            padding-top: 236px;
           }
-          .hero-content {
-            max-width: 100%;
+
+          .hero-left-pane {
+            padding: 32px 24px;
           }
+
           .hero-title {
-            font-size: 28px;
-            margin-bottom: 12px;
+            font-size: 32px;
           }
-          .hero-subtitle {
-            font-size: 14px;
-            margin-bottom: 24px;
-          }
+
           .hero-actions {
             flex-direction: column;
             width: 100%;
             gap: 12px;
           }
+
           .primary-btn, .secondary-btn {
             width: 100%;
-            padding: 12px 24px;
-            font-size: 14px;
+            justify-content: center;
           }
-          .welcome-tag {
-            margin-bottom: 12px;
-            font-size: 11px;
-            padding: 4px 12px;
+
+          .reviews-badge {
+            bottom: 16px;
+            right: 16px;
+            padding: 8px 16px;
+            gap: 10px;
+          }
+
+          .avatar-img {
+            width: 28px;
+            height: 28px;
           }
         }
       `}</style>

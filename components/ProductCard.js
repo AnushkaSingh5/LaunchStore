@@ -10,7 +10,6 @@ export default function ProductCard({ product }) {
   const router = useRouter();
   const pathname = usePathname() || '';
 
-  // Extract store slug from the active URL path to scope navigation inside creator's store
   const segments = pathname.split('/');
   const isDemo = segments[1] === 'demo-store';
   const storeSlug = (segments[1] === 'store' || isDemo) ? segments[2] : null;
@@ -19,343 +18,304 @@ export default function ProductCard({ product }) {
     ? (isDemo ? `/demo-store/${storeSlug}/product/${idOrSlug}` : `/store/${storeSlug}/product/${idOrSlug}`) 
     : `/product/${idOrSlug}`;
 
-  const handleBuyNow = (e) => {
+  const handleAddToCart = (e) => {
     e.preventDefault();
+    if (product.stock === 0) return;
     addToCart(product);
-    if (storeSlug) {
-      router.push(isDemo ? `/demo-store/${storeSlug}/cart` : `/store/${storeSlug}/cart`);
-    } else {
-      router.push('/cart');
-    }
   };
 
+  const displayPrice = typeof product.price === 'number' ? product.price : parseFloat(product.price) || 0;
+
   return (
-    <div className={`product-card dashboard-card ${product.stock === 0 ? 'unavailable' : ''}`}>
-      <div className="product-visual-wrapper">
-        <Link href={productLink} className="product-visual">
-          <img src={product.image} alt={product.name} onError={(e) => { e.target.style.display = 'none'; }} />
+    <div className={`premium-product-card ${product.stock === 0 ? 'out-of-stock-card' : ''}`}>
+      <div className="product-image-wrapper">
+        <Link href={productLink} className="product-image-link">
+          <img 
+            src={product.image} 
+            alt={product.name} 
+            className="product-img" 
+            onError={(e) => { 
+              e.target.src = 'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&q=80&w=600'; 
+            }} 
+          />
           {product.stock === 0 ? (
-            <span className="product-badge out-of-stock">Out of Stock</span>
+            <span className="stock-badge oos">Out of Stock</span>
           ) : product.stock > 0 && product.stock < 10 ? (
-            <span className="product-badge low-stock">Only {product.stock} left</span>
+            <span className="stock-badge low">Only {product.stock} left</span>
           ) : (
             <>
-              {product.trending && <span className="product-badge accent">Trending</span>}
-              {product.featured && !product.trending && <span className="product-badge secondary">New</span>}
+              {product.trending && <span className="stock-badge bestseller">Bestseller</span>}
+              {product.featured && !product.trending && <span className="stock-badge new-tag">New</span>}
             </>
           )}
         </Link>
         
-        <div className="visual-actions">
-          <button 
-            className={`action-circle wishlist-btn ${isWishlisted ? 'active' : ''}`}
-            onClick={(e) => {
-              e.preventDefault();
-              toggleWishlist(product);
-            }}
-            title="Add to Wishlist"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill={isWishlisted ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
-          </button>
-          
-          {product.stock !== 0 && (
-            <button 
-              className="action-circle add-btn"
-              onClick={(e) => {
-                e.preventDefault();
-                addToCart(product);
-              }}
-              title="Quick Add to Cart"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-            </button>
-          )}
-        </div>
+        {/* Wishlist Button */}
+        <button 
+          className={`wishlist-overlay-btn ${isWishlisted ? 'active' : ''}`}
+          onClick={(e) => {
+            e.preventDefault();
+            toggleWishlist(product);
+          }}
+          title="Add to Wishlist"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill={isWishlisted ? "#ef4444" : "none"} stroke={isWishlisted ? "#ef4444" : "currentColor"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+        </button>
       </div>
 
-      <div className="product-body">
-        <div className="product-meta">
-          <span className="product-cat">{product.category}</span>
-          <div className="product-rating">
-            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="currentColor" className="star"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-            <span>4.8</span>
-          </div>
-        </div>
+      <div className="product-details">
         <Link href={productLink}>
-          <h3 className="product-name">{product.name}</h3>
+          <h3 className="product-name-title">{product.name}</h3>
         </Link>
-        <div className="product-footer">
-          <span className="product-price">₹{product.price.toLocaleString()}</span>
-          {product.stock === 0 ? (
+        
+        <div className="product-footer-row">
+          <div className="footer-left-col">
+            <span className="price-label">₹{displayPrice.toLocaleString()}</span>
+            <div className="rating-row">
+              <span className="star-symbol">★</span>
+              <span className="rating-score-num">{product.rating || '4.8'}</span>
+            </div>
+          </div>
+          
+          <div className="footer-right-col">
             <button 
-              className="buy-btn disabled-btn"
-              disabled
+              className={`add-to-cart-circle-btn ${product.stock === 0 ? 'disabled' : ''}`}
+              onClick={handleAddToCart}
+              disabled={product.stock === 0}
+              title="Add to Cart"
             >
-              Out of Stock
+              {product.stock === 0 ? (
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              )}
             </button>
-          ) : (
-            <button 
-              className="buy-btn"
-              onClick={handleBuyNow}
-            >
-              Buy
-            </button>
-          )}
+          </div>
         </div>
       </div>
 
       <style jsx>{`
-        .product-card {
-          padding: 12px;
+        .premium-product-card {
           display: flex;
           flex-direction: column;
-          gap: 12px;
-          background: var(--white);
+          background: #ffffff;
+          border-radius: 20px;
+          padding: 12px;
+          transition: all 0.35s cubic-bezier(0.25, 1, 0.5, 1);
           height: 100%;
-          min-width: 0;
-          transition: var(--transition-smooth);
+          border: 1px solid rgba(0, 0, 0, 0.02);
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.01);
         }
 
-        .product-card:hover {
-          transform: translateY(-8px);
-          box-shadow: var(--shadow-lg);
+        .premium-product-card:hover {
+          transform: translateY(-6px);
+          box-shadow: 0 12px 30px rgba(0, 0, 0, 0.04);
+          border-color: rgba(0, 0, 0, 0.04);
         }
 
-        .product-visual-wrapper {
+        .product-image-wrapper {
           position: relative;
           width: 100%;
           aspect-ratio: 1/1;
-          border-radius: calc(var(--radius-md) - 4px);
+          border-radius: 14px;
           overflow: hidden;
-          background: var(--bg-main);
+          background: #FAF8F5;
         }
 
-        .product-visual {
+        .product-image-link {
           display: block;
           width: 100%;
           height: 100%;
         }
 
-        .product-visual img {
+        .product-img {
           width: 100%;
           height: 100%;
           object-fit: cover;
-          transition: var(--transition-smooth);
+          transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
         }
 
-        .product-card:hover .product-visual img {
+        .premium-product-card:hover .product-img {
           transform: scale(1.05);
         }
 
-        .visual-actions {
-          position: absolute;
-          right: 12px;
-          top: 12px;
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-          z-index: 10;
-          
-          /* Forced Hidden State */
-          opacity: 0 !important;
-          visibility: hidden !important;
-          pointer-events: none !important;
-          transform: translateX(10px);
-          transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s ease;
-        }
-
-        /* Desktop Hover Behavior - Only active on true hoverable devices */
-        @media (hover: hover) {
-          .product-card:hover .visual-actions {
-            opacity: 1 !important;
-            visibility: visible !important;
-            pointer-events: auto !important;
-            transform: translateX(0);
-          }
-        }
-
-        /* Strictly hide for touch-only devices to ensure they NEVER show by accident */
-        @media (hover: none) {
-          .visual-actions {
-            display: none !important;
-          }
-        }
-
-        .action-circle {
-          width: 36px;
-          height: 36px;
-          border-radius: 50%;
-          background: var(--white);
-          color: var(--primary);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-          transition: var(--transition-fast);
-        }
-
-        .action-circle:hover {
-          background: var(--primary);
-          color: var(--white);
-          transform: scale(1.1);
-        }
-
-        .wishlist-btn.active {
-          color: #ef4444;
-        }
-
-        .product-badge {
+        .stock-badge {
           position: absolute;
           top: 12px;
           left: 12px;
           padding: 4px 10px;
-          border-radius: 20px;
+          border-radius: 40px;
           font-size: 9px;
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.5px;
+          z-index: 2;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.04);
+        }
+
+        .stock-badge.bestseller {
+          background: #EFECE6;
+          color: #232724;
+        }
+
+        .stock-badge.new-tag {
+          background: #232724;
+          color: #FAF8F5;
+        }
+
+        .stock-badge.oos {
+          background: #706f6c;
+          color: #FAF8F5;
+        }
+
+        .stock-badge.low {
+          background: #f59e0b;
+          color: #ffffff;
+        }
+
+        .wishlist-overlay-btn {
+          position: absolute;
+          top: 12px;
+          right: 12px;
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          background: rgba(250, 248, 245, 0.9);
+          backdrop-filter: blur(4px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #706f6c;
+          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+          transition: all 0.2s ease;
           z-index: 5;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
 
-        .product-badge.accent {
-          background: #ef4444;
-          color: white;
+        .wishlist-overlay-btn:hover {
+          background: #ffffff;
+          color: #ef4444;
+          transform: scale(1.08);
         }
 
-        .product-badge.secondary {
-          background: var(--accent);
-          color: white;
+        .wishlist-overlay-btn.active {
+          color: #ef4444;
+          background: #ffffff;
         }
 
-        .product-body {
-          padding: 4px 8px 8px;
+        .product-details {
+          padding: 16px 4px 4px;
           display: flex;
           flex-direction: column;
-          gap: 6px;
           flex: 1;
-          min-width: 0;
         }
 
-        .product-meta {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-
-        .product-cat {
-          font-size: 10px;
+        .product-name-title {
+          font-size: 15px;
           font-weight: 600;
-          color: var(--text-sub);
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
+          color: #121212;
+          margin-bottom: 12px;
+          line-height: 1.4;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+          font-family: 'Outfit', sans-serif;
+          transition: color 0.2s ease;
         }
 
-        .product-rating {
+        .product-name-title:hover {
+          color: #706f6c;
+        }
+
+        .product-footer-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-top: auto;
+        }
+
+        .footer-left-col {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+
+        .price-label {
+          font-size: 16px;
+          font-weight: 700;
+          color: #121212;
+        }
+
+        .rating-row {
           display: flex;
           align-items: center;
           gap: 4px;
-          font-size: 10px;
-          font-weight: 700;
-          color: #f59e0b;
-        }
-
-        .product-name {
-          font-size: 15px;
+          font-size: 11px;
+          color: #706f6c;
           font-weight: 600;
-          color: var(--text-main);
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          transition: var(--transition-fast);
         }
 
-        .product-name:hover {
-          color: var(--accent);
+        .star-symbol {
+          color: #f59e0b;
+          font-size: 12px;
         }
 
-        .product-footer {
+        .add-to-cart-circle-btn {
+          width: 38px;
+          height: 38px;
+          border-radius: 50%;
+          background: #121212;
+          color: #FAF8F5;
           display: flex;
-          justify-content: space-between;
           align-items: center;
-          margin-top: auto;
-          padding-top: 8px;
-          gap: 8px;
+          justify-content: center;
+          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+          transition: all 0.25s ease;
         }
 
-        .product-price {
-          font-size: 16px;
-          font-weight: 700;
-          color: var(--primary);
-          white-space: nowrap;
+        .add-to-cart-circle-btn:hover {
+          background: #232724;
+          transform: scale(1.08);
+          box-shadow: 0 6px 14px rgba(0,0,0,0.15);
         }
 
-        .buy-btn {
-          padding: 8px 16px;
-          background: var(--primary);
-          color: var(--white);
-          border-radius: 10px;
-          font-size: 13px;
-          font-weight: 700;
-          transition: var(--transition-fast);
-          flex-shrink: 0;
+        .add-to-cart-circle-btn.disabled {
+          background: #e2e8f0;
+          color: #94a3b8;
+          cursor: not-allowed;
+          box-shadow: none;
         }
 
-        .buy-btn:hover {
-          background: var(--accent);
-          transform: scale(1.05);
+        .add-to-cart-circle-btn.disabled:hover {
+          transform: none;
+        }
+
+        .out-of-stock-card {
+          opacity: 0.85;
+        }
+
+        .out-of-stock-card .product-img {
+          filter: grayscale(30%);
         }
 
         @media (max-width: 768px) {
-          .product-card {
+          .premium-product-card {
+            border-radius: 16px;
             padding: 8px;
-            gap: 6px;
           }
-          .product-body {
-            padding: 4px;
+          .product-details {
+            padding: 10px 2px 2px;
           }
-          .product-name {
+          .product-name-title {
             font-size: 13px;
+            margin-bottom: 8px;
           }
-          .product-price {
+          .price-label {
             font-size: 14px;
           }
-          .buy-btn {
-            padding: 6px 12px;
-            font-size: 11px;
-            border-radius: 8px;
+          .add-to-cart-circle-btn {
+            width: 32px;
+            height: 32px;
           }
-          .action-circle {
-            width: 30px;
-            height: 30px;
-          }
-          .action-circle svg {
-            width: 14px;
-            height: 14px;
-          }
-        }
-        .product-card.unavailable {
-          opacity: 0.75;
-        }
-        .product-card.unavailable .product-visual img {
-          filter: grayscale(80%);
-        }
-        .product-badge.out-of-stock {
-          background: #ef4444;
-          color: white;
-        }
-        .product-badge.low-stock {
-          background: #f59e0b;
-          color: white;
-        }
-        .disabled-btn {
-          opacity: 0.6;
-          cursor: not-allowed;
-          background: #64748b !important;
-          color: #cbd5e1 !important;
         }
       `}</style>
     </div>

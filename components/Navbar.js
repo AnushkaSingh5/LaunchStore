@@ -59,100 +59,133 @@ export default function Navbar({ storeName, logoUrl }) {
     }
   };
 
+  const handleMenuClick = (targetId) => {
+    if (pathname !== (storeSlug ? `/${pathParts[1]}/${storeSlug}` : '/')) {
+      router.push(storeSlug ? `/${pathParts[1]}/${storeSlug}#${targetId}` : `/#${targetId}`);
+      return;
+    }
+    
+    if (targetId === 'shop') {
+      setSearchQuery('');
+      setSelectedCategory('All');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      const element = document.getElementById(targetId);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  };
+
   return (
     <header className={`navbar-wrapper ${isScrolled ? 'scrolled' : ''}`}>
-      <nav className="container nav-container dashboard-card glass">
+      <nav className="container nav-container">
         <div className="nav-main">
+          {/* Logo / Brand Name */}
           <Link href={storeSlug ? `/${pathParts[1]}/${storeSlug}` : "/"} className="logo">
-            {storeLogo && (
+            {storeLogo ? (
               <img 
                 src={storeLogo} 
                 alt={`${storeName} Logo`} 
                 className="logo-img" 
                 onError={(e) => { e.target.style.display = 'none'; }} 
               />
+            ) : (
+              <div className="logo-placeholder-dot"></div>
             )}
-            <span>{storeName || 'Online Store'}</span>
+            <span>{storeName || 'AestheticStore'}</span>
           </Link>
 
-          <form className="search-container desktop-search" onSubmit={(e) => e.preventDefault()}>
-            <input 
-              type="text" 
-              placeholder="Search products..." 
-              className="search-input"
-              value={searchQuery}
-              onChange={handleSearchChange}
-            />
-            <div className="search-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-            </div>
-          </form>
+          {/* Middle Nav Links */}
+          <div className="nav-links">
+            <button onClick={() => handleMenuClick('shop')} className="nav-link-btn">Shop</button>
+            <button onClick={() => handleMenuClick('categories-section')} className="nav-link-btn">Categories</button>
+            <button onClick={() => handleMenuClick('new-arrivals-section')} className="nav-link-btn">New Arrivals</button>
+            <button onClick={() => handleMenuClick('trending-section')} className="nav-link-btn">Best Sellers</button>
+            <button onClick={() => handleMenuClick('footer-section')} className="nav-link-btn">About Us</button>
+          </div>
 
-          <div className="nav-actions">
-            {!isDemo && (
-              <div className="user-dropdown-container">
-                <button 
-                  className="action-btn user-btn"
-                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  aria-label="User profile menu"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                </button>
-                {isDropdownOpen && (
-                  <div className="dropdown-menu glass">
-                    {user ? (
-                      <>
-                        <div className="dropdown-header">
-                          <div className="dropdown-name">{profile?.full_name || 'Customer'}</div>
-                          <div className="dropdown-email">{user.email}</div>
-                        </div>
-                        <div className="dropdown-divider"></div>
-                        <Link href={storeSlug ? `/customer/profile?store=${storeSlug}` : "/customer/profile"} className="dropdown-item" onClick={() => setIsDropdownOpen(false)}>
-                          My Profile
-                        </Link>
-                        <Link href={storeSlug ? `/customer/orders?store=${storeSlug}` : "/customer/orders"} className="dropdown-item" onClick={() => setIsDropdownOpen(false)}>
-                          My Orders
-                        </Link>
-                        <Link href={storeSlug ? `/customer/addresses?store=${storeSlug}` : "/customer/addresses"} className="dropdown-item" onClick={() => setIsDropdownOpen(false)}>
-                          My Addresses
-                        </Link>
-                        <div className="dropdown-divider"></div>
-                        <button 
-                          className="dropdown-item logout-btn" 
-                          onClick={() => {
-                            signOut();
-                            setIsDropdownOpen(false);
-                          }}
-                        >
-                          Logout
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <Link 
-                          href={storeSlug ? `/customer/login?redirect=/store/${storeSlug}` : "/customer/login"} 
-                          className="dropdown-item" 
-                          onClick={() => setIsDropdownOpen(false)}
-                        >
-                          Login
-                        </Link>
-                        <Link 
-                          href={storeSlug ? `/customer/signup?redirect=/store/${storeSlug}` : "/customer/signup"} 
-                          className="dropdown-item" 
-                          onClick={() => setIsDropdownOpen(false)}
-                        >
-                          Sign Up
-                        </Link>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-            <Link href={storeSlug ? `/${pathParts[1]}/${storeSlug}/cart` : "/cart"} className="action-btn cart-btn">
-              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><path d="M3 6h18"></path><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
-              {cartCount > 0 && <span className="badge">{cartCount}</span>}
-            </Link>
+          {/* Right Action Area */}
+          <div className="nav-actions-area">
+            <form className="search-container desktop-search" onSubmit={(e) => e.preventDefault()}>
+              <input 
+                type="text" 
+                placeholder="Search products..." 
+                className="search-input"
+                value={searchQuery}
+                onChange={handleSearchChange}
+              />
+              <button className="search-submit-btn" type="button" aria-label="Search">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              </button>
+            </form>
+
+            <div className="nav-icons">
+              {!isDemo && (
+                <div className="user-dropdown-container">
+                  <button 
+                    className="action-btn user-btn"
+                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                    aria-label="User profile menu"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                  </button>
+                  {isDropdownOpen && (
+                    <div className="dropdown-menu">
+                      {user ? (
+                        <>
+                          <div className="dropdown-header">
+                            <div className="dropdown-name">{profile?.full_name || 'Customer'}</div>
+                            <div className="dropdown-email">{user.email}</div>
+                          </div>
+                          <div className="dropdown-divider"></div>
+                          <Link href={storeSlug ? `/customer/profile?store=${storeSlug}` : "/customer/profile"} className="dropdown-item" onClick={() => setIsDropdownOpen(false)}>
+                            My Profile
+                          </Link>
+                          <Link href={storeSlug ? `/customer/orders?store=${storeSlug}` : "/customer/orders"} className="dropdown-item" onClick={() => setIsDropdownOpen(false)}>
+                            My Orders
+                          </Link>
+                          <Link href={storeSlug ? `/customer/addresses?store=${storeSlug}` : "/customer/addresses"} className="dropdown-item" onClick={() => setIsDropdownOpen(false)}>
+                            My Addresses
+                          </Link>
+                          <div className="dropdown-divider"></div>
+                          <button 
+                            className="dropdown-item logout-btn" 
+                            onClick={() => {
+                              signOut();
+                              setIsDropdownOpen(false);
+                            }}
+                          >
+                            Logout
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <Link 
+                            href={storeSlug ? `/customer/login?redirect=/store/${storeSlug}` : "/customer/login"} 
+                            className="dropdown-item" 
+                            onClick={() => setIsDropdownOpen(false)}
+                          >
+                            Login
+                          </Link>
+                          <Link 
+                            href={storeSlug ? `/customer/signup?redirect=/store/${storeSlug}` : "/customer/signup"} 
+                            className="dropdown-item" 
+                            onClick={() => setIsDropdownOpen(false)}
+                          >
+                            Sign Up
+                          </Link>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+              <Link href={storeSlug ? `/${pathParts[1]}/${storeSlug}/cart` : "/cart"} className="action-btn cart-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><path d="M3 6h18"></path><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+                {cartCount > 0 && <span className="badge">{cartCount}</span>}
+              </Link>
+            </div>
           </div>
         </div>
 
@@ -160,14 +193,14 @@ export default function Navbar({ storeName, logoUrl }) {
         <form className="mobile-search" onSubmit={(e) => e.preventDefault()}>
           <input 
             type="text" 
-            placeholder="Search..." 
+            placeholder="Search products..." 
             className="search-input"
             value={searchQuery}
             onChange={handleSearchChange}
           />
-          <div className="search-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-          </div>
+          <button className="search-submit-btn" type="button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          </button>
         </form>
       </nav>
 
@@ -178,12 +211,17 @@ export default function Navbar({ storeName, logoUrl }) {
           left: 0;
           width: 100%;
           z-index: 1000;
-          padding: 20px 0;
-          transition: var(--transition-smooth);
+          padding: 24px 0;
+          transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+          background: transparent;
         }
 
         .navbar-wrapper.scrolled {
-          padding: 12px 0;
+          padding: 16px 0;
+          background: rgba(250, 248, 245, 0.95);
+          backdrop-filter: blur(12px);
+          box-shadow: 0 4px 30px rgba(0, 0, 0, 0.02);
+          border-bottom: 1px solid rgba(0, 0, 0, 0.03);
         }
 
         @media (max-width: 900px) {
@@ -193,13 +231,8 @@ export default function Navbar({ storeName, logoUrl }) {
         }
 
         .nav-container {
-          display: flex;
-          flex-direction: column;
-          padding: 12px 24px;
-          border-radius: 40px;
           margin: 0 auto;
-          transition: var(--transition-smooth);
-          gap: 0;
+          width: 100%;
         }
 
         .nav-main {
@@ -207,17 +240,18 @@ export default function Navbar({ storeName, logoUrl }) {
           align-items: center;
           justify-content: space-between;
           width: 100%;
+          gap: 20px;
         }
 
         .logo {
-          font-size: 20px;
-          font-weight: 700;
+          font-size: 22px;
+          font-weight: 600;
           letter-spacing: -0.5px;
-          color: var(--primary);
-          white-space: nowrap;
+          color: #121212;
           display: flex;
           align-items: center;
           gap: 10px;
+          font-family: 'Outfit', sans-serif;
         }
 
         .logo-img {
@@ -225,55 +259,146 @@ export default function Navbar({ storeName, logoUrl }) {
           height: 32px;
           border-radius: 50%;
           object-fit: cover;
-          border: 1px solid rgba(0, 0, 0, 0.08);
+          border: 1px solid rgba(0, 0, 0, 0.06);
           flex-shrink: 0;
+        }
+
+        .logo-placeholder-dot {
+          width: 10px;
+          height: 10px;
+          background: #706f6c;
+          border-radius: 50%;
+        }
+
+        /* Middle Links */
+        .nav-links {
+          display: flex;
+          align-items: center;
+          gap: 32px;
+        }
+
+        .nav-link-btn {
+          font-size: 14px;
+          font-weight: 500;
+          color: #555350;
+          transition: all 0.2s ease;
+          position: relative;
+          padding: 8px 0;
+        }
+
+        .nav-link-btn:hover {
+          color: #121212;
+        }
+
+        .nav-link-btn::after {
+          content: '';
+          position: absolute;
+          bottom: 2px;
+          left: 0;
+          width: 100%;
+          height: 1.5px;
+          background: #121212;
+          transform: scaleX(0);
+          transform-origin: right;
+          transition: transform 0.25s ease;
+        }
+
+        .nav-link-btn:hover::after {
+          transform: scaleX(1);
+          transform-origin: left;
+        }
+
+        /* Right Actions */
+        .nav-actions-area {
+          display: flex;
+          align-items: center;
+          gap: 24px;
         }
 
         .search-container {
           position: relative;
-          flex: 1;
-          max-width: 400px;
-          margin: 0 30px;
+          width: 240px;
+          transition: width 0.3s ease;
         }
 
-        .mobile-search {
-          display: none;
-          position: relative;
-          width: 100%;
-          margin-top: 12px;
+        .search-container:focus-within {
+          width: 280px;
         }
 
         .search-input {
           width: 100%;
-          padding: 10px 20px 10px 48px;
-          border-radius: 30px;
-          border: 1px solid rgba(0, 0, 0, 0.05);
-          background: var(--bg-main);
-          font-size: 14px;
-          transition: var(--transition-fast);
+          padding: 10px 44px 10px 20px;
+          border-radius: 40px;
+          border: 1px solid rgba(0, 0, 0, 0.04);
+          background: #EFECE6;
+          font-size: 13px;
+          color: #121212;
+          transition: all 0.25s ease;
         }
 
         .search-input:focus {
           outline: none;
-          background: var(--white);
-          border-color: var(--accent);
-          box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+          background: #FAF8F5;
+          border-color: #121212;
+          box-shadow: 0 0 0 3px rgba(18, 18, 18, 0.05);
         }
 
-        .search-icon {
+        .search-submit-btn {
           position: absolute;
-          left: 18px;
+          right: 16px;
           top: 50%;
           transform: translateY(-50%);
-          color: var(--text-sub);
-        }
-
-        .nav-actions {
+          color: #706f6c;
           display: flex;
           align-items: center;
-          gap: 12px;
+          justify-content: center;
         }
 
+        .search-submit-btn:hover {
+          color: #121212;
+        }
+
+        .nav-icons {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .action-btn {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #121212;
+          position: relative;
+          transition: all 0.2s ease;
+        }
+
+        .action-btn:hover {
+          background: rgba(0, 0, 0, 0.03);
+          transform: scale(1.05);
+        }
+
+        .badge {
+          position: absolute;
+          top: 4px;
+          right: 4px;
+          background: #121212;
+          color: #FAF8F5;
+          font-size: 9px;
+          font-weight: 700;
+          min-width: 16px;
+          height: 16px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 1.5px solid #FAF8F5;
+        }
+
+        /* User Dropdown */
         .user-dropdown-container {
           position: relative;
         }
@@ -283,11 +408,10 @@ export default function Navbar({ storeName, logoUrl }) {
           top: calc(100% + 12px);
           right: 0;
           width: 220px;
-          border-radius: var(--radius-md);
-          background: rgba(255, 255, 255, 0.9);
-          backdrop-filter: blur(16px);
-          border: 1px solid rgba(0, 0, 0, 0.08);
-          box-shadow: var(--shadow-lg);
+          border-radius: 16px;
+          background: #FAF8F5;
+          border: 1px solid rgba(0, 0, 0, 0.06);
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
           padding: 8px;
           display: flex;
           flex-direction: column;
@@ -314,24 +438,18 @@ export default function Navbar({ storeName, logoUrl }) {
         .dropdown-name {
           font-size: 14px;
           font-weight: 600;
-          color: var(--text-main);
+          color: #121212;
           margin-bottom: 2px;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
         }
 
         .dropdown-email {
           font-size: 11px;
-          color: var(--text-sub);
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
+          color: #706f6c;
         }
 
         .dropdown-divider {
           height: 1px;
-          background: rgba(0, 0, 0, 0.06);
+          background: rgba(0, 0, 0, 0.05);
           margin: 6px 0;
         }
 
@@ -342,17 +460,15 @@ export default function Navbar({ storeName, logoUrl }) {
           padding: 8px 12px;
           font-size: 13px;
           font-weight: 500;
-          color: var(--text-main);
-          border-radius: var(--radius-sm);
-          transition: var(--transition-fast);
+          color: #555350;
+          border-radius: 8px;
+          transition: all 0.2s ease;
           background: transparent;
-          border: none;
-          cursor: pointer;
         }
 
         .dropdown-item:hover {
-          background: rgba(0, 0, 0, 0.04);
-          color: var(--accent);
+          background: rgba(0, 0, 0, 0.03);
+          color: #121212;
         }
 
         .logout-btn {
@@ -360,68 +476,40 @@ export default function Navbar({ storeName, logoUrl }) {
         }
 
         .logout-btn:hover {
-          background: rgba(220, 38, 38, 0.08);
+          background: rgba(220, 38, 38, 0.05);
           color: #dc2626;
         }
 
-        .action-btn {
+        /* Mobile Layout */
+        .mobile-search {
+          display: none;
           position: relative;
-          width: 40px;
-          height: 40px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: var(--text-main);
-          transition: var(--transition-fast);
+          width: 100%;
+          margin-top: 12px;
         }
 
-        .action-btn:hover {
-          background: var(--bg-main);
-          color: var(--accent);
-          transform: scale(1.05);
-        }
-
-        .badge {
-          position: absolute;
-          top: 4px;
-          right: 4px;
-          background: var(--accent);
-          color: var(--white);
-          font-size: 9px;
-          font-weight: 700;
-          min-width: 16px;
-          height: 16px;
-          border-radius: 10px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border: 2px solid var(--white);
-        }
-
-        @media (max-width: 768px) {
-          .navbar-wrapper {
-            padding: 10px 15px;
+        @media (max-width: 900px) {
+          .nav-links {
+            display: none;
           }
-          .navbar-wrapper.scrolled {
-            padding: 8px 15px;
-          }
-          .nav-container {
-            padding: 10px 16px;
-            border-radius: 30px;
-          }
-          .desktop-search {
+          .search-container.desktop-search {
             display: none;
           }
           .mobile-search {
             display: block;
           }
           .search-input {
-            padding: 8px 16px 8px 36px;
-            font-size: 13px;
+            padding: 8px 36px 8px 16px;
+            font-size: 12px;
           }
-          .search-icon {
-            left: 12px;
+          .search-submit-btn {
+            right: 12px;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .navbar-wrapper {
+            padding: 12px 16px;
           }
           .logo {
             font-size: 18px;
