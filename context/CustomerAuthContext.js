@@ -16,7 +16,36 @@ export function CustomerAuthProvider({ children }) {
   const initialSessionLoadedRef = useRef(false);
 
   // Fetch customer profile from public.customers using auth UID
-  const fetchCustomerProfile = async (authId) => {
+  const fetchCustomerProfile = async (authId, userObject = null) => {
+    if (!supabaseClient) return null;
+
+    try {
+      // Check user role from profiles to prevent creators/admins from being treated as customers
+      const { data: userProfile } = await supabaseClient
+        .from('profiles')
+        .select('role')
+        .eq('id', authId)
+        .maybeSingle();
+
+      if (userProfile && (userProfile.role === 'creator' || userProfile.role === 'admin')) {
+        console.log(`[LaunchCart - CustomerAuth] User role is: ${userProfile.role}. Skipping customer profile loading.`);
+        setCustomerProfile(null);
+        return null;
+      }
+    } catch (e) {
+      console.warn('[LaunchCart - CustomerAuth] Failed to pre-check user profile role:', e);
+    }
+
+    let userObj = userObject;
+    if (!userObj) {
+      try {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        userObj = user;
+      } catch (err) {
+        console.warn('[LaunchCart - CustomerAuth] Failed to fetch current authenticated user:', err);
+      }
+    }
+
     console.log("Profile fetch started");
     let attempt = 0;
     const maxAttempts = 3;
@@ -35,6 +64,29 @@ export function CustomerAuthProvider({ children }) {
           console.log("Profile fetch complete");
           return profileData;
         }
+
+        // Fallback: If no customer profile row exists, create one on the fly (already verified not creator/admin)
+        if (!profileData && userObj) {
+          console.log(`[LaunchCart - CustomerAuth] Profile not found. Creating customers row...`);
+          const { data: newProfile, error: insertErr } = await supabaseClient
+            .from('customers')
+            .insert([{
+              auth_id: authId,
+              full_name: userObj.user_metadata?.name || userObj.user_metadata?.full_name || userObj.phone || userObj.email?.split('@')[0] || 'Customer',
+              email: userObj.email || `${userObj.phone || authId}@phone.placeholder`,
+              phone: userObj.phone || userObj.user_metadata?.phone || null,
+            }])
+            .select()
+            .single();
+          if (insertErr) {
+            console.error('❌ [LaunchCart - CustomerAuth]: Fallback customer creation failed:', insertErr);
+          } else if (newProfile) {
+            setCustomerProfile(newProfile);
+            console.log("Profile fetch complete (auto-created)");
+            return newProfile;
+          }
+        }
+
         console.log("Profile fetch complete");
         return null;
       } catch (err) {
@@ -91,7 +143,7 @@ export function CustomerAuthProvider({ children }) {
         console.log("Session restore complete");
 
         if (session && session.user && isSubscribed) {
-          const profileData = await fetchCustomerProfile(session.user.id);
+          const profileData = await fetchCustomerProfile(session.user.id, session.user);
           if (profileData) {
             setCustomer(session.user);
           } else {
@@ -116,43 +168,45 @@ export function CustomerAuthProvider({ children }) {
     loadSession();
 
     // Listen to Supabase Auth State Changes
-    const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(async (event, session) => {
-      if (!isSubscribed) return;
+    const { data: { subscription } } = supabaseClient.auth.onAuthStateChange((event, session) => {
+      setTimeout(async () => {
+        if (!isSubscribed) return;
 
-      console.log(`🔑 [LaunchCart - CustomerAuth]: auth state changes: event="${event}"`);
+        console.log(`🔑 [LaunchCart - CustomerAuth]: auth state changes: event="${event}"`);
 
-      if (event === 'INITIAL_SESSION') {
-        return; // Handled by loadSession
-      }
+        if (event === 'INITIAL_SESSION') {
+          return; // Handled by loadSession
+        }
 
-      if (!initialSessionLoadedRef.current) {
-        console.log(`🔔 [LaunchCart - CustomerAuth]: onAuthStateChange event "${event}" ignored during initial session load.`);
-        return;
-      }
+        if (!initialSessionLoadedRef.current) {
+          console.log(`🔔 [LaunchCart - CustomerAuth]: onAuthStateChange event "${event}" ignored during initial session load.`);
+          return;
+        }
 
-      setLoading(true);
-      startLoading();
-      try {
-        if (session && session.user) {
-          const profileData = await fetchCustomerProfile(session.user.id);
-          if (profileData) {
-            setCustomer(session.user);
+        setLoading(true);
+        startLoading();
+        try {
+          if (session && session.user) {
+            const profileData = await fetchCustomerProfile(session.user.id, session.user);
+            if (profileData) {
+              setCustomer(session.user);
+            } else {
+              setCustomer(null);
+              setCustomerProfile(null);
+            }
           } else {
             setCustomer(null);
             setCustomerProfile(null);
           }
-        } else {
-          setCustomer(null);
-          setCustomerProfile(null);
+        } catch (err) {
+          console.warn('❌ [LaunchCart - CustomerAuth]: Auth state change error:', err);
+        } finally {
+          if (isSubscribed) {
+            setLoading(false);
+          }
+          completeLoading();
         }
-      } catch (err) {
-        console.warn('❌ [LaunchCart - CustomerAuth]: Auth state change error:', err);
-      } finally {
-        if (isSubscribed) {
-          setLoading(false);
-        }
-        completeLoading();
-      }
+      }, 0);
     });
 
     return () => {
@@ -173,7 +227,7 @@ export function CustomerAuthProvider({ children }) {
       if (error) throw error;
 
       // Verify the user is a registered customer
-      const profileData = await fetchCustomerProfile(data.user.id);
+      const profileData = await fetchCustomerProfile(data.user.id, data.user);
       if (!profileData) {
         // If not a customer, log out immediately and throw error
         await supabaseClient.auth.signOut();
@@ -283,6 +337,88 @@ export function CustomerAuthProvider({ children }) {
     }
   };
 
+  const loginWithProvider = async (provider, redirectUrl = '/customer/profile') => {
+    if (!supabaseClient) throw new Error('Supabase client is not initialized.');
+    setLoading(true);
+    startLoading();
+    try {
+      console.log(`🔄 [LaunchCart - CustomerAuth]: Logging in with provider: ${provider}`);
+      const { data, error } = await supabaseClient.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: redirectUrl,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+          data: {
+            role: 'customer',
+          }
+        }
+      });
+      if (error) throw error;
+      return data;
+    } catch (err) {
+      console.error(`❌ [LaunchCart - CustomerAuth]: Provider ${provider} login failed:`, err);
+      throw err;
+    } finally {
+      setLoading(false);
+      completeLoading();
+    }
+  };
+
+  const loginWithPhone = async (phone) => {
+    if (!supabaseClient) throw new Error('Supabase client is not initialized.');
+    setLoading(true);
+    startLoading();
+    try {
+      console.log(`🔄 [LaunchCart - CustomerAuth]: Sending OTP to phone: ${phone}`);
+      const { data, error } = await supabaseClient.auth.signInWithOtp({
+        phone,
+        options: {
+          channel: 'sms',
+          data: {
+            role: 'customer',
+          }
+        }
+      });
+      if (error) throw error;
+      return { success: true, data };
+    } catch (err) {
+      console.error('❌ [LaunchCart - CustomerAuth]: Phone OTP send failed:', err);
+      throw err;
+    } finally {
+      setLoading(false);
+      completeLoading();
+    }
+  };
+
+  const verifyPhoneOtp = async (phone, token) => {
+    if (!supabaseClient) throw new Error('Supabase client is not initialized.');
+    setLoading(true);
+    startLoading();
+    try {
+      console.log(`🔄 [LaunchCart - CustomerAuth]: Verifying OTP for phone: ${phone}`);
+      const { data, error } = await supabaseClient.auth.verifyOtp({
+        phone,
+        token,
+        type: 'sms',
+      });
+      if (error) throw error;
+
+      // Verify customer record
+      const profileData = await fetchCustomerProfile(data.user.id, data.user);
+      setCustomer(data.user);
+      return { success: true, user: data.user, profile: profileData };
+    } catch (err) {
+      console.error('❌ [LaunchCart - CustomerAuth]: Phone OTP verification failed:', err);
+      throw err;
+    } finally {
+      setLoading(false);
+      completeLoading();
+    }
+  };
+
   const refreshProfile = async () => {
     if (!customer) return;
     await fetchCustomerProfile(customer.id);
@@ -295,6 +431,9 @@ export function CustomerAuthProvider({ children }) {
     isAuthenticated: !!customer && !!customerProfile,
     login,
     signup,
+    loginWithProvider,
+    loginWithPhone,
+    verifyPhoneOtp,
     logout,
     refreshProfile,
   };

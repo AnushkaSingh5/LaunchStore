@@ -31,9 +31,9 @@ export function StoreProvider({ children }) {
           const dbCart = await cartService.getOrCreateCart(customerProfile.id);
           setDbCartId(dbCart.id);
 
-          // Get guest cart items from sessionStorage
+          // Get guest cart items from sessionStorage or localStorage
           let guestCart = [];
-          const savedGuestCart = sessionStorage.getItem('luxe_cart_guest');
+          const savedGuestCart = sessionStorage.getItem('luxe_cart_guest') || localStorage.getItem('luxe_cart_guest');
           if (savedGuestCart) {
             try {
               guestCart = JSON.parse(savedGuestCart);
@@ -63,23 +63,17 @@ export function StoreProvider({ children }) {
     } else {
       setDbCartId(null);
 
-      // If guest (not a customer and not a creator/admin), load from sessionStorage
-      const isCreatorOrAdmin = authRole === 'creator' || authRole === 'admin';
-      if (!customerUser && !isCreatorOrAdmin) {
-        const savedGuestCart = sessionStorage.getItem('luxe_cart_guest') || localStorage.getItem('luxe_cart_guest');
-        if (savedGuestCart) {
-          try {
-            const parsed = JSON.parse(savedGuestCart);
-            setCart(parsed);
-            sessionStorage.setItem('luxe_cart_guest', savedGuestCart);
-          } catch (e) {
-            setCart([]);
-          }
-        } else {
+      // Load from localStorage/sessionStorage for anyone who is not a customer (Guests, Creators, Admins)
+      const savedGuestCart = sessionStorage.getItem('luxe_cart_guest') || localStorage.getItem('luxe_cart_guest');
+      if (savedGuestCart) {
+        try {
+          const parsed = JSON.parse(savedGuestCart);
+          setCart(parsed);
+          sessionStorage.setItem('luxe_cart_guest', savedGuestCart);
+        } catch (e) {
           setCart([]);
         }
       } else {
-        // Creators/Admins cart always starts empty
         setCart([]);
       }
     }
@@ -107,8 +101,6 @@ export function StoreProvider({ children }) {
 
   // Helper to persist cart changes to storage or DB
   const saveCartToStorage = async (updatedCart, changedProductId = null, newQty = null) => {
-    if (authRole === 'admin') return;
-
     if (customerProfile) {
       try {
         let activeCartId = dbCartId;
@@ -129,15 +121,15 @@ export function StoreProvider({ children }) {
       } catch (err) {
         console.warn('Failed to update DB cart:', err);
       }
-    } else if (!customerUser && authRole !== 'creator') {
-      // Guest
+    } else {
+      // Guest / Creator / Admin acting as visitor
       sessionStorage.setItem('luxe_cart_guest', JSON.stringify(updatedCart));
+      localStorage.setItem('luxe_cart_guest', JSON.stringify(updatedCart));
     }
   };
 
   const addToCart = async (product, quantity = 1) => {
     if (!product) return;
-    if (authRole === 'admin') return;
 
     let newQty = quantity;
     const existing = cart.find((item) => item.id === product.id);
@@ -155,6 +147,15 @@ export function StoreProvider({ children }) {
       return;
     }
 
+    // Auto-detect store slug from URL if missing on product object
+    let itemStoreSlug = product.store_slug || product.store?.slug || '';
+    if (!itemStoreSlug && typeof window !== 'undefined') {
+      const parts = window.location.pathname.split('/');
+      if ((parts[1] === 'store' || parts[1] === 'demo-store') && parts[2]) {
+        itemStoreSlug = parts[2];
+      }
+    }
+
     let updatedCart = [];
     if (existing) {
       updatedCart = cart.map((item) =>
@@ -168,7 +169,7 @@ export function StoreProvider({ children }) {
         image: product.image || product.image_url || 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=800',
         category: product.category || 'Uncategorized',
         store_id: product.store_id,
-        store_slug: product.store_slug || product.store?.slug || '',
+        store_slug: itemStoreSlug,
         stock: product.stock !== undefined ? product.stock : 999,
         quantity
       };

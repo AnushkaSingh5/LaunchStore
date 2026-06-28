@@ -1638,13 +1638,29 @@ export default function CustomersPage() {
           cursor: pointer;
         }
         @media print {
-          .sidebar, .top-bar, .header-row, .stats-grid, .table-filters-bar, 
-          .active-filters-row, .quick-filters-bar, .list-footer, .drawer-overlay,
-          .filter-drawer, .action-buttons, .modal-footer-btns, .close-modal-btn {
+          /* Hide all sibling elements of the modal overlay within .customers-page to prevent extra pages */
+          .customers-page > :not(.overlay) {
             display: none !important;
           }
           
-          :global(.overlay) { background: white !important; position: static !important; }
+          /* Hide global dashboard chrome and action buttons */
+          .sidebar, .top-bar, .modal-footer-btns, .close-modal-btn {
+            display: none !important;
+          }
+          
+          :global(.overlay) { 
+            background: white !important; 
+            position: absolute !important; 
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: auto !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            display: block !important;
+            z-index: 9999 !important;
+          }
+          
           :global(.modal) { 
             box-shadow: none !important; 
             border: none !important; 
@@ -1653,8 +1669,14 @@ export default function CustomersPage() {
             margin: 0 !important;
             padding: 0 !important;
             position: static !important;
+            height: auto !important;
+            max-height: none !important;
           }
-          .customers-page { padding: 0 !important; margin: 0 !important; }
+          
+          .customers-page { 
+            padding: 0 !important; 
+            margin: 0 !important; 
+          }
         }
       `}</style>
     </div>

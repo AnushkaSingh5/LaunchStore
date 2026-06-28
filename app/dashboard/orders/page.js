@@ -1218,12 +1218,7 @@ export default function OrdersPage() {
         }
         .num-btn.active { background: #6366f1; color: #fff; }
 
-        /* Global override for Order Details Modal width */
-        :global(.modal) {
-          max-width: min(1150px, 95vw) !important;
-          width: 95% !important;
-          overflow-x: hidden !important;
-        }
+
 
         /* Style for the title passed as prop */
         .modal-header-content {
@@ -1612,13 +1607,29 @@ export default function OrdersPage() {
         }
 
         @media print {
-          .sidebar, .top-bar, .header-row, .summary-grid, .actions-bar, 
-          .active-filters-row, .quick-filters-row, .list-footer, .filter-drawer,
-          .drawer-overlay, .modal-footer-btns, .close-modal-btn {
+          /* Hide all sibling elements of the modal overlay within .orders-page to prevent extra pages */
+          .orders-page > :not(.overlay) {
             display: none !important;
           }
           
-          :global(.overlay) { background: white !important; position: static !important; }
+          /* Hide global dashboard chrome and action buttons */
+          .sidebar, .top-bar, .modal-footer-btns, .close-modal-btn {
+            display: none !important;
+          }
+          
+          :global(.overlay) { 
+            background: white !important; 
+            position: absolute !important; 
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: auto !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            display: block !important;
+            z-index: 9999 !important;
+          }
+          
           :global(.modal) { 
             box-shadow: none !important; 
             border: none !important; 
@@ -1627,8 +1638,14 @@ export default function OrdersPage() {
             margin: 0 !important;
             padding: 0 !important;
             position: static !important;
+            height: auto !important;
+            max-height: none !important;
           }
-          .orders-page { padding: 0 !important; margin: 0 !important; }
+          
+          .orders-page { 
+            padding: 0 !important; 
+            margin: 0 !important; 
+          }
         }
       `}</style>
 

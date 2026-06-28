@@ -10,7 +10,7 @@ import { demoStores } from '@/lib/demoData';
 export default function Navbar({ storeName, logoUrl }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const { cartCount, searchQuery, setSearchQuery } = useStore();
-  const { customer, customerProfile, logout } = useCustomerAuth();
+  const { customer, customerProfile, logout, loginWithProvider } = useCustomerAuth();
   const user = customer;
   const profile = customerProfile;
   const signOut = logout;
@@ -140,13 +140,13 @@ export default function Navbar({ storeName, logoUrl }) {
                           </div>
                           <div className="dropdown-divider"></div>
                           <Link href={storeSlug ? `/customer/profile?store=${storeSlug}` : "/customer/profile"} className="dropdown-item" onClick={() => setIsDropdownOpen(false)}>
-                            My Profile
+                            <span className="dropdown-icon">👤</span>My Profile
                           </Link>
                           <Link href={storeSlug ? `/customer/orders?store=${storeSlug}` : "/customer/orders"} className="dropdown-item" onClick={() => setIsDropdownOpen(false)}>
-                            My Orders
+                            <span className="dropdown-icon">📦</span>My Orders
                           </Link>
                           <Link href={storeSlug ? `/customer/addresses?store=${storeSlug}` : "/customer/addresses"} className="dropdown-item" onClick={() => setIsDropdownOpen(false)}>
-                            My Addresses
+                            <span className="dropdown-icon">📍</span>My Addresses
                           </Link>
                           <div className="dropdown-divider"></div>
                           <button 
@@ -156,26 +156,33 @@ export default function Navbar({ storeName, logoUrl }) {
                               setIsDropdownOpen(false);
                             }}
                           >
-                            Logout
+                            <span className="dropdown-icon">🚪</span>Logout
                           </button>
                         </>
                       ) : (
-                        <>
-                          <Link 
-                            href={storeSlug ? `/customer/login?redirect=/store/${storeSlug}` : "/customer/login"} 
-                            className="dropdown-item" 
-                            onClick={() => setIsDropdownOpen(false)}
-                          >
-                            Login
-                          </Link>
-                          <Link 
-                            href={storeSlug ? `/customer/signup?redirect=/store/${storeSlug}` : "/customer/signup"} 
-                            className="dropdown-item" 
-                            onClick={() => setIsDropdownOpen(false)}
-                          >
-                            Sign Up
-                          </Link>
-                        </>
+                        <div className="logged-out-menu">
+                          <div className="dropdown-header-welcome">
+                            <div className="dropdown-welcome-title">Welcome to {storeName || 'AestheticStore'}</div>
+                            <div className="dropdown-welcome-subtitle">Access your account, track orders, and shop securely.</div>
+                          </div>
+                          
+                          <div className="dropdown-actions">
+                            <Link 
+                              href={storeSlug ? `/customer/login?redirect=/store/${storeSlug}` : "/customer/login"} 
+                              className="dropdown-primary-btn" 
+                              onClick={() => setIsDropdownOpen(false)}
+                            >
+                              Sign In
+                            </Link>
+                            <Link 
+                              href={storeSlug ? `/customer/signup?redirect=/store/${storeSlug}` : "/customer/signup"} 
+                              className="dropdown-secondary-btn" 
+                              onClick={() => setIsDropdownOpen(false)}
+                            >
+                              Create Account
+                            </Link>
+                          </div>
+                        </div>
                       )}
                     </div>
                   )}
@@ -243,31 +250,37 @@ export default function Navbar({ storeName, logoUrl }) {
           gap: 20px;
         }
 
-        .logo {
-          font-size: 22px;
-          font-weight: 600;
+        :global(.logo) {
+          font-size: 22px !important;
+          font-weight: 700 !important;
           letter-spacing: -0.5px;
-          color: #121212;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          font-family: 'Outfit', sans-serif;
+          color: #121212 !important;
+          display: flex !important;
+          flex-direction: row !important;
+          align-items: center !important;
+          gap: 10px !important;
+          font-family: 'Outfit', sans-serif !important;
+          text-decoration: none !important;
         }
 
-        .logo-img {
-          width: 32px;
-          height: 32px;
-          border-radius: 50%;
-          object-fit: cover;
-          border: 1px solid rgba(0, 0, 0, 0.06);
-          flex-shrink: 0;
+        :global(.logo-img) {
+          width: 36px !important;
+          height: 36px !important;
+          border-radius: 50% !important;
+          object-fit: cover !important;
+          border: 1px solid rgba(0, 0, 0, 0.06) !important;
+          flex-shrink: 0 !important;
         }
 
-        .logo-placeholder-dot {
-          width: 10px;
-          height: 10px;
-          background: #706f6c;
-          border-radius: 50%;
+        :global(.logo span) {
+          font-weight: 700 !important;
+        }
+
+        :global(.logo-placeholder-dot) {
+          width: 10px !important;
+          height: 10px !important;
+          background: #706f6c !important;
+          border-radius: 50% !important;
         }
 
         /* Middle Links */
@@ -364,38 +377,39 @@ export default function Navbar({ storeName, logoUrl }) {
           gap: 8px;
         }
 
-        .action-btn {
-          width: 40px;
-          height: 40px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: #121212;
-          position: relative;
-          transition: all 0.2s ease;
+        :global(.action-btn) {
+          width: 40px !important;
+          height: 40px !important;
+          border-radius: 50% !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          color: #121212 !important;
+          position: relative !important;
+          transition: all 0.2s ease !important;
         }
 
-        .action-btn:hover {
-          background: rgba(0, 0, 0, 0.03);
-          transform: scale(1.05);
+        :global(.action-btn:hover) {
+          background: rgba(0, 0, 0, 0.03) !important;
+          transform: scale(1.05) !important;
         }
 
-        .badge {
-          position: absolute;
-          top: 4px;
-          right: 4px;
-          background: #121212;
-          color: #FAF8F5;
-          font-size: 9px;
-          font-weight: 700;
-          min-width: 16px;
-          height: 16px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border: 1.5px solid #FAF8F5;
+        :global(.badge) {
+          position: absolute !important;
+          top: 4px !important;
+          right: 4px !important;
+          background: #2563eb !important;
+          color: #ffffff !important;
+          font-size: 9px !important;
+          font-weight: 700 !important;
+          min-width: 16px !important;
+          height: 16px !important;
+          border-radius: 50% !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          border: 1.5px solid #ffffff !important;
+          z-index: 10 !important;
         }
 
         /* User Dropdown */
@@ -403,21 +417,161 @@ export default function Navbar({ storeName, logoUrl }) {
           position: relative;
         }
 
-        .dropdown-menu {
+        :global(.dropdown-menu) {
           position: absolute;
           top: calc(100% + 12px);
           right: 0;
-          width: 220px;
-          border-radius: 16px;
+          width: 280px;
+          border-radius: 20px;
           background: #FAF8F5;
-          border: 1px solid rgba(0, 0, 0, 0.06);
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
-          padding: 8px;
+          border: 1px solid rgba(0, 0, 0, 0.08);
+          box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
+          padding: 20px;
           display: flex;
           flex-direction: column;
-          gap: 2px;
           z-index: 1100;
-          animation: dropdownFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+          animation: dropdownFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        :global(.dropdown-icon) {
+          margin-right: 8px;
+          font-size: 14px;
+          display: inline-flex;
+          align-items: center;
+        }
+
+        /* Logged Out Dropdown Styling */
+        :global(.logged-out-menu) {
+          display: flex;
+          flex-direction: column;
+          padding: 4px;
+        }
+
+        :global(.dropdown-header-welcome) {
+          padding: 4px 0 16px 0;
+          text-align: center;
+          border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+          margin-bottom: 16px;
+        }
+
+        :global(.dropdown-welcome-title) {
+          font-size: 15px;
+          font-weight: 700;
+          color: #121212;
+          margin-bottom: 6px;
+        }
+
+        :global(.dropdown-welcome-subtitle) {
+          font-size: 12px;
+          color: #706f6c;
+          line-height: 1.4;
+          max-width: 220px;
+          margin: 0 auto;
+        }
+
+        :global(.dropdown-actions) {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          margin-bottom: 16px;
+        }
+
+        :global(.dropdown-primary-btn) {
+          display: block;
+          width: 100%;
+          text-align: center;
+          padding: 12px;
+          background: #121212;
+          color: #FAF8F5;
+          font-weight: 600;
+          font-size: 13px;
+          border-radius: 12px;
+          transition: all 0.25s ease;
+          text-decoration: none;
+          border: none;
+        }
+
+        :global(.dropdown-primary-btn:hover) {
+          background: #3e3d3a;
+          transform: translateY(-0.5px);
+          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        :global(.dropdown-secondary-btn) {
+          display: block;
+          width: 100%;
+          text-align: center;
+          padding: 12px;
+          background: transparent;
+          color: #121212;
+          border: 1.5px solid #121212;
+          font-weight: 600;
+          font-size: 13px;
+          border-radius: 12px;
+          transition: all 0.25s ease;
+          text-decoration: none;
+        }
+
+        :global(.dropdown-secondary-btn:hover) {
+          background: rgba(18, 18, 18, 0.04);
+        }
+
+        :global(.dropdown-divider-text) {
+          display: flex;
+          align-items: center;
+          text-align: center;
+          color: #8c8985;
+          font-size: 10px;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          margin: 8px 0 16px;
+        }
+
+        :global(.dropdown-divider-text::before), :global(.dropdown-divider-text::after) {
+          content: '';
+          flex: 1;
+          border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        :global(.dropdown-divider-text:not(:empty)::before) {
+          margin-right: .75em;
+        }
+
+        :global(.dropdown-divider-text:not(:empty)::after) {
+          margin-left: .75em;
+        }
+
+        :global(.social-quick-grid) {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        :global(.dropdown-social-btn) {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 12px;
+          width: 100%;
+          padding: 12px;
+          border-radius: 12px;
+          border: 1px solid rgba(0, 0, 0, 0.08);
+          background: #ffffff;
+          color: #555350;
+          font-weight: 600;
+          font-size: 12px;
+          cursor: pointer;
+          transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+          text-decoration: none;
+        }
+
+        :global(.dropdown-social-btn:hover) {
+          border-color: #121212;
+          color: #121212;
+          background: #ffffff;
+          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
+          transform: translateY(-0.5px);
         }
 
         @keyframes dropdownFadeIn {
@@ -511,8 +665,8 @@ export default function Navbar({ storeName, logoUrl }) {
           .navbar-wrapper {
             padding: 12px 16px;
           }
-          .logo {
-            font-size: 18px;
+          :global(.logo) {
+            font-size: 18px !important;
           }
           .action-btn {
             width: 36px;

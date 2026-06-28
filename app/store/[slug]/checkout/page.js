@@ -177,13 +177,7 @@ export default function StoreCheckoutPage({ params }) {
     setCouponError('');
   };
 
-  console.log('🛒 [Checkout] Render state:', { 
-    slug, 
-    loadingDetails, 
-    authLoading, 
-    userEmail: user?.email, 
-    profileName: profile?.full_name 
-  });
+  console.log(`🛒 [Checkout] Render state: slug=${slug} loadingDetails=${loadingDetails} authLoading=${authLoading} user=${user ? user.email : 'null'} profile=${profile ? profile.full_name : 'null'}`);
 
   if (loadingDetails || authLoading) {
     return (

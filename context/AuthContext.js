@@ -280,46 +280,48 @@ export function AuthProvider({ children }) {
     loadInitialSession();
 
     // 2. Set up auth state change listener
-    const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(async (event, activeSession) => {
-      console.log(`🔔 [LaunchCart - Auth]: auth state changes: event="${event}"`);
+    const { data: { subscription } } = supabaseClient.auth.onAuthStateChange((event, activeSession) => {
+      setTimeout(async () => {
+        console.log(`🔔 [LaunchCart - Auth]: auth state changes: event="${event}"`);
 
-      if (event === 'INITIAL_SESSION') {
-        // Skip since loadInitialSession is handling it
-        return;
-      }
-
-      if (!initialSessionLoadedRef.current) {
-        console.log(`🔔 [LaunchCart - Auth]: onAuthStateChange event "${event}" ignored during initial session load.`);
-        return;
-      }
-
-      if (!isSubscribed) return;
-
-      try {
-        setLoading(true);
-        startLoading();
-        setSession(activeSession);
-        const currentUser = activeSession?.user ?? null;
-        setUser(currentUser);
-
-        if (currentUser) {
-          await fetchProfileOnly(currentUser.id, currentUser.email, activeSession?.access_token);
-          fetchStoreOnly(currentUser.id, activeSession?.access_token).catch(e => {
-            console.warn("Background store fetch failed:", e);
-          });
-        } else {
-          setProfile(null);
-          setStore(null);
-          setRole('creator');
+        if (event === 'INITIAL_SESSION') {
+          // Skip since loadInitialSession is handling it
+          return;
         }
-      } catch (err) {
-        console.warn('❌ [LaunchCart - Auth]: Error handling onAuthStateChange:', err);
-      } finally {
-        if (isSubscribed) {
-          setLoading(false);
+
+        if (!initialSessionLoadedRef.current) {
+          console.log(`🔔 [LaunchCart - Auth]: onAuthStateChange event "${event}" ignored during initial session load.`);
+          return;
         }
-        completeLoading();
-      }
+
+        if (!isSubscribed) return;
+
+        try {
+          setLoading(true);
+          startLoading();
+          setSession(activeSession);
+          const currentUser = activeSession?.user ?? null;
+          setUser(currentUser);
+
+          if (currentUser) {
+            await fetchProfileOnly(currentUser.id, currentUser.email, activeSession?.access_token);
+            fetchStoreOnly(currentUser.id, activeSession?.access_token).catch(e => {
+              console.warn("Background store fetch failed:", e);
+            });
+          } else {
+            setProfile(null);
+            setStore(null);
+            setRole('creator');
+          }
+        } catch (err) {
+          console.warn('❌ [LaunchCart - Auth]: Error handling onAuthStateChange:', err);
+        } finally {
+          if (isSubscribed) {
+            setLoading(false);
+          }
+          completeLoading();
+        }
+      }, 0);
     });
 
     return () => {
