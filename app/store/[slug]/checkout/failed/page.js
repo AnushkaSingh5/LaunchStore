@@ -48,7 +48,8 @@ export default function CheckoutFailedPage({ params }) {
     if (!orderDetails || !storeDetails) return;
     setRetrying(true);
     try {
-      const provider = paymentFactory.getProvider('Razorpay');
+      const activeProviderName = process.env.NEXT_PUBLIC_ACTIVE_PAYMENT_PROVIDER || 'Razorpay';
+      const provider = paymentFactory.getProvider(activeProviderName);
       const paymentOrder = await provider.createPaymentOrder(
         orderDetails.id,
         orderDetails.total_amount,
@@ -63,7 +64,7 @@ export default function CheckoutFailedPage({ params }) {
         setMockPaymentData({
           orderId: orderDetails.id,
           totalAmount: orderDetails.total_amount,
-          paymentOrderId: paymentOrder.id,
+          paymentOrderId: paymentOrder.payment_session_id || paymentOrder.id,
           provider
         });
         setShowMockModal(true);
@@ -75,6 +76,18 @@ export default function CheckoutFailedPage({ params }) {
       if (!scriptLoaded) {
         alert('Failed to load payment script. Please try again.');
         setRetrying(false);
+        return;
+      }
+
+      if (activeProviderName === 'Cashfree') {
+        // Trigger Cashfree SDK Web Checkout retry redirect
+        const cashfree = window.Cashfree({
+          mode: process.env.NEXT_PUBLIC_CASHFREE_ENV === 'PRODUCTION' ? 'production' : 'sandbox'
+        });
+        console.log('🔄 [Retry]: Redirecting to Cashfree checkout retry...');
+        cashfree.checkout({
+          paymentSessionId: paymentOrder.payment_session_id
+        });
         return;
       }
 
@@ -138,6 +151,9 @@ export default function CheckoutFailedPage({ params }) {
     setShowMockModal(false);
     try {
       const mockDetails = {
+        payment_order_id: mockPaymentData.paymentOrderId,
+        payment_id: `cf_pay_mock_${Date.now()}`,
+        // Keep Razorpay fields for legacy compatibility
         razorpay_order_id: mockPaymentData.paymentOrderId,
         razorpay_payment_id: `pay_mock_${Date.now()}`,
         razorpay_signature: `sig_mock_${Date.now()}`
@@ -146,9 +162,9 @@ export default function CheckoutFailedPage({ params }) {
       if (verified) {
         await orderService.updateOrderPayment(mockPaymentData.orderId, {
           paymentStatus: 'paid',
-          paymentProvider: 'Razorpay',
-          paymentId: mockDetails.razorpay_payment_id,
-          paymentOrderId: mockDetails.razorpay_order_id,
+          paymentProvider: provider.name,
+          paymentId: provider.name === 'Cashfree' ? mockDetails.payment_id : mockDetails.razorpay_payment_id,
+          paymentOrderId: provider.name === 'Cashfree' ? mockDetails.payment_order_id : mockDetails.razorpay_order_id,
           status: 'confirmed'
         });
         router.push(`/store/${slug}/checkout/success?orderId=${mockPaymentData.orderId}`);
@@ -163,9 +179,21 @@ export default function CheckoutFailedPage({ params }) {
     }
   };
 
-  const handleMockFailure = () => {
+  const handleMockFailure = async () => {
     setShowMockModal(false);
     setRetrying(false);
+    try {
+      const provider = mockPaymentData?.provider;
+      if (provider) {
+        await orderService.updateOrderPayment(mockPaymentData.orderId, {
+          paymentStatus: 'failed',
+          paymentProvider: provider.name,
+          status: 'awaiting_payment'
+        });
+      }
+    } catch (err) {
+      console.error('Mock retry failure error:', err);
+    }
   };
 
   if (loading) {

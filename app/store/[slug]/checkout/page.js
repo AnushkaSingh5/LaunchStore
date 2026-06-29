@@ -415,7 +415,8 @@ export default function StoreCheckoutPage({ params }) {
         }
 
         // Trigger payment flow
-        const provider = paymentFactory.getProvider('Razorpay');
+        const activeProviderName = process.env.NEXT_PUBLIC_ACTIVE_PAYMENT_PROVIDER || 'Razorpay';
+        const provider = paymentFactory.getProvider(activeProviderName);
         const paymentOrder = await provider.createPaymentOrder(
           response.orders[0].id,
           response.orders[0].total_amount,
@@ -430,7 +431,7 @@ export default function StoreCheckoutPage({ params }) {
           setMockPaymentData({
             orderId: response.orders[0].id,
             totalAmount: response.orders[0].total_amount,
-            paymentOrderId: paymentOrder.id,
+            paymentOrderId: paymentOrder.payment_session_id || paymentOrder.id,
             provider
           });
           setShowMockModal(true);
@@ -445,6 +446,19 @@ export default function StoreCheckoutPage({ params }) {
           return;
         }
 
+        if (activeProviderName === 'Cashfree') {
+          // Trigger Cashfree SDK Web Checkout redirect
+          const cashfree = window.Cashfree({
+            mode: process.env.NEXT_PUBLIC_CASHFREE_ENV === 'PRODUCTION' ? 'production' : 'sandbox'
+          });
+          console.log('🔄 [Checkout]: Redirecting to Cashfree checkout...');
+          cashfree.checkout({
+            paymentSessionId: paymentOrder.payment_session_id
+          });
+          return;
+        }
+
+        // Razorpay Payment Gateway options
         const options = {
           key: provider.keyId,
           amount: paymentOrder.amount,
@@ -509,6 +523,9 @@ export default function StoreCheckoutPage({ params }) {
     setShowMockModal(false);
     try {
       const mockDetails = {
+        payment_order_id: mockPaymentData.paymentOrderId,
+        payment_id: `cf_pay_mock_${Date.now()}`,
+        // Keep Razorpay fields for legacy compatibility
         razorpay_order_id: mockPaymentData.paymentOrderId,
         razorpay_payment_id: `pay_mock_${Date.now()}`,
         razorpay_signature: `sig_mock_${Date.now()}`
@@ -517,9 +534,9 @@ export default function StoreCheckoutPage({ params }) {
       if (verified) {
         await orderService.updateOrderPayment(mockPaymentData.orderId, {
           paymentStatus: 'paid',
-          paymentProvider: 'Razorpay',
-          paymentId: mockDetails.razorpay_payment_id,
-          paymentOrderId: mockDetails.razorpay_order_id,
+          paymentProvider: provider.name,
+          paymentId: provider.name === 'Cashfree' ? mockDetails.payment_id : mockDetails.razorpay_payment_id,
+          paymentOrderId: provider.name === 'Cashfree' ? mockDetails.payment_order_id : mockDetails.razorpay_order_id,
           status: 'confirmed'
         });
         await clearCart();
@@ -541,7 +558,7 @@ export default function StoreCheckoutPage({ params }) {
     try {
       await orderService.updateOrderPayment(mockPaymentData.orderId, {
         paymentStatus: 'failed',
-        paymentProvider: 'Razorpay',
+        paymentProvider: provider.name,
         status: 'awaiting_payment'
       });
       router.push(`/store/${slug}/checkout/failed?orderId=${mockPaymentData.orderId}`);

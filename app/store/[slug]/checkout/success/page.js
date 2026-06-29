@@ -225,6 +225,8 @@ export default function CheckoutSuccessPage({ params }) {
           font-family: monospace;
           font-size: 12px;
           color: #475569;
+          word-break: break-all;
+          max-width: 300px;
         }
         .address-val {
           font-weight: 500;

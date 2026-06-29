@@ -40,3 +40,8 @@ CREATE POLICY "Allow creators to update own store orders" ON public.orders
 -- Customers and storefront visitors can update order details (e.g. payment reference & status) during checkout
 CREATE POLICY "Allow public update of orders" ON public.orders 
   FOR UPDATE USING (true) WITH CHECK (true);
+
+-- Customers and storefront visitors can select order details by ID during checkout
+DROP POLICY IF EXISTS "Allow public select of orders" ON public.orders;
+CREATE POLICY "Allow public select of orders" ON public.orders 
+  FOR SELECT USING (true);
