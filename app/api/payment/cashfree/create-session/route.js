@@ -68,9 +68,12 @@ export async function POST(request) {
     });
 
   } catch (error) {
-    console.error('❌ [create-session] Exception:', error);
+    console.error('❌ [create-session] Exception details:', error.message);
+    if (error.response && error.response.data) {
+      console.error('   - Cashfree API Error Response:', JSON.stringify(error.response.data, null, 2));
+    }
     return NextResponse.json(
-      { error: error.message || 'Internal Server Error' },
+      { error: error.response?.data?.message || error.message || 'Internal Server Error' },
       { status: 500 }
     );
   }

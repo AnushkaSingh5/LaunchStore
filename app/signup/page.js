@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { authService } from '@/services/authService';
+import { supabaseClient } from '@/lib/supabase';
 import { useLoading } from '@/components/TopLoader';
 
 export default function SignupPage() {
@@ -38,10 +39,7 @@ export default function SignupPage() {
         if (isAlreadyRegistered) {
           console.log('🔄 [LaunchCart - MerchantSignup]: User already registered, attempting auto-login instead...');
           const loginRes = await authService.signIn(email, password);
-          if (loginRes.error) {
-            throw new Error('This account already exists, and login failed. Please verify your password.');
-          }
-          result = loginRes;
+          if (loginRes.error) throw loginRes.error;
           session = loginRes.data?.session;
         } else {
           throw signUpErr;
@@ -67,6 +65,28 @@ export default function SignupPage() {
     } finally {
       setLoading(false);
       completeLoading();
+    }
+  };
+
+  const handleSocialLogin = async (provider) => {
+    setErrorMsg('');
+    setSuccessMsg('');
+    try {
+      const callbackUrl = `${window.location.origin}/onboarding`;
+      console.log(`🔄 [LaunchCart - MerchantSignup]: Triggering OAuth signup for ${provider} with callback ${callbackUrl}`);
+      const { error } = await supabaseClient.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: callbackUrl,
+          data: {
+            role: 'creator',
+          }
+        }
+      });
+      if (error) throw error;
+    } catch (err) {
+      console.error(`❌ [LaunchCart - MerchantSignup]: ${provider} OAuth error:`, err);
+      setErrorMsg(err.message || `Failed to sign up with ${provider}.`);
     }
   };
 
@@ -174,7 +194,7 @@ export default function SignupPage() {
 
         {/* Social Authentication */}
         <div className="social-auth">
-          <button className="social-btn" onClick={() => router.push('/dashboard')}>
+          <button className="social-btn" onClick={() => handleSocialLogin('google')}>
             <span className="social-icon">🌐</span>
             Sign Up with Google
           </button>

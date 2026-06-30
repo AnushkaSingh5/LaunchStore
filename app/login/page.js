@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { authService } from '@/services/authService';
+import { supabaseClient } from '@/lib/supabase';
 import { useLoading } from '@/components/TopLoader';
 
 export default function LoginPage() {
@@ -36,6 +37,27 @@ export default function LoginPage() {
     }
   };
 
+  const handleSocialLogin = async (provider) => {
+    setErrorMsg('');
+    try {
+      const callbackUrl = `${window.location.origin}/dashboard`;
+      console.log(`🔄 [LaunchCart - LoginPage]: Triggering OAuth login for ${provider} with callback ${callbackUrl}`);
+      const { error } = await supabaseClient.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: callbackUrl,
+          data: {
+            role: 'creator',
+          }
+        }
+      });
+      if (error) throw error;
+    } catch (err) {
+      console.error(`❌ [LaunchCart - LoginPage]: ${provider} OAuth error:`, err);
+      setErrorMsg(err.message || `Failed to sign in with ${provider}.`);
+    }
+  };
+
   return (
     <div className="login-container">
       {/* Glow overlay */}
@@ -60,11 +82,11 @@ export default function LoginPage() {
 
         {/* Social Authentication */}
         <div className="social-auth">
-          <button className="social-btn" onClick={() => router.push('/dashboard')}>
+          <button className="social-btn" onClick={() => handleSocialLogin('google')}>
             <span className="social-icon">🌐</span>
             Continue with Google
           </button>
-          <button className="social-btn" onClick={() => router.push('/dashboard')}>
+          <button className="social-btn" onClick={() => handleSocialLogin('github')}>
             <span className="social-icon">💻</span>
             Continue with GitHub
           </button>

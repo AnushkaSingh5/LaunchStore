@@ -66,7 +66,11 @@ export async function GET(request) {
     }
 
   } catch (error) {
-    console.error('❌ [verify-redirect] Exception:', error);
-    return NextResponse.redirect(`${baseUrl}/store/${slug}/checkout/failed?orderId=${orderId}&error=${encodeURIComponent(error.message || 'Verification error')}`);
+    console.error('❌ [verify-redirect] Exception details:', error.message);
+    if (error.response && error.response.data) {
+      console.error('   - Cashfree API Error Response:', JSON.stringify(error.response.data, null, 2));
+    }
+    const errorMsg = error.response?.data?.message || error.message || 'Verification error';
+    return NextResponse.redirect(`${baseUrl}/store/${slug}/checkout/failed?orderId=${orderId}&error=${encodeURIComponent(errorMsg)}`);
   }
 }
