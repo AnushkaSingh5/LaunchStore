@@ -7,7 +7,10 @@ export async function GET(request) {
   const orderId = searchParams.get('order_id');
   const slug = searchParams.get('slug') || 'store1';
 
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+  const envUrl = process.env.NEXT_PUBLIC_BASE_URL;
+  const host = request.headers.get('host') || 'localhost:3000';
+  const protocol = host.includes('localhost') ? 'http' : 'https';
+  const baseUrl = (envUrl && envUrl.trim() !== '') ? envUrl : `${protocol}://${host}`;
 
   if (!orderId) {
     return NextResponse.redirect(`${baseUrl}/store/${slug}`);
