@@ -41,7 +41,9 @@ export async function POST(request) {
     const envUrl = process.env.NEXT_PUBLIC_BASE_URL;
     const host = request.headers.get('host') || 'localhost:3000';
     const protocol = host.includes('localhost') ? 'http' : 'https';
-    const baseUrl = (envUrl && envUrl.trim() !== '') ? envUrl : `${protocol}://${host}`;
+    const baseUrl = host.includes('localhost') 
+      ? `${protocol}://${host}`
+      : ((envUrl && envUrl.trim() !== '') ? envUrl : `${protocol}://${host}`);
     const storeSlug = slug || 'store1';
     const returnUrl = `${baseUrl}/api/payment/cashfree/verify?order_id={order_id}&slug=${storeSlug}`;
 

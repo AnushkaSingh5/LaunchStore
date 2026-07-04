@@ -26,9 +26,11 @@ export default function StoreCheckoutPage({ params }) {
     email: '',
     phone: '',
     address: '',
+    address_line_2: '',
     city: '',
     state: '',
-    pincode: ''
+    pincode: '',
+    country: 'India'
   });
 
   const [errors, setErrors] = useState({});
@@ -78,10 +80,12 @@ export default function StoreCheckoutPage({ params }) {
               ...prev,
               name: defaultAddr.full_name || prev.name || '',
               phone: defaultAddr.phone || prev.phone || '',
-              address: defaultAddr.address_line_1 + (defaultAddr.address_line_2 ? `, ${defaultAddr.address_line_2}` : ''),
-              city: defaultAddr.city,
-              state: defaultAddr.state,
-              pincode: defaultAddr.postal_code,
+              address: defaultAddr.address_line_1 || '',
+              address_line_2: defaultAddr.address_line_2 || '',
+              city: defaultAddr.city || '',
+              state: defaultAddr.state || '',
+              pincode: defaultAddr.postal_code || '',
+              country: defaultAddr.country || 'India'
             }));
           } else if (addresses.length > 0) {
             setSelectedAddressId(addresses[0].id);
@@ -89,10 +93,12 @@ export default function StoreCheckoutPage({ params }) {
               ...prev,
               name: addresses[0].full_name || prev.name || '',
               phone: addresses[0].phone || prev.phone || '',
-              address: addresses[0].address_line_1 + (addresses[0].address_line_2 ? `, ${addresses[0].address_line_2}` : ''),
-              city: addresses[0].city,
-              state: addresses[0].state,
-              pincode: addresses[0].postal_code,
+              address: addresses[0].address_line_1 || '',
+              address_line_2: addresses[0].address_line_2 || '',
+              city: addresses[0].city || '',
+              state: addresses[0].state || '',
+              pincode: addresses[0].postal_code || '',
+              country: addresses[0].country || 'India'
             }));
           } else {
             setSelectedAddressId('new');
@@ -112,10 +118,12 @@ export default function StoreCheckoutPage({ params }) {
       ...prev,
       name: addr.full_name || '',
       phone: addr.phone || '',
-      address: addr.address_line_1 + (addr.address_line_2 ? `, ${addr.address_line_2}` : ''),
+      address: addr.address_line_1 || '',
+      address_line_2: addr.address_line_2 || '',
       city: addr.city || '',
       state: addr.state || '',
       pincode: addr.postal_code || '',
+      country: addr.country || 'India'
     }));
     setErrors({});
   };
@@ -127,9 +135,11 @@ export default function StoreCheckoutPage({ params }) {
       name: profile?.full_name || '',
       phone: profile?.phone || '',
       address: '',
+      address_line_2: '',
       city: '',
       state: '',
       pincode: '',
+      country: 'India'
     }));
     setErrors({});
   };
@@ -387,9 +397,11 @@ export default function StoreCheckoutPage({ params }) {
               (addr.full_name || '').toLowerCase().trim() === (form.name || '').toLowerCase().trim() &&
               (addr.phone || '').trim() === (form.phone || '').trim() &&
               (addr.address_line_1 || '').toLowerCase().trim() === (form.address || '').toLowerCase().trim() &&
+              (addr.address_line_2 || '').toLowerCase().trim() === (form.address_line_2 || '').toLowerCase().trim() &&
               (addr.city || '').toLowerCase().trim() === (form.city || '').toLowerCase().trim() &&
               (addr.state || '').toLowerCase().trim() === (form.state || '').toLowerCase().trim() &&
-              (addr.postal_code || '').trim() === (form.pincode || '').trim()
+              (addr.postal_code || '').trim() === (form.pincode || '').trim() &&
+              (addr.country || '').toLowerCase().trim() === (form.country || 'India').toLowerCase().trim()
             );
 
             if (!addressExists) {
@@ -400,10 +412,10 @@ export default function StoreCheckoutPage({ params }) {
                 full_name: form.name,
                 phone: form.phone,
                 address_line_1: form.address,
-                address_line_2: null,
+                address_line_2: form.address_line_2 || null,
                 city: form.city,
                 state: form.state,
-                country: 'US',
+                country: form.country || 'India',
                 postal_code: form.pincode,
                 is_default: existingAddresses.length === 0
               });
@@ -810,17 +822,18 @@ export default function StoreCheckoutPage({ params }) {
               </div>
 
               <div className="form-group">
-                <label>Shipping Address</label>
+                <label>Shipping Address (Line 1)</label>
                 <textarea 
                   name="address" 
                   value={form.address} 
                   onChange={handleInputChange} 
                   placeholder="Street name, apartment, building no..."
-                  rows="3"
+                  rows="2"
                   className={errors.address ? 'error-input' : ''}
                 />
                 {errors.address && <span className="error-text">{errors.address}</span>}
               </div>
+
 
               <div className="form-grid">
                 <div className="form-group">
@@ -860,6 +873,19 @@ export default function StoreCheckoutPage({ params }) {
                     className={errors.pincode ? 'error-input' : ''}
                   />
                   {errors.pincode && <span className="error-text">{errors.pincode}</span>}
+                </div>
+
+                <div className="form-group">
+                  <label>Country</label>
+                  <input 
+                    type="text" 
+                    name="country" 
+                    value={form.country} 
+                    onChange={handleInputChange} 
+                    placeholder="e.g. India"
+                    className={errors.country ? 'error-input' : ''}
+                  />
+                  {errors.country && <span className="error-text">{errors.country}</span>}
                 </div>
               </div>
 

@@ -10,7 +10,9 @@ export async function GET(request) {
   const envUrl = process.env.NEXT_PUBLIC_BASE_URL;
   const host = request.headers.get('host') || 'localhost:3000';
   const protocol = host.includes('localhost') ? 'http' : 'https';
-  const baseUrl = (envUrl && envUrl.trim() !== '') ? envUrl : `${protocol}://${host}`;
+  const baseUrl = host.includes('localhost') 
+    ? `${protocol}://${host}`
+    : ((envUrl && envUrl.trim() !== '') ? envUrl : `${protocol}://${host}`);
 
   if (!orderId) {
     return NextResponse.redirect(`${baseUrl}/store/${slug}`);
@@ -57,6 +59,15 @@ export async function GET(request) {
         paymentId: transactionId,
         paymentOrderId: orderId
       });
+
+      // Auto-trigger Shiprocket shipment creation (handled gracefully so failures do not block customer success view)
+      try {
+        const { shippingService } = await import('@/services/shipping/shippingService');
+        await shippingService.createShipment(orderId);
+      } catch (shipErr) {
+        console.error('⚠️ [verify-redirect]: Auto shipment creation failed:', shipErr.message);
+      }
+      
       return NextResponse.redirect(`${baseUrl}/store/${slug}/checkout/success?orderId=${orderId}`);
     } else {
       console.log(`❌ [verify-redirect]: Cashfree order ${orderId} status is: ${cfOrder?.order_status || 'UNKNOWN'}. Marking failed.`);

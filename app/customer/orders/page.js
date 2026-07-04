@@ -36,6 +36,23 @@ export default function CustomerOrdersPage() {
     try {
       const details = await orderService.getOrderDetails(orderId);
       setSelectedOrder(details);
+
+      // Auto-sync tracking status if tracking number is present
+      if (details && details.tracking_number) {
+        try {
+          console.log(`[CustomerOrders] Auto-syncing tracking status for order: ${orderId}`);
+          const syncRes = await fetch(`/api/shipping/sync?order_id=${orderId}`);
+          if (syncRes.ok) {
+            const syncData = await syncRes.json();
+            if (syncData.success) {
+              const freshDetails = await orderService.getOrderDetails(orderId);
+              if (freshDetails) setSelectedOrder(freshDetails);
+            }
+          }
+        } catch (syncErr) {
+          console.warn('[CustomerOrders] Failed to auto-sync tracking:', syncErr);
+        }
+      }
     } catch (err) {
       console.error('Failed to load order details:', err);
       alert('Could not retrieve order details. Please try again.');
@@ -187,6 +204,138 @@ export default function CustomerOrdersPage() {
                 <p className="value address-val">{selectedOrder.shipping_address}</p>
                 <p className="value font-semibold">{selectedOrder.customer_name} ({selectedOrder.customer_phone})</p>
               </div>
+
+              {selectedOrder && (selectedOrder.payment_status === 'paid' || selectedOrder.status === 'confirmed') && (
+                <>
+                  <div className="modal-divider"></div>
+                  <div className="shipping-timeline-section" style={{ padding: '4px 0' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                      <span className="label" style={{ margin: 0, fontWeight: 700 }}>🚚 Shipment Tracking ({selectedOrder.courier_name || 'Pending assignment'})</span>
+                      <span style={{ 
+                        fontSize: '11px', 
+                        fontWeight: 700, 
+                        padding: '3px 8px', 
+                        borderRadius: '99px', 
+                        background: selectedOrder.shipping_status === 'Delivered' ? '#ecfdf5' : '#eff6ff', 
+                        color: selectedOrder.shipping_status === 'Delivered' ? '#047857' : '#1d4ed8' 
+                      }}>
+                        {selectedOrder.shipping_status || 'Pending'}
+                      </span>
+                    </div>
+
+                    <div style={{ fontSize: '13px', color: '#475569', marginBottom: '16px', display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
+                      <div><strong>AWB Number:</strong> <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>{selectedOrder.awb_number || 'Pending assignment'}</span></div>
+                      {selectedOrder.estimated_delivery ? (
+                        <div><strong>Estimated Delivery:</strong> <span style={{ fontWeight: 600 }}>{selectedOrder.estimated_delivery}</span></div>
+                      ) : (
+                        <div style={{ color: '#64748b' }}>* Delivery estimates will be available once the order is shipped.</div>
+                      )}
+                    </div>
+
+                    {(() => {
+                      const getStepIndex = (status) => {
+                        const s = String(status || 'Pending').toLowerCase();
+                        if (s === 'pending') return 0;
+                        if (s === 'shipment created') return 1;
+                        if (s === 'picked up') return 2;
+                        if (s === 'in transit') return 3;
+                        if (s === 'out for delivery') return 4;
+                        if (s === 'delivered') return 5;
+                        if (s === 'cancelled') return -1;
+                        if (s === 'returned') return -2;
+                        return 0;
+                      };
+
+                      const currentStepIdx = getStepIndex(selectedOrder.shipping_status);
+
+                      if (currentStepIdx >= 0) {
+                        const steps = [
+                          { label: 'Order Confirmed', desc: 'Your payment was successfully verified.' },
+                          { label: 'Shipment Created', desc: 'AWB allocated, package preparing.' },
+                          { label: 'Picked Up', desc: 'Handed over to courier partner.' },
+                          { label: 'In Transit', desc: 'Package is traveling between hubs.' },
+                          { label: 'Out For Delivery', desc: 'Package is arriving today.' },
+                          { label: 'Delivered', desc: 'Package has been delivered.' }
+                        ];
+
+                        return (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '12px' }}>
+                            {steps.map((step, idx) => {
+                              const isCompleted = idx <= currentStepIdx;
+                              const isActive = idx === currentStepIdx;
+
+                              return (
+                                <div key={idx} style={{ display: 'flex', gap: '12px' }}>
+                                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                    <div style={{
+                                      width: '20px',
+                                      height: '20px',
+                                      borderRadius: '50%',
+                                      background: isCompleted ? '#10b981' : '#e2e8f0',
+                                      border: isActive ? '3px solid #d1fae5' : 'none',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      color: '#fff',
+                                      fontSize: '9px',
+                                      fontWeight: 'bold',
+                                      zIndex: 1
+                                    }}>
+                                      {isCompleted ? '✓' : idx + 1}
+                                    </div>
+                                    {idx < 5 && (
+                                      <div style={{
+                                        width: '2px',
+                                        flex: 1,
+                                        background: idx < currentStepIdx ? '#10b981' : '#e2e8f0',
+                                        margin: '3px 0',
+                                        minHeight: '16px'
+                                      }}></div>
+                                    )}
+                                  </div>
+                                  <div style={{ paddingBottom: idx < 5 ? '8px' : 0 }}>
+                                    <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: isCompleted ? '#1e293b' : '#94a3b8' }}>{step.label}</h4>
+                                    <p style={{ margin: '1px 0 0', fontSize: '11px', color: isCompleted ? '#64748b' : '#cbd5e1' }}>{step.desc}</p>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        );
+                      } else {
+                        return (
+                          <div style={{ padding: '12px', background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: '10px', color: '#b91c1c', fontSize: '12px', fontWeight: 600 }}>
+                            {selectedOrder.shipping_status === 'Cancelled' 
+                              ? '❌ This shipment has been cancelled.' 
+                              : '🔄 This shipment has been returned to sender.'}
+                          </div>
+                        );
+                      }
+                    })()}
+
+                    {selectedOrder.tracking_url && (
+                      <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
+                        <a 
+                          href={selectedOrder.tracking_url} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          style={{
+                            fontSize: '12px',
+                            fontWeight: 700,
+                            padding: '8px 12px',
+                            background: '#0f172a',
+                            color: '#fff',
+                            borderRadius: '8px',
+                            textDecoration: 'none'
+                          }}
+                        >
+                          Track Package ↗
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
 
               <div className="modal-divider"></div>
 

@@ -79,6 +79,22 @@ export default function OrdersPage() {
     status: o.status,
     payment: o.payment_status || 'Pending',
     shipping_address: o.shipping_address,
+    shipping_address_line1: o.shipping_address_line1,
+    shipping_address_line2: o.shipping_address_line2,
+    shipping_address_city: o.shipping_address_city,
+    shipping_address_state: o.shipping_address_state,
+    shipping_address_pincode: o.shipping_address_pincode,
+    shipping_address_country: o.shipping_address_country,
+    shipping_provider: o.shipping_provider,
+    shipment_id: o.shipment_id,
+    awb_number: o.awb_number,
+    courier_name: o.courier_name,
+    tracking_number: o.tracking_number,
+    tracking_url: o.tracking_url,
+    shipping_status: o.shipping_status || 'Pending',
+    estimated_delivery: o.estimated_delivery,
+    shipped_at: o.shipped_at,
+    delivered_at: o.delivered_at
   }));
 
   const filteredOrders = orders.filter(order => {
@@ -1756,6 +1772,138 @@ export default function OrdersPage() {
               </div>
             </div>
           </div>
+
+          {/* Shiprocket Delivery Details Panel */}
+          {selectedOrder?.payment.toLowerCase() === 'paid' && (
+            <div style={{ background: '#f8fafc', borderRadius: '16px', padding: '16px 20px', border: '1px solid #f1f5f9', marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span className="info-label" style={{ fontSize: '10px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Shiprocket Delivery Details</span>
+                <span style={{ 
+                  fontSize: '12px', 
+                  fontWeight: 700, 
+                  padding: '4px 10px', 
+                  borderRadius: '99px', 
+                  background: selectedOrder?.shipping_status === 'Delivered' ? '#ecfdf5' : '#eff6ff', 
+                  color: selectedOrder?.shipping_status === 'Delivered' ? '#047857' : '#1d4ed8' 
+                }}>
+                  {selectedOrder?.shipping_status || 'Pending'}
+                </span>
+              </div>
+              
+              {selectedOrder?.awb_number ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px', color: '#334155' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    <div><strong>Courier Name:</strong> {selectedOrder?.courier_name || 'Standard Courier'}</div>
+                    <div><strong>AWB / Tracking #:</strong> {selectedOrder?.awb_number}</div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    <div><strong>Est. Delivery:</strong> {selectedOrder?.estimated_delivery || 'Not synced'}</div>
+                    <div><strong>Shipment ID:</strong> {selectedOrder?.shipment_id || 'N/A'}</div>
+                  </div>
+                  {(selectedOrder?.shipped_at || selectedOrder?.delivered_at) && (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '4px', fontSize: '11px', color: '#64748b' }}>
+                      {selectedOrder?.shipped_at && (
+                        <div><strong>Shipped At:</strong> {new Date(selectedOrder.shipped_at).toLocaleString()}</div>
+                      )}
+                      {selectedOrder?.delivered_at && (
+                        <div><strong>Delivered At:</strong> {new Date(selectedOrder.delivered_at).toLocaleString()}</div>
+                      )}
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', gap: '10px', marginTop: '8px', flexWrap: 'wrap' }}>
+                    <a 
+                      href={`/api/shipping/label?order_id=${selectedOrder.rawId}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      style={{ fontSize: '12px', fontWeight: 700, padding: '8px 14px', background: '#ffffff', color: '#0f172a', border: '1px solid #e2e8f0', borderRadius: '8px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      🖨️ Print Shipping Label
+                    </a>
+                    {selectedOrder?.tracking_url && (
+                      <a 
+                        href={selectedOrder.tracking_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        style={{ fontSize: '12px', fontWeight: 700, padding: '8px 14px', background: '#0f172a', color: '#ffffff', border: '1px solid #0f172a', borderRadius: '8px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}
+                      >
+                        🚚 Track Shipment
+                      </a>
+                    )}
+                    {selectedOrder?.shipping_status !== 'Cancelled' && selectedOrder?.shipping_status !== 'Delivered' && (
+                      <button 
+                        onClick={async () => {
+                          if (confirm('Are you sure you want to cancel this shipment?')) {
+                            try {
+                              const res = await fetch('/api/shipping/cancel', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ orderId: selectedOrder.rawId })
+                              });
+                              if (!res.ok) {
+                                const text = await res.text().catch(() => '');
+                                console.error('❌ [Frontend/Cancel] Failed response:', text);
+                                let errMsg = 'Failed to cancel shipment.';
+                                try {
+                                  const data = JSON.parse(text);
+                                  errMsg = data.message || data.error || errMsg;
+                                } catch (e) {
+                                  errMsg = text.includes('<!DOCTYPE html>') ? 'Internal server error (HTML returned)' : text || errMsg;
+                                }
+                                throw new Error(errMsg);
+                              }
+                              alert('Shipment cancelled successfully!');
+                              window.location.reload();
+                            } catch (err) {
+                              alert('Error cancelling shipment: ' + err.message);
+                            }
+                          }
+                        }}
+                        style={{ fontSize: '12px', fontWeight: 700, padding: '8px 14px', background: '#fef2f2', color: '#b91c1c', border: '1px solid #fca5a5', borderRadius: '8px', cursor: 'pointer' }}
+                      >
+                        Cancel Shipment
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px', background: '#fffbeb', borderRadius: '12px', border: '1px solid #fef3c7', flexWrap: 'wrap', gap: '10px' }}>
+                  <div style={{ fontSize: '12px', color: '#78350f' }}>
+                    <strong>Shipment not created yet.</strong> Generate AWB to register shipment in Shiprocket.
+                  </div>
+                  <button 
+                    onClick={async () => {
+                      try {
+                        const res = await fetch('/api/shipping/ship', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ orderId: selectedOrder.rawId })
+                        });
+                        if (!res.ok) {
+                          const text = await res.text().catch(() => '');
+                          console.error('❌ [Frontend/Ship] Failed response:', text);
+                          let errMsg = 'Failed to generate shipment.';
+                          try {
+                            const data = JSON.parse(text);
+                            errMsg = data.message || data.error || errMsg;
+                          } catch (e) {
+                            errMsg = text.includes('<!DOCTYPE html>') ? 'Internal server error (HTML returned)' : text || errMsg;
+                          }
+                          throw new Error(errMsg);
+                        }
+                        alert('Shipment created and AWB generated successfully!');
+                        window.location.reload();
+                      } catch (err) {
+                        alert('Error generating shipment AWB: ' + err.message);
+                      }
+                    }}
+                    style={{ fontSize: '12px', fontWeight: 700, padding: '8px 14px', background: '#d97706', color: '#ffffff', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
+                  >
+                    Generate AWB / Ship Order
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="items-section">
             <h3 className="section-title">Order Items</h3>

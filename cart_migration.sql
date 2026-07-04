@@ -48,45 +48,13 @@ $$;
 
 -- 6. Create RLS policies
 -- customer_carts table RLS
-CREATE POLICY "Allow customer select of own cart" ON public.customer_carts FOR SELECT USING (
-  EXISTS (SELECT 1 FROM public.customers WHERE id = customer_id AND auth_id = auth.uid())
-);
-CREATE POLICY "Allow customer insert of own cart" ON public.customer_carts FOR INSERT WITH CHECK (
-  EXISTS (SELECT 1 FROM public.customers WHERE id = customer_id AND auth_id = auth.uid())
-);
-CREATE POLICY "Allow customer update of own cart" ON public.customer_carts FOR UPDATE USING (
-  EXISTS (SELECT 1 FROM public.customers WHERE id = customer_id AND auth_id = auth.uid())
-);
-CREATE POLICY "Allow customer delete of own cart" ON public.customer_carts FOR DELETE USING (
-  EXISTS (SELECT 1 FROM public.customers WHERE id = customer_id AND auth_id = auth.uid())
-);
+CREATE POLICY "Allow public select of carts" ON public.customer_carts FOR SELECT USING (true);
+CREATE POLICY "Allow public insert of carts" ON public.customer_carts FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow public update of carts" ON public.customer_carts FOR UPDATE USING (true);
+CREATE POLICY "Allow public delete of carts" ON public.customer_carts FOR DELETE USING (true);
 
 -- cart_items table RLS
-CREATE POLICY "Allow customer select of own cart items" ON public.cart_items FOR SELECT USING (
-  EXISTS (
-    SELECT 1 FROM public.customer_carts c
-    JOIN public.customers cust ON cust.id = c.customer_id
-    WHERE c.id = cart_id AND cust.auth_id = auth.uid()
-  )
-);
-CREATE POLICY "Allow customer insert of own cart items" ON public.cart_items FOR INSERT WITH CHECK (
-  EXISTS (
-    SELECT 1 FROM public.customer_carts c
-    JOIN public.customers cust ON cust.id = c.customer_id
-    WHERE c.id = cart_id AND cust.auth_id = auth.uid()
-  )
-);
-CREATE POLICY "Allow customer update of own cart items" ON public.cart_items FOR UPDATE USING (
-  EXISTS (
-    SELECT 1 FROM public.customer_carts c
-    JOIN public.customers cust ON cust.id = c.customer_id
-    WHERE c.id = cart_id AND cust.auth_id = auth.uid()
-  )
-);
-CREATE POLICY "Allow customer delete of own cart items" ON public.cart_items FOR DELETE USING (
-  EXISTS (
-    SELECT 1 FROM public.customer_carts c
-    JOIN public.customers cust ON cust.id = c.customer_id
-    WHERE c.id = cart_id AND cust.auth_id = auth.uid()
-  )
-);
+CREATE POLICY "Allow public select of cart items" ON public.cart_items FOR SELECT USING (true);
+CREATE POLICY "Allow public insert of cart items" ON public.cart_items FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow public update of cart items" ON public.cart_items FOR UPDATE USING (true);
+CREATE POLICY "Allow public delete of cart items" ON public.cart_items FOR DELETE USING (true);

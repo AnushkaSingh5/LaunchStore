@@ -31,6 +31,23 @@ export default function CheckoutSuccessPage({ params }) {
         ]);
         setStoreDetails(store);
         setOrderDetails(order);
+
+        // Auto-sync tracking status if tracking number is present
+        if (order && order.tracking_number) {
+          try {
+            console.log(`[SuccessPage] Auto-syncing tracking status for order: ${orderId}`);
+            const syncRes = await fetch(`/api/shipping/sync?order_id=${orderId}`);
+            if (syncRes.ok) {
+              const syncData = await syncRes.json();
+              if (syncData.success) {
+                const freshOrder = await orderService.getOrderDetails(orderId);
+                if (freshOrder) setOrderDetails(freshOrder);
+              }
+            }
+          } catch (syncErr) {
+            console.warn('[SuccessPage] Failed to auto-sync tracking:', syncErr);
+          }
+        }
       } catch (err) {
         console.error('⚠️ [SuccessPage] Error loading checkout details:', err);
       } finally {
@@ -118,6 +135,149 @@ export default function CheckoutSuccessPage({ params }) {
               <span className="order-val address-val">{orderDetails?.shipping_address}</span>
             </div>
           </div>
+
+          {/* Shiprocket Delivery Tracking Timeline */}
+          {orderDetails && (orderDetails.payment_status === 'paid' || orderDetails.status === 'confirmed') && (
+            <div className="shipping-tracking-section" style={{
+              marginTop: '32px',
+              padding: '24px',
+              background: '#f8fafc',
+              borderRadius: '20px',
+              border: '1px solid #e2e8f0',
+              textAlign: 'left'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0f172a' }}>🚚 Shipment Tracking</h3>
+                <span style={{ 
+                  fontSize: '12px', 
+                  fontWeight: 700, 
+                  padding: '4px 10px', 
+                  borderRadius: '99px', 
+                  background: orderDetails.shipping_status === 'Delivered' ? '#ecfdf5' : '#eff6ff', 
+                  color: orderDetails.shipping_status === 'Delivered' ? '#047857' : '#1d4ed8' 
+                }}>
+                  {orderDetails.shipping_status || 'Pending'}
+                </span>
+              </div>
+              
+              <div style={{ fontSize: '13px', color: '#475569', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '20px' }}>
+                <div><strong>Courier Partner:</strong> {orderDetails.courier_name || 'Pending assignment'}</div>
+                <div><strong>AWB Number:</strong> {orderDetails.awb_number || 'Pending assignment'}</div>
+                {orderDetails.estimated_delivery ? (
+                  <div style={{ gridColumn: 'span 2', marginTop: '4px' }}>
+                    <strong>Estimated Delivery:</strong> {orderDetails.estimated_delivery}
+                  </div>
+                ) : (
+                  <div style={{ gridColumn: 'span 2', marginTop: '4px', color: '#64748b', fontSize: '12px' }}>
+                    * Delivery estimates will be available once the order is shipped.
+                  </div>
+                )}
+              </div>
+
+              {(() => {
+                const getStepIndex = (status) => {
+                  const s = String(status || 'Pending').toLowerCase();
+                  if (s === 'pending') return 0;
+                  if (s === 'shipment created') return 1;
+                  if (s === 'picked up') return 2;
+                  if (s === 'in transit') return 3;
+                  if (s === 'out for delivery') return 4;
+                  if (s === 'delivered') return 5;
+                  if (s === 'cancelled') return -1;
+                  if (s === 'returned') return -2;
+                  return 0;
+                };
+
+                const currentStepIdx = getStepIndex(orderDetails.shipping_status);
+
+                if (currentStepIdx >= 0) {
+                  const steps = [
+                    { label: 'Order Confirmed', desc: 'Your order has been verified.' },
+                    { label: 'Shipment Created', desc: 'AWB allocated, package printing.' },
+                    { label: 'Picked Up', desc: 'Handed over to courier partner.' },
+                    { label: 'In Transit', desc: 'Package traveling between hubs.' },
+                    { label: 'Out For Delivery', desc: 'Package is arriving today.' },
+                    { label: 'Delivered', desc: 'Package safely delivered.' }
+                  ];
+
+                  return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '20px' }}>
+                      {steps.map((step, idx) => {
+                        const isCompleted = idx <= currentStepIdx;
+                        const isActive = idx === currentStepIdx;
+                        
+                        return (
+                          <div key={idx} style={{ display: 'flex', gap: '16px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                              <div style={{
+                                width: '24px',
+                                height: '24px',
+                                borderRadius: '50%',
+                                background: isCompleted ? '#10b981' : '#e2e8f0',
+                                border: isActive ? '4px solid #d1fae5' : 'none',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: '#fff',
+                                fontSize: '11px',
+                                fontWeight: 'bold',
+                                zIndex: 1
+                              }}>
+                                {isCompleted ? '✓' : idx + 1}
+                              </div>
+                              {idx < 5 && (
+                                <div style={{
+                                  width: '2px',
+                                  flex: 1,
+                                  background: idx < currentStepIdx ? '#10b981' : '#e2e8f0',
+                                  margin: '4px 0',
+                                  minHeight: '20px'
+                                }}></div>
+                              )}
+                            </div>
+                            <div style={{ paddingBottom: idx < 5 ? '12px' : 0 }}>
+                              <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: isCompleted ? '#1e293b' : '#94a3b8' }}>{step.label}</h4>
+                              <p style={{ margin: '2px 0 0', fontSize: '11px', color: isCompleted ? '#64748b' : '#cbd5e1' }}>{step.desc}</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                } else {
+                  return (
+                    <div style={{ padding: '16px', background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: '12px', color: '#b91c1c', fontSize: '13px', fontWeight: 600 }}>
+                      {orderDetails.shipping_status === 'Cancelled' 
+                        ? '❌ This shipment has been cancelled.' 
+                        : '🔄 This shipment has been returned to sender.'}
+                    </div>
+                  );
+                }
+              })()}
+
+              {orderDetails.tracking_url && (
+                <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-end' }}>
+                  <a 
+                    href={orderDetails.tracking_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    style={{
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      padding: '10px 16px',
+                      background: '#0f172a',
+                      color: '#fff',
+                      borderRadius: '10px',
+                      textDecoration: 'none',
+                      boxShadow: '0 2px 8px rgba(15, 23, 42, 0.15)'
+                    }}
+                  >
+                    Track Order on Shiprocket ↗
+                  </a>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="action-row">
             <Link href={`/store/${slug}`} className="primary-btn">Continue Shopping</Link>

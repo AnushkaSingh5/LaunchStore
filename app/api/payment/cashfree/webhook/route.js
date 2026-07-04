@@ -51,6 +51,14 @@ export async function POST(request) {
         paymentId: cfPaymentId ? String(cfPaymentId) : `cf_webhook_${Date.now()}`,
         paymentOrderId: orderId
       });
+
+      // Auto-trigger Shiprocket shipment creation (handled gracefully so failures do not crash the webhook listener)
+      try {
+        const { shippingService } = await import('@/services/shipping/shippingService');
+        await shippingService.createShipment(orderId);
+      } catch (shipErr) {
+        console.error('⚠️ [webhook]: Auto shipment creation failed:', shipErr.message);
+      }
     }
 
     return NextResponse.json({ status: 'OK' }, { status: 200 });

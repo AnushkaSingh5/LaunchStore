@@ -41,6 +41,10 @@ export const checkoutService = {
     } else if (!/^[0-9a-zA-Z\s\-]{3,10}$/.test(form.pincode)) {
       errors.pincode = 'Please provide a valid pincode.';
     }
+
+    if (form.country !== undefined && (!form.country || !form.country.trim())) {
+      errors.country = 'Country is required.';
+    }
     
     return {
       isValid: Object.keys(errors).length === 0,
@@ -88,7 +92,9 @@ export const checkoutService = {
     });
 
     const results = [];
-    const shippingAddressFormatted = `${customerInfo.address}, ${customerInfo.city}, ${customerInfo.state} - ${customerInfo.pincode}`;
+    const addressLine2Suffix = customerInfo.address_line_2 ? `, ${customerInfo.address_line_2}` : '';
+    const countrySuffix = (customerInfo.country || 'India') ? `, ${customerInfo.country || 'India'}` : ', India';
+    const shippingAddressFormatted = `${customerInfo.address}${addressLine2Suffix}, ${customerInfo.city}, ${customerInfo.state} - ${customerInfo.pincode}${countrySuffix}`;
 
     // Place separate database orders per store group
     for (const storeId of Object.keys(storeGroups)) {
@@ -105,6 +111,19 @@ export const checkoutService = {
         customer_email: customerInfo.email,
         customer_phone: customerInfo.phone,
         shipping_address: shippingAddressFormatted,
+        shipping_address_line1: customerInfo.address,
+        shipping_address_line2: customerInfo.address_line_2 || null,
+        shipping_address_city: customerInfo.city,
+        shipping_address_state: customerInfo.state,
+        shipping_address_pincode: customerInfo.pincode,
+        shipping_address_country: customerInfo.country || 'India',
+        
+        // Permanent snapshot columns:
+        shipping_city: customerInfo.city,
+        shipping_state: customerInfo.state,
+        shipping_country: customerInfo.country || 'India',
+        shipping_pincode: customerInfo.pincode,
+
         total_amount: totalAmount,
         items,
         coupon_id: couponData?.coupon_id || null,

@@ -19,6 +19,7 @@ const icons = {
   Earnings: <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>,
   Profile: <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>,
   Wallet: <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"></path><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"></path><path d="M18 12a2 2 0 0 0 0 4h4v-4z"></path></svg>,
+  Shipping: <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>,
 };
 
 export default function Sidebar({ isOpen, onClose, isCollapsed, onToggle }) {
@@ -81,7 +82,8 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggle }) {
     { label: 'Earnings', path: '/dashboard/earnings', icon: icons.Earnings, color: '#10b981' },
     { label: 'Wallet', path: '/dashboard/wallet', icon: icons.Wallet, color: '#f59e0b' },
     { label: 'Profile', path: '/dashboard/profile', icon: icons.Profile, color: '#06b6d4' },
-    { label: 'Payments & Shipping', path: '/dashboard/payments', icon: icons.Payments, color: '#6366f1' },
+    { label: 'Payments', path: '/dashboard/payments', icon: icons.Payments, color: '#6366f1' },
+    { label: 'Shipping', path: '/dashboard/shipping', icon: icons.Shipping, color: '#14b8a6' },
   ];
 
   return (

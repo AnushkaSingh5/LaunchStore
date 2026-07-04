@@ -16,6 +16,12 @@ export const orderService = {
     customer_email,
     customer_phone,
     shipping_address,
+    shipping_address_line1,
+    shipping_address_line2,
+    shipping_address_city,
+    shipping_address_state,
+    shipping_address_pincode,
+    shipping_address_country,
     total_amount,
     items,
     payment_provider = 'Razorpay',
@@ -53,13 +59,23 @@ export const orderService = {
 
     try {
       // 1. Insert Order
-      const insertPayload = {
+      const payload = {
         store_id,
         customer_id,
         customer_name,
         customer_email,
         customer_phone,
         shipping_address,
+        shipping_address_line1,
+        shipping_address_line2,
+        shipping_address_city,
+        shipping_address_state,
+        shipping_address_pincode,
+        shipping_address_country,
+        shipping_city: shipping_address_city,
+        shipping_state: shipping_address_state,
+        shipping_country: shipping_address_country || 'India',
+        shipping_pincode: shipping_address_pincode,
         total_amount: parseFloat(total_amount) || 0,
         status: 'pending_payment',
         payment_status: 'pending',
@@ -69,39 +85,79 @@ export const orderService = {
         discount_amount: parseFloat(discount_amount) || 0
       };
 
-      let result = await supabaseClient
-        .from('orders')
-        .insert([insertPayload])
-        .select()
-        .single();
+      let result;
+      let attempts = 0;
+      const maxAttempts = 15;
+      while (attempts < maxAttempts) {
+        result = await supabaseClient
+          .from('orders')
+          .insert([payload])
+          .select()
+          .single();
 
-      if (result.error) {
-        console.warn('⚠️ [orderService]: Initial order insert failed. Detailed DB response:', JSON.stringify(result.error, null, 2));
-
-        const isCheckConstraintError = result.error.code === '23514';
-        const isColumnMissingError = result.error.code === '42703' || result.error.message?.includes('payment_status');
-
-        if (isColumnMissingError || isCheckConstraintError) {
-          console.warn('🔄 [orderService]: Falling back to legacy status values (Pending) due to DB constraints or missing columns.');
-          const fallbackPayload = {
-            store_id,
-            customer_id,
-            customer_name,
-            customer_email,
-            customer_phone,
-            shipping_address,
-            total_amount: parseFloat(total_amount) || 0,
-            status: 'Pending',
-            coupon_id: coupon_id || null,
-            coupon_code: coupon_code || null,
-            discount_amount: parseFloat(discount_amount) || 0
-          };
-          result = await supabaseClient
-            .from('orders')
-            .insert([fallbackPayload])
-            .select()
-            .single();
+        if (!result.error) {
+          break;
         }
+
+        const err = result.error;
+        console.warn(`⚠️ [orderService.createOrder] Attempt ${attempts + 1} failed:`, err.message);
+
+        // Check if check constraint error on 'status' with 'pending_payment'
+        if (err.code === '23514' && payload.status === 'pending_payment') {
+          console.warn('🔄 [orderService.createOrder] Status check constraint failed. Falling back to status = "Pending".');
+          payload.status = 'Pending';
+          attempts++;
+          continue;
+        }
+
+        // If it's a missing column error (PostgreSQL 42703, or PostgREST schema cache error)
+        const isMissingColumnError = 
+          err.code === '42703' || 
+          err.code === 'PGRST200' || 
+          err.code === 'PGRST204' || 
+          err.status === 400 ||
+          (err.message && (
+            err.message.includes('schema cache') || 
+            err.message.includes('Could not find the') || 
+            err.message.includes('column')
+          ));
+
+        if (isMissingColumnError) {
+          // Parse the column name from the error message
+          // Standard PostgreSQL: column "shipping_address_2" of relation "orders"
+          // PostgREST: Could not find the 'shipping_address_2' column of 'orders' in the schema cache
+          const match = err.message.match(/column "([^"]+)"/) || 
+                        err.message.match(/Could not find the '([^']+)' column/) ||
+                        err.message.match(/column '([^']+)'/);
+
+          if (match && match[1]) {
+            const col = match[1];
+            console.warn(`🔄 [orderService.createOrder] Stripping missing column "${col}" from payload and retrying...`);
+            delete payload[col];
+            attempts++;
+            continue;
+          } else {
+            // Fallback: strip known optional/new columns
+            console.warn('🔄 [orderService.createOrder] Could not parse column name. Stripping optional/new columns...');
+            const optionalCols = [
+              'shipping_address_2', 'shipping_city', 'shipping_state', 'shipping_country', 'shipping_pincode',
+              'shipping_address_line1', 'shipping_address_line2', 'shipping_address_city', 'shipping_address_state',
+              'shipping_address_pincode', 'shipping_address_country', 'payment_status', 'payment_provider',
+              'coupon_id', 'coupon_code', 'discount_amount'
+            ];
+            let stripped = false;
+            for (const col of optionalCols) {
+              if (col in payload) {
+                delete payload[col];
+                stripped = true;
+              }
+            }
+            if (!stripped) break;
+            attempts++;
+            continue;
+          }
+        }
+        break;
       }
 
       const { data: order, error: orderErr } = result;
@@ -173,6 +229,15 @@ export const orderService = {
               status: 'pending',
               created_at: new Date().toISOString()
             });
+          }
+
+          // Auto-trigger shipment creation for mock mode
+          try {
+            const { shippingService } = await import('@/services/shipping/shippingService');
+            console.log(`🔄 [orderService.updateOrderPayment] Auto-triggering shipment creation for Order ${orderId} (mock mode)...`);
+            await shippingService.createShipment(orderId);
+          } catch (shipErr) {
+            console.error(`⚠️ [orderService.updateOrderPayment] Auto-trigger shipment mock mode failed:`, shipErr.message);
           }
         }
 
@@ -248,6 +313,15 @@ export const orderService = {
               if (fallbackData && fallbackData.coupon_id) {
                 await couponService.incrementCouponUsage(fallbackData.coupon_id);
               }
+              
+              // Auto-trigger shipment creation in background or async
+              try {
+                const { shippingService } = await import('@/services/shipping/shippingService');
+                console.log(`🔄 [orderService.updateOrderPayment] Auto-triggering shipment creation for Order ${orderId} (fallback path)...`);
+                await shippingService.createShipment(orderId);
+              } catch (shipErr) {
+                console.error(`⚠️ [orderService.updateOrderPayment] Auto-trigger shipment fallback path failed:`, shipErr.message);
+              }
             }
             return { ...fallbackData, success: true, columnsMissing: true };
           }
@@ -260,6 +334,15 @@ export const orderService = {
       if (paymentStatus === 'paid' || paymentStatus === 'Paid') {
         if (data && data.coupon_id) {
           await couponService.incrementCouponUsage(data.coupon_id);
+        }
+        
+        // Auto-trigger shipment creation in background or async
+        try {
+          const { shippingService } = await import('@/services/shipping/shippingService');
+          console.log(`🔄 [orderService.updateOrderPayment] Auto-triggering shipment creation for Order ${orderId}...`);
+          await shippingService.createShipment(orderId);
+        } catch (shipErr) {
+          console.error(`⚠️ [orderService.updateOrderPayment] Auto-trigger shipment failed:`, shipErr.message);
         }
       }
 
