@@ -44,3 +44,14 @@ CREATE POLICY "Allow public delete of cart items" ON public.cart_items FOR DELET
 -- 4. Fix order_items select policy to allow public select (so server-side APIs can read them)
 DROP POLICY IF EXISTS "Allow public select of order_items" ON public.order_items;
 CREATE POLICY "Allow public select of order_items" ON public.order_items FOR SELECT USING (true);
+
+
+-- 5. Add Delhivery-specific warehouse configuration fields to store_shipping_settings if they don't exist
+ALTER TABLE public.store_shipping_settings ADD COLUMN IF NOT EXISTS pickup_address_line2 TEXT;
+ALTER TABLE public.store_shipping_settings ADD COLUMN IF NOT EXISTS business_name TEXT;
+ALTER TABLE public.store_shipping_settings ADD COLUMN IF NOT EXISTS landmark TEXT;
+ALTER TABLE public.store_shipping_settings ADD COLUMN IF NOT EXISTS warehouse_status TEXT;
+ALTER TABLE public.store_shipping_settings ADD COLUMN IF NOT EXISTS last_synced TIMESTAMPTZ;
+
+-- 6. Add pickup_id column to orders table if it doesn't exist
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS pickup_id TEXT;

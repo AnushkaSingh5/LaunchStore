@@ -18,16 +18,8 @@ export async function GET(request) {
       return NextResponse.json(resData, { status: 400 });
     }
 
-    console.log(`🔄 [api/shipping/label]: Fetching shipping label for Order: ${orderId}`);
-    const labelUrl = await shippingService.getLabelUrl(orderId);
-    
-    // Fetch the PDF from the generated label URL securely on the server
-    const pdfResponse = await fetch(labelUrl);
-    if (!pdfResponse.ok) {
-      throw new Error(`Failed to download label PDF from source: ${pdfResponse.statusText}`);
-    }
-
-    const pdfBuffer = await pdfResponse.arrayBuffer();
+    console.log(`🔄 [api/shipping/label]: Fetching shipping label PDF for Order: ${orderId}`);
+    const pdfBuffer = await shippingService.fetchLabelPdf(orderId);
 
     console.log(`📤 [API Response] Status: 200 | Body: [PDF Binary Data]`);
     return new Response(pdfBuffer, {

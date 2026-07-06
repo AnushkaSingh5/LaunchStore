@@ -41,6 +41,16 @@ export async function POST(request) {
     const errStack = err.stack || new Error().stack;
     console.error(`❌ [api/shipping/ship]: Failed to initialize shipment. Stack Trace:`, errStack);
     
+    if (err.code === 'INSUFFICIENT_BALANCE') {
+      const resData = {
+        success: false,
+        code: 'INSUFFICIENT_BALANCE',
+        message: 'Delhivery account has insufficient balance.'
+      };
+      console.log(`📤 [API Response] Status: 400 | Body:`, JSON.stringify(resData));
+      return NextResponse.json(resData, { status: 400 });
+    }
+
     const resData = { success: false, message: errMsg };
     console.log(`📤 [API Response] Status: 500 | Body:`, JSON.stringify(resData));
     return NextResponse.json(resData, { status: 500 });

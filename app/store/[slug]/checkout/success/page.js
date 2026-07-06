@@ -17,6 +17,9 @@ export default function CheckoutSuccessPage({ params }) {
   const [storeDetails, setStoreDetails] = useState(null);
   const [orderDetails, setOrderDetails] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [trackingInfo, setTrackingInfo] = useState(null);
+  const [loadingTracking, setLoadingTracking] = useState(false);
+  const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -33,19 +36,25 @@ export default function CheckoutSuccessPage({ params }) {
         setOrderDetails(order);
 
         // Auto-sync tracking status if tracking number is present
-        if (order && order.tracking_number) {
+        const awb = order?.awb_number || order?.tracking_number;
+        if (awb) {
           try {
-            console.log(`[SuccessPage] Auto-syncing tracking status for order: ${orderId}`);
-            const syncRes = await fetch(`/api/shipping/sync?order_id=${orderId}`);
-            if (syncRes.ok) {
-              const syncData = await syncRes.json();
-              if (syncData.success) {
-                const freshOrder = await orderService.getOrderDetails(orderId);
-                if (freshOrder) setOrderDetails(freshOrder);
+            setLoadingTracking(true);
+            console.log(`[SuccessPage] Fetching live tracking for waybill: ${awb}`);
+            const trackRes = await fetch(`/api/shipping/track?waybill=${awb}`);
+            if (trackRes.ok) {
+              const trackData = await trackRes.json();
+              if (trackData.success) {
+                setTrackingInfo(trackData.tracking);
               }
             }
+            
+            // Also sync in database
+            fetch(`/api/shipping/sync?order_id=${orderId}`).catch(() => {});
           } catch (syncErr) {
-            console.warn('[SuccessPage] Failed to auto-sync tracking:', syncErr);
+            console.warn('[SuccessPage] Failed to load live tracking:', syncErr);
+          } finally {
+            setLoadingTracking(false);
           }
         }
       } catch (err) {
@@ -136,7 +145,7 @@ export default function CheckoutSuccessPage({ params }) {
             </div>
           </div>
 
-          {/* Shiprocket Delivery Tracking Timeline */}
+          {/* Live Delivery Tracking Timeline */}
           {orderDetails && (orderDetails.payment_status === 'paid' || orderDetails.status === 'confirmed') && (
             <div className="shipping-tracking-section" style={{
               marginTop: '32px',
@@ -153,19 +162,19 @@ export default function CheckoutSuccessPage({ params }) {
                   fontWeight: 700, 
                   padding: '4px 10px', 
                   borderRadius: '99px', 
-                  background: orderDetails.shipping_status === 'Delivered' ? '#ecfdf5' : '#eff6ff', 
-                  color: orderDetails.shipping_status === 'Delivered' ? '#047857' : '#1d4ed8' 
+                  background: (trackingInfo?.status || orderDetails.shipping_status) === 'Delivered' ? '#ecfdf5' : '#eff6ff', 
+                  color: (trackingInfo?.status || orderDetails.shipping_status) === 'Delivered' ? '#047857' : '#1d4ed8' 
                 }}>
-                  {orderDetails.shipping_status || 'Pending'}
+                  {trackingInfo?.status || orderDetails.shipping_status || 'Pending'}
                 </span>
               </div>
               
               <div style={{ fontSize: '13px', color: '#475569', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '20px' }}>
-                <div><strong>Courier Partner:</strong> {orderDetails.courier_name || 'Pending assignment'}</div>
+                <div><strong>Courier Partner:</strong> {orderDetails.courier_name || 'Delhivery Express'}</div>
                 <div><strong>AWB Number:</strong> {orderDetails.awb_number || 'Pending assignment'}</div>
-                {orderDetails.estimated_delivery ? (
+                {(trackingInfo?.estimated_delivery || orderDetails.estimated_delivery) ? (
                   <div style={{ gridColumn: 'span 2', marginTop: '4px' }}>
-                    <strong>Estimated Delivery:</strong> {orderDetails.estimated_delivery}
+                    <strong>Estimated Delivery:</strong> {trackingInfo?.estimated_delivery || orderDetails.estimated_delivery}
                   </div>
                 ) : (
                   <div style={{ gridColumn: 'span 2', marginTop: '4px', color: '#64748b', fontSize: '12px' }}>
@@ -178,17 +187,18 @@ export default function CheckoutSuccessPage({ params }) {
                 const getStepIndex = (status) => {
                   const s = String(status || 'Pending').toLowerCase();
                   if (s === 'pending') return 0;
-                  if (s === 'shipment created') return 1;
-                  if (s === 'picked up') return 2;
+                  if (s === 'shipment created' || s === 'manifested') return 1;
+                  if (s === 'picked up' || s === 'dispatched') return 2;
                   if (s === 'in transit') return 3;
                   if (s === 'out for delivery') return 4;
                   if (s === 'delivered') return 5;
                   if (s === 'cancelled') return -1;
                   if (s === 'returned') return -2;
-                  return 0;
+                  return (orderDetails.awb_number || orderDetails.tracking_number) ? 1 : 0;
                 };
 
-                const currentStepIdx = getStepIndex(orderDetails.shipping_status);
+                const currentStatus = trackingInfo?.status || orderDetails.shipping_status || 'Pending';
+                const currentStepIdx = getStepIndex(currentStatus);
 
                 if (currentStepIdx >= 0) {
                   const steps = [
@@ -247,7 +257,7 @@ export default function CheckoutSuccessPage({ params }) {
                 } else {
                   return (
                     <div style={{ padding: '16px', background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: '12px', color: '#b91c1c', fontSize: '13px', fontWeight: 600 }}>
-                      {orderDetails.shipping_status === 'Cancelled' 
+                      {currentStatus === 'Cancelled' 
                         ? '❌ This shipment has been cancelled.' 
                         : '🔄 This shipment has been returned to sender.'}
                     </div>
@@ -255,12 +265,25 @@ export default function CheckoutSuccessPage({ params }) {
                 }
               })()}
 
-              {orderDetails.tracking_url && (
+              {(!trackingInfo?.events || trackingInfo.events.length === 0) && orderDetails.awb_number && (
+                <div style={{
+                  marginTop: '20px',
+                  padding: '12px 16px',
+                  background: '#f1f5f9',
+                  borderRadius: '12px',
+                  color: '#475569',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  borderLeft: '4px solid #94a3b8'
+                }}>
+                  ℹ️ Shipment has been created successfully and is awaiting courier pickup.
+                </div>
+              )}
+
+              {orderDetails.awb_number && (
                 <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-end' }}>
-                  <a 
-                    href={orderDetails.tracking_url} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
+                  <button 
+                    onClick={() => setIsTrackingModalOpen(true)}
                     style={{
                       fontSize: '13px',
                       fontWeight: 700,
@@ -268,12 +291,13 @@ export default function CheckoutSuccessPage({ params }) {
                       background: '#0f172a',
                       color: '#fff',
                       borderRadius: '10px',
-                      textDecoration: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
                       boxShadow: '0 2px 8px rgba(15, 23, 42, 0.15)'
                     }}
                   >
-                    Track Order on Shiprocket ↗
-                  </a>
+                    Track Shipment ↗
+                  </button>
                 </div>
               )}
             </div>
@@ -284,6 +308,107 @@ export default function CheckoutSuccessPage({ params }) {
             <Link href={`/customer/orders?store=${slug}`} className="secondary-btn">View My Orders</Link>
           </div>
         </div>
+
+        {/* Live Tracking Modal Overlay */}
+        {isTrackingModalOpen && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.6)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '20px'
+          }}>
+            <div style={{
+              backgroundColor: '#fff',
+              borderRadius: '24px',
+              padding: '32px',
+              maxWidth: '500px',
+              width: '100%',
+              maxHeight: '80vh',
+              overflowY: 'auto',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+              fontFamily: 'inherit',
+              color: '#0f172a'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#0f172a' }}>📦 Live Tracking History</h3>
+                <button 
+                  onClick={() => setIsTrackingModalOpen(false)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    fontSize: '24px',
+                    cursor: 'pointer',
+                    color: '#64748b'
+                  }}
+                >&times;</button>
+              </div>
+              
+              {loadingTracking ? (
+                <div style={{ textAlign: 'center', padding: '40px 0', color: '#64748b' }}>Loading tracking details...</div>
+              ) : (
+                <div>
+                  <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid #e2e8f0' }}>
+                    <div><strong>Current Status:</strong> {trackingInfo?.status || orderDetails?.shipping_status || 'Pending'}</div>
+                    {(trackingInfo?.estimated_delivery || orderDetails?.estimated_delivery) && (
+                      <div style={{ marginTop: '4px' }}>
+                        <strong>Est. Delivery:</strong> {trackingInfo?.estimated_delivery || orderDetails?.estimated_delivery}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'left' }}>
+                    {trackingInfo?.events && trackingInfo.events.length > 0 ? (
+                      trackingInfo.events.map((evt, idx) => (
+                        <div key={idx} style={{ display: 'flex', gap: '12px' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                            <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#3b82f6', marginTop: '4px' }} />
+                            {idx < trackingInfo.events.length - 1 && (
+                              <div style={{ width: '2px', flex: 1, background: '#e2e8f0', margin: '4px 0' }} />
+                            )}
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '14px', fontWeight: 700, color: '#1e293b' }}>{evt.status}</div>
+                            <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                              {new Date(evt.time).toLocaleString()} • {evt.location || 'Hub'}
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div style={{ padding: '20px 0', textAlign: 'center', color: '#64748b', fontSize: '14px' }}>
+                        Shipment has been created successfully and is awaiting courier pickup.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              <button 
+                onClick={() => setIsTrackingModalOpen(false)}
+                style={{
+                  marginTop: '24px',
+                  width: '100%',
+                  padding: '12px',
+                  background: '#0f172a',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '12px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer'
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
       </main>
 
       <Footer storeName={storeDetails?.name} />

@@ -31,6 +31,7 @@ async function safeOrderUpdate(supabase, orderId, payload) {
       const strippedPayload = { ...payload };
       delete strippedPayload.pickup_location_name;
       delete strippedPayload.pickup_location_id;
+      delete strippedPayload.pickup_id;
       delete strippedPayload.customer_phone;
       delete strippedPayload.shipping_address_2;
       delete strippedPayload.shipping_city;
@@ -86,6 +87,11 @@ async function safeSettingsUpsert(supabase, payload) {
       delete strippedPayload.pickup_state;
       delete strippedPayload.pickup_country;
       delete strippedPayload.pickup_pincode;
+      delete strippedPayload.pickup_address_line2;
+      delete strippedPayload.business_name;
+      delete strippedPayload.landmark;
+      delete strippedPayload.warehouse_status;
+      delete strippedPayload.last_synced;
       
       const { data, error } = await supabase
         .from('store_shipping_settings')
@@ -150,7 +156,7 @@ export const shippingService = {
     if (!storeId) throw new Error('Store ID is required to save settings.');
 
     // 1. Resolve active shipping provider and register/verify pickup location
-    const providerName = process.env.NEXT_PUBLIC_ACTIVE_SHIPPING_PROVIDER || 'Shiprocket';
+    const providerName = process.env.NEXT_PUBLIC_ACTIVE_SHIPPING_PROVIDER || 'Delhivery';
     const provider = shippingFactory.getProvider(providerName);
     
     let regResult = { lat: null, lon: null, registered: false, pickup_location_name: null, pickup_location_id: null };
@@ -179,7 +185,12 @@ export const shippingService = {
       lon: regResult.lon,
       shiprocket_registered: regResult.registered,
       pickup_location_name: regResult.pickup_location_name || null,
-      pickup_location_id: regResult.pickup_location_id || null
+      pickup_location_id: regResult.pickup_location_id || null,
+      pickup_address_line2: settings.pickup_address_line2 || null,
+      business_name: settings.business_name || null,
+      landmark: settings.landmark || null,
+      warehouse_status: regResult.warehouse_status || 'registered',
+      last_synced: regResult.last_synced || new Date().toISOString()
     };
 
     if (!supabaseClient) {
@@ -218,7 +229,7 @@ export const shippingService = {
       const phone = (orderDetails.customer_phone || '').trim();
       
       if (!address || address.length < 10) {
-        throw new Error('Customer shipping address is too short. Shiprocket requires at least 10 characters to generate shipment.');
+        throw new Error('Customer shipping address is too short. Shipping requires at least 10 characters to generate shipment.');
       }
       if (!pincode || pincode.replace(/\D/g, '').length !== 6) {
         throw new Error('Customer shipping pincode must be exactly 6 digits.');
@@ -234,7 +245,21 @@ export const shippingService = {
       }
 
       // 3. Resolve active shipping provider
-      const providerName = process.env.NEXT_PUBLIC_ACTIVE_SHIPPING_PROVIDER || 'Shiprocket';
+      const providerName = process.env.NEXT_PUBLIC_ACTIVE_SHIPPING_PROVIDER || 'Delhivery';
+
+      if (providerName === 'Delhivery') {
+        console.log('Pickup Configuration Loaded:');
+        console.log(pickupSettings.warehouse_name || 'N/A');
+        console.log(pickupSettings.business_name || 'N/A');
+        console.log(pickupSettings.contact_person || 'N/A');
+        console.log(pickupSettings.phone || 'N/A');
+        console.log(pickupSettings.email || 'N/A');
+        console.log(pickupSettings.address || 'N/A');
+        console.log(pickupSettings.city || 'N/A');
+        console.log(pickupSettings.state || 'N/A');
+        console.log(pickupSettings.pincode || 'N/A');
+      }
+
       const provider = shippingFactory.getProvider(providerName);
 
       // 4. Call provider to trigger shipment creation
@@ -255,7 +280,8 @@ export const shippingService = {
           shipped_at: isShipped ? new Date().toISOString() : null,
           delivered_at: result.status === 'Delivered' ? new Date().toISOString() : null,
           pickup_location_name: result.pickup_location_name || null,
-          pickup_location_id: result.pickup_location_id || null
+          pickup_location_id: result.pickup_location_id || null,
+          pickup_id: result.pickup_id || null
         });
       } else {
         // Fallback mock update in memory
@@ -375,10 +401,74 @@ export const shippingService = {
       if (!orderDetails.shipment_id) throw new Error('No shipment exists for this order.');
 
       const provider = shippingFactory.getProvider(orderDetails.shipping_provider);
-      return await provider.getLabelUrl(orderDetails.shipment_id);
+      return await provider.getLabelUrl(orderDetails.shipment_id, orderDetails.awb_number);
     } catch (e) {
       console.error(`❌ [shippingService.getLabelUrl] Failed for Order ${orderId}:`, e.message);
       throw e;
+    }
+  },
+
+  /**
+   * Securely fetch the Shipping Label PDF binary buffer
+   */
+  fetchLabelPdf: async (orderId) => {
+    if (!orderId) throw new Error('Order ID is required to fetch label.');
+
+    const orderDetails = await orderService.getOrderDetails(orderId);
+    if (!orderDetails) throw new Error('Order details not found.');
+    if (!orderDetails.shipment_id) throw new Error('No shipment exists for this order.');
+
+    const providerName = orderDetails.shipping_provider || 'Delhivery';
+    const provider = shippingFactory.getProvider(providerName);
+    
+    if (providerName === 'Delhivery') {
+      const trackingNo = orderDetails.awb_number || orderDetails.shipment_id;
+      if (provider.isMock) {
+        console.log(`[shippingService.fetchLabelPdf]: Mock mode. Downloading sample PDF...`);
+        const pdfResponse = await fetch('https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf');
+        const pdfBuffer = await pdfResponse.arrayBuffer();
+        return Buffer.from(pdfBuffer);
+      }
+      
+      const labelDataUrl = `${provider.apiBase}/api/p/packing_slip?wbns=${trackingNo}&pdf=true`;
+      console.log(`🔄 [shippingService.fetchLabelPdf]: Querying Delhivery packing slip download link from ${labelDataUrl}...`);
+      
+      const response = await fetch(labelDataUrl, {
+        headers: {
+          'Authorization': `Token ${provider.token}`
+        }
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to query Delhivery packing slip link: ${response.statusText} - ${errorText}`);
+      }
+      
+      const data = await response.json();
+      const downloadUrl = data.packages?.[0]?.pdf_download_link;
+      if (!downloadUrl) {
+        throw new Error(`No pdf_download_link found in Delhivery response: ${JSON.stringify(data)}`);
+      }
+      
+      console.log(`🔄 [shippingService.fetchLabelPdf]: Downloading label PDF binary from ${downloadUrl}...`);
+      const pdfResponse = await fetch(downloadUrl);
+      if (!pdfResponse.ok) {
+        throw new Error(`Failed to download Delhivery label PDF from S3: ${pdfResponse.statusText}`);
+      }
+      
+      const pdfBuffer = await pdfResponse.arrayBuffer();
+      return Buffer.from(pdfBuffer);
+    } else {
+      const labelUrl = await provider.getLabelUrl(orderDetails.shipment_id, orderDetails.awb_number);
+      console.log(`🔄 [shippingService.fetchLabelPdf]: Fetching label PDF from ${labelUrl}...`);
+      
+      const pdfResponse = await fetch(labelUrl);
+      if (!pdfResponse.ok) {
+        throw new Error(`Failed to download label PDF: ${pdfResponse.statusText}`);
+      }
+      
+      const pdfBuffer = await pdfResponse.arrayBuffer();
+      return Buffer.from(pdfBuffer);
     }
   }
 };

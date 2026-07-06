@@ -13,6 +13,33 @@ export default function CustomerOrdersPage() {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [loadingDetails, setLoadingDetails] = useState(false);
+  const [trackingData, setTrackingData] = useState(null);
+  const [loadingTracking, setLoadingTracking] = useState(false);
+  const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false);
+
+  const handleTrackPackage = async (awbNumber) => {
+    if (!awbNumber) return;
+    setLoadingTracking(true);
+    setIsTrackingModalOpen(true);
+    try {
+      const res = await fetch(`/api/shipping/track?waybill=${awbNumber}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          setTrackingData(data.tracking);
+        } else {
+          setTrackingData({ error: data.message || 'No tracking information available.' });
+        }
+      } else {
+        setTrackingData({ error: 'Failed to retrieve tracking details.' });
+      }
+    } catch (err) {
+      console.error('Failed to fetch tracking details:', err);
+      setTrackingData({ error: 'Failed to retrieve tracking details.' });
+    } finally {
+      setLoadingTracking(false);
+    }
+  };
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -313,12 +340,10 @@ export default function CustomerOrdersPage() {
                       }
                     })()}
 
-                    {selectedOrder.tracking_url && (
+                    {selectedOrder.awb_number && (
                       <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
-                        <a 
-                          href={selectedOrder.tracking_url} 
-                          target="_blank" 
-                          rel="noopener noreferrer" 
+                        <button 
+                          onClick={() => handleTrackPackage(selectedOrder.awb_number)}
                           style={{
                             fontSize: '12px',
                             fontWeight: 700,
@@ -326,11 +351,12 @@ export default function CustomerOrdersPage() {
                             background: '#0f172a',
                             color: '#fff',
                             borderRadius: '8px',
-                            textDecoration: 'none'
+                            border: 'none',
+                            cursor: 'pointer'
                           }}
                         >
                           Track Package ↗
-                        </a>
+                        </button>
                       </div>
                     )}
                   </div>
@@ -369,6 +395,71 @@ export default function CustomerOrdersPage() {
                   <span>₹{parseFloat(selectedOrder.total_amount || 0).toFixed(2)}</span>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Live Tracking Status Modal */}
+      {isTrackingModalOpen && (
+        <div className="modal-overlay" style={{ zIndex: 1300 }} onClick={() => { setIsTrackingModalOpen(false); setTrackingData(null); }}>
+          <div className="modal-card glass" style={{ maxWidth: '480px' }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Live Shipment Status</h3>
+              <button className="close-btn" onClick={() => { setIsTrackingModalOpen(false); setTrackingData(null); }}>✕</button>
+            </div>
+            <div className="modal-body" style={{ padding: '24px' }}>
+              {loadingTracking ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 0', gap: '16px' }}>
+                  <div className="spinner"></div>
+                  <p style={{ fontSize: '14px', color: '#64748b' }}>Fetching live tracking logs from Delhivery...</p>
+                </div>
+              ) : trackingData?.error ? (
+                <div style={{ padding: '16px', background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: '12px', color: '#b91c1c', fontSize: '13px', textAlign: 'center' }}>
+                  ⚠️ {trackingData.error}
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  <div style={{ padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                    <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '4px' }}>CURRENT STATUS</div>
+                    <div style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a' }}>{trackingData?.status || 'Shipment Manifested'}</div>
+                    {trackingData?.estimated_delivery && (
+                      <div style={{ fontSize: '13px', color: '#475569', marginTop: '8px' }}>
+                        📅 Estimated Delivery: <strong>{trackingData.estimated_delivery}</strong>
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <h4 style={{ margin: '0 0 12px', fontSize: '14px', fontWeight: 800, color: '#1e293b' }}>Scan Checkpoints</h4>
+                    {!trackingData?.events || trackingData.events.length === 0 ? (
+                      <div style={{ fontSize: '13px', color: '#64748b', fontStyle: 'italic', padding: '12px 0' }}>
+                        No physical scans logged yet. Package is awaiting courier pickup at the origin warehouse.
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxHeight: '250px', overflowY: 'auto', paddingRight: '4px' }}>
+                        {trackingData.events.map((event, idx) => (
+                          <div key={idx} style={{ display: 'flex', gap: '12px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', marginTop: '4px' }}></div>
+                              {idx < trackingData.events.length - 1 && (
+                                <div style={{ width: '2px', flex: 1, background: '#e2e8f0', margin: '4px 0' }}></div>
+                              )}
+                            </div>
+                            <div>
+                              <div style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b' }}>{event.status}</div>
+                              <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
+                                {event.location ? `📍 ${event.location}` : ''}
+                                {event.time ? ` • ${new Date(event.time).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}` : ''}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

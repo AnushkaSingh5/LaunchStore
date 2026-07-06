@@ -19,11 +19,14 @@ export default function CreatorShippingPage() {
     email: '',
     phone: '',
     address: '',
-    pincode: '',
+    pickup_address_line2: '',
     city: '',
     state: '',
     country: 'India',
+    pincode: '',
     gstin: '',
+    business_name: '',
+    landmark: '',
     pickup_location_name: '',
     pickup_location_id: ''
   });
@@ -40,11 +43,14 @@ export default function CreatorShippingPage() {
               email: data.email || '',
               phone: data.phone || '',
               address: data.address || '',
-              pincode: data.pincode || '',
+              pickup_address_line2: data.pickup_address_line2 || '',
               city: data.city || '',
               state: data.state || '',
               country: data.country || 'India',
+              pincode: data.pincode || '',
               gstin: data.gstin || '',
+              business_name: data.business_name || '',
+              landmark: data.landmark || '',
               pickup_location_name: data.pickup_location_name || '',
               pickup_location_id: data.pickup_location_id || ''
             });
@@ -70,40 +76,99 @@ export default function CreatorShippingPage() {
     e.preventDefault();
     if (!store?.id) return;
     
+    // Trim string fields
+    const trimmedWarehouseName = (settings.warehouse_name || '').trim();
+    const trimmedContactPerson = (settings.contact_person || '').trim();
+    const trimmedEmail = (settings.email || '').trim();
+    const trimmedPhone = (settings.phone || '').trim();
+    const trimmedAddress = (settings.address || '').trim();
+    const trimmedAddressLine2 = (settings.pickup_address_line2 || '').trim();
+    const trimmedCity = (settings.city || '').trim();
+    const trimmedState = (settings.state || '').trim();
+    const trimmedCountry = (settings.country || 'India').trim();
+    const trimmedPincode = (settings.pincode || '').trim();
+    const trimmedGstin = (settings.gstin || '').trim();
+    const trimmedBusinessName = (settings.business_name || '').trim();
+    const trimmedLandmark = (settings.landmark || '').trim();
+
     // Front-end validations
-    if (!settings.warehouse_name || settings.warehouse_name.trim().length === 0) {
+    if (!trimmedWarehouseName) {
       setErrorMsg('Warehouse Name / Nickname is required.');
       return;
     }
-    if (!settings.phone || settings.phone.replace(/\D/g, '').length !== 10) {
-      setErrorMsg('Contact Mobile Number must be exactly 10 digits.');
+    if (!trimmedContactPerson) {
+      setErrorMsg('Contact Person is required.');
       return;
     }
-    if (!settings.pincode || settings.pincode.replace(/\D/g, '').length !== 6) {
+    if (!trimmedBusinessName) {
+      setErrorMsg('Business Name / Company Name is required.');
+      return;
+    }
+    if (!trimmedEmail || !trimmedEmail.includes('@')) {
+      setErrorMsg('A valid Contact Email is required.');
+      return;
+    }
+
+    // Phone validation: exactly 10 digits, no +91, no spaces, no special characters
+    const digitsOnlyPhone = trimmedPhone.replace(/\D/g, '');
+    if (trimmedPhone !== digitsOnlyPhone || trimmedPhone.length !== 10) {
+      setErrorMsg('Contact Mobile Number must be exactly 10 digits (no +91, spaces, or special characters).');
+      return;
+    }
+
+    // Pincode validation: exactly 6 digits
+    const digitsOnlyPincode = trimmedPincode.replace(/\D/g, '');
+    if (trimmedPincode !== digitsOnlyPincode || trimmedPincode.length !== 6) {
       setErrorMsg('Pincode must be exactly 6 digits.');
       return;
     }
-    if (!settings.address || settings.address.trim().length < 10) {
-      setErrorMsg('Street Address must be at least 10 characters.');
+
+    if (!trimmedAddress || trimmedAddress.length < 10) {
+      setErrorMsg('Pickup Address Line 1 must be at least 10 characters.');
       return;
     }
+    if (!trimmedCity) {
+      setErrorMsg('City is required.');
+      return;
+    }
+    if (!trimmedState) {
+      setErrorMsg('State is required.');
+      return;
+    }
+
+    const trimmedSettings = {
+      warehouse_name: trimmedWarehouseName,
+      contact_person: trimmedContactPerson,
+      email: trimmedEmail,
+      phone: trimmedPhone,
+      address: trimmedAddress,
+      pickup_address_line2: trimmedAddressLine2,
+      city: trimmedCity,
+      state: trimmedState,
+      country: trimmedCountry,
+      pincode: trimmedPincode,
+      gstin: trimmedGstin,
+      business_name: trimmedBusinessName,
+      landmark: trimmedLandmark
+    };
 
     setSaving(true);
     setSuccessMsg('');
     setErrorMsg('');
     try {
-      const updated = await shippingService.saveShippingSettings(store.id, settings);
+      const updated = await shippingService.saveShippingSettings(store.id, trimmedSettings);
       if (updated) {
         setSettings(prev => ({
           ...prev,
+          ...trimmedSettings,
           pickup_location_name: updated.pickup_location_name || prev.pickup_location_name,
           pickup_location_id: updated.pickup_location_id || prev.pickup_location_id
         }));
       }
-      setSuccessMsg('Shipping settings saved successfully!');
+      setSuccessMsg('Delhivery shipping settings saved successfully!');
     } catch (err) {
       console.error(err);
-      setErrorMsg(err.message || 'Failed to save shipping settings.');
+      setErrorMsg(err.message || 'Failed to save Delhivery shipping settings.');
     } finally {
       setSaving(false);
     }
@@ -120,8 +185,8 @@ export default function CreatorShippingPage() {
   return (
     <div className="shipping-dashboard-container" style={{ padding: '24px', maxWidth: '800px', margin: '0 auto' }}>
       <div className="shipping-header" style={{ marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>Shipping Configuration</h1>
-        <p style={{ color: '#64748b', fontSize: '15px' }}>Configure your pickup warehouse details. This information will be sent directly to Shiprocket to arrange order pickups.</p>
+        <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>Delhivery Shipping Configuration</h1>
+        <p style={{ color: '#64748b', fontSize: '15px' }}>Configure your pickup warehouse details. This information will be sent directly to Delhivery to arrange order pickups.</p>
       </div>
 
       {successMsg && (
@@ -138,7 +203,7 @@ export default function CreatorShippingPage() {
 
       {settings.pickup_location_id && (
         <div style={{ padding: '12px 16px', borderRadius: '12px', background: '#f8fafc', color: '#334155', border: '1px solid #e2e8f0', marginBottom: '20px', fontSize: '13px' }}>
-          <span style={{ fontWeight: 700 }}>✅ Shiprocket Registered:</span> Location Nickname <strong>"{settings.pickup_location_name}"</strong> is synced with Shiprocket (ID: <code>{settings.pickup_location_id}</code>).
+          <span style={{ fontWeight: 700 }}>✅ Delhivery Registered:</span> Location Nickname <strong>"{settings.pickup_location_name}"</strong> is synced with Delhivery (ID: <code>{settings.pickup_location_id}</code>).
         </div>
       )}
 
@@ -155,9 +220,22 @@ export default function CreatorShippingPage() {
                 onChange={(e) => handleChange('warehouse_name', e.target.value)}
                 required
               />
-              <span style={{ fontSize: '11px', color: '#94a3b8' }}>Must match your Shiprocket registered pickup location name exactly.</span>
+              <span style={{ fontSize: '11px', color: '#94a3b8' }}>Must match your Delhivery registered pickup location name exactly.</span>
             </div>
             
+            <div>
+              <label style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '8px' }}>Business Name / Company Name</label>
+              <Input
+                type="text"
+                placeholder="e.g. Acme Corp"
+                value={settings.business_name}
+                onChange={(e) => handleChange('business_name', e.target.value)}
+                required
+              />
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' }}>
             <div>
               <label style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '8px' }}>Contact Person</label>
               <Input
@@ -168,9 +246,7 @@ export default function CreatorShippingPage() {
                 required
               />
             </div>
-          </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
             <div>
               <label style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '8px' }}>Contact Mobile Number</label>
               <Input
@@ -194,15 +270,49 @@ export default function CreatorShippingPage() {
             </div>
           </div>
 
-          <div>
-            <label style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '8px' }}>Street Address (Pickup Address)</label>
-            <Input
-              type="text"
-              placeholder="Building, street name, locality"
-              value={settings.address}
-              onChange={(e) => handleChange('address', e.target.value)}
-              required
-            />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+            <div>
+              <label style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '8px' }}>Pickup Address Line 1</label>
+              <Input
+                type="text"
+                placeholder="Building, street name, locality"
+                value={settings.address}
+                onChange={(e) => handleChange('address', e.target.value)}
+                required
+              />
+            </div>
+
+            <div>
+              <label style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '8px' }}>Pickup Address Line 2 (Optional)</label>
+              <Input
+                type="text"
+                placeholder="Floor, suite, additional details"
+                value={settings.pickup_address_line2}
+                onChange={(e) => handleChange('pickup_address_line2', e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px' }}>
+            <div>
+              <label style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '8px' }}>Landmark (Optional)</label>
+              <Input
+                type="text"
+                placeholder="e.g. Near Metro Station"
+                value={settings.landmark}
+                onChange={(e) => handleChange('landmark', e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '8px' }}>GST Number (Optional)</label>
+              <Input
+                type="text"
+                placeholder="e.g. 29AAAAA0000A1Z5"
+                value={settings.gstin}
+                onChange={(e) => handleChange('gstin', e.target.value)}
+              />
+            </div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '20px' }}>
@@ -249,16 +359,6 @@ export default function CreatorShippingPage() {
                 required
               />
             </div>
-          </div>
-
-          <div>
-            <label style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '8px' }}>GST Number (Optional)</label>
-            <Input
-              type="text"
-              placeholder="e.g. 29AAAAA0000A1Z5"
-              value={settings.gstin}
-              onChange={(e) => handleChange('gstin', e.target.value)}
-            />
           </div>
 
           <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'flex-end' }}>

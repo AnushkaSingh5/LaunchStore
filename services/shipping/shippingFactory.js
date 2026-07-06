@@ -1,10 +1,12 @@
 // services/shipping/shippingFactory.js
 import { ShiprocketProvider } from './shiprocketProvider';
+import { DelhiveryProvider } from './delhiveryProvider';
 
 class ShippingFactory {
   constructor() {
     this.providers = {
-      Shiprocket: new ShiprocketProvider()
+      Shiprocket: new ShiprocketProvider(),
+      Delhivery: new DelhiveryProvider()
     };
   }
 
@@ -12,12 +14,12 @@ class ShippingFactory {
    * Get the configured active shipping provider instance
    */
   getProvider(providerName) {
-    const activeProvider = providerName || process.env.NEXT_PUBLIC_ACTIVE_SHIPPING_PROVIDER || 'Shiprocket';
+    const activeProvider = providerName || process.env.NEXT_PUBLIC_ACTIVE_SHIPPING_PROVIDER || 'Delhivery';
     const provider = this.providers[activeProvider];
     
     if (!provider) {
-      console.warn(`⚠️ [ShippingFactory]: Provider "${activeProvider}" not found. Falling back to Shiprocket.`);
-      return this.providers['Shiprocket'];
+      console.warn(`⚠️ [ShippingFactory]: Provider "${activeProvider}" not found. Falling back to Delhivery.`);
+      return this.providers['Delhivery'];
     }
     
     return provider;
