@@ -256,7 +256,21 @@ export function StoreProvider({ children }) {
 export function useStore() {
   const context = useContext(StoreContext);
   if (!context) {
-    throw new Error('useStore must be used within a StoreProvider');
+    console.warn('[StoreContext] useStore was called outside of StoreProvider. Returning fallback.');
+    return {
+      cart: [],
+      wishlist: [],
+      selectedCategory: 'All',
+      setSelectedCategory: () => {},
+      searchQuery: '',
+      setSearchQuery: () => {},
+      addToCart: () => {},
+      removeFromCart: () => {},
+      updateQuantity: () => {},
+      clearCart: () => {},
+      isCartOpen: false,
+      setIsCartOpen: () => {},
+    };
   }
   return context;
 }

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
+import StoreUnderReview from '@/components/StoreUnderReview';
 import Hero from '@/components/Hero';
 import CategoryCard from '@/components/CategoryCard';
 import ProductCard from '@/components/ProductCard';
@@ -126,101 +127,12 @@ export default function StoreClient({ slug, initialStoreDetails, initialProducts
 
   // For visitors, block access to non-approved stores
   if (storeDetails && storeDetails.status !== 'approved' && !isCreator) {
-    const isPending = storeDetails.status === 'pending';
-    const isRejected = storeDetails.status === 'rejected';
-    const isDisabled = storeDetails.status === 'disabled';
-
-    let title = "Store is under review";
-    let icon = "⏳";
-    let color = "#f59e0b";
-    let buttonColor = "#121212";
-    let description = `The online store "${storeDetails.name}" is currently under review by platform administrators. Please check back later!`;
-
-    if (isPending) {
-      title = "Store is under review";
-      icon = "⏳";
-      color = "#f59e0b";
-      description = `The store "${storeDetails.name}" has been created and is currently waiting for admin review.`;
-    } else if (isRejected) {
-      title = "Store Unavailable";
-      icon = "🔒";
-      color = "#ef4444";
-      description = `The store "${storeDetails.name}" is currently unavailable. Please contact the owner or try again later.`;
-    } else if (isDisabled) {
-      title = "Store Disabled";
-      icon = "🚫";
-      color = "#6b7280";
-      description = `The store "${storeDetails.name}" has been disabled by platform administrators.`;
-    }
-
     return (
-      <div className="pending-store-screen">
-        <div className="glass-card">
-          <div className="icon-badge" style={{ color: color }}>{icon}</div>
-          <h2>{title}</h2>
-          <p>{description}</p>
-          <Link href="/" className="back-link" style={{ backgroundColor: buttonColor }}>Return to Home</Link>
-        </div>
-        <style jsx>{`
-          .pending-store-screen {
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #FAF8F5;
-            padding: 20px;
-            font-family: 'Outfit', sans-serif;
-          }
-          .glass-card {
-            background: #ffffff;
-            border: 1px solid rgba(0, 0, 0, 0.05);
-            border-radius: 28px;
-            padding: 48px;
-            max-width: 500px;
-            text-align: center;
-            color: #121212;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.03);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-          }
-          .icon-badge {
-            font-size: 56px;
-            margin-bottom: 24px;
-            animation: pulse 2s infinite alternate;
-          }
-          @keyframes pulse {
-            0% { transform: scale(1); }
-            100% { transform: scale(1.08); }
-          }
-          .glass-card h2 {
-            font-size: 26px;
-            font-weight: 800;
-            margin-bottom: 16px;
-            color: #121212;
-            font-family: 'Outfit', sans-serif;
-          }
-          .glass-card p {
-            font-size: 14px;
-            color: #706f6c;
-            line-height: 1.6;
-            margin-bottom: 32px;
-          }
-          .back-link {
-            display: inline-block;
-            padding: 14px 28px;
-            color: #FAF8F5;
-            border-radius: 14px;
-            font-weight: 700;
-            text-decoration: none;
-            transition: all 0.2s;
-            cursor: pointer;
-          }
-          .back-link:hover {
-            transform: translateY(-2px);
-          }
-        `}</style>
-      </div>
+      <StoreUnderReview 
+        storeName={storeDetails.name} 
+        status={storeDetails.status} 
+        statusReason={storeDetails.status_reason} 
+      />
     );
   }
 

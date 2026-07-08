@@ -155,6 +155,7 @@ export default function AdminCreators() {
         isOpen={!!selectedCreator} 
         onClose={() => setSelectedCreator(null)}
         title="Creator Verification & Profile details"
+        size="large"
         footer={
           <div className="modal-footer-actions">
             {extendedProfile && (extendedProfile.verification_status === 'Under Review' || extendedProfile.verification_status === 'Not Submitted') && (
@@ -306,8 +307,8 @@ export default function AdminCreators() {
           color: #fff;
         }
 
-        .creator-details { display: flex; flex-direction: column; gap: 24px; max-height: 70vh; overflow-y: auto; padding-right: 8px; }
-        .profile-main { display: flex; align-items: center; gap: 16px; margin-bottom: 8px; }
+        .creator-details { display: flex; flex-direction: column; gap: 20px; max-height: none; overflow: visible; }
+        .profile-main { display: flex; align-items: center; gap: 16px; margin-bottom: 4px; }
         .avatar {
           width: 64px; height: 64px; background: #8b5cf6; color: #fff;
           border-radius: 20px; display: flex; align-items: center; justify-content: center;
@@ -335,11 +336,11 @@ export default function AdminCreators() {
           border-bottom: 1px dashed #cbd5e1;
         }
 
-        .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 20px; padding: 16px; background: #f8fafc; border-radius: 16px; }
+        .detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px 20px; padding: 16px; background: #f8fafc; border-radius: 16px; }
         .detail-item { display: flex; flex-direction: column; gap: 4px; }
         .detail-item strong { font-size: 11px; text-transform: uppercase; color: #94a3b8; letter-spacing: 0.5px; }
         .detail-item span { font-size: 14px; font-weight: 700; color: #334155; }
-        .detail-item.full-width { grid-column: span 2; }
+        .detail-item.full-width { grid-column: 1 / -1; }
 
         .bio-text {
           font-size: 14px;

@@ -23,6 +23,7 @@ export const orderService = {
     shipping_address_pincode,
     shipping_address_country,
     total_amount,
+    shipping_cost = 0,
     items,
     payment_provider = 'Razorpay',
     coupon_id = null,
@@ -40,7 +41,8 @@ export const orderService = {
         customer_phone,
         shipping_address,
         total_amount: parseFloat(total_amount) || 0,
-        status: 'pending_payment',
+        shipping_cost: parseFloat(shipping_cost) || 0,
+        status: payment_provider === 'COD' ? 'confirmed' : 'pending_payment',
         payment_status: 'pending',
         payment_provider,
         coupon_id: coupon_id || null,
@@ -58,6 +60,21 @@ export const orderService = {
     }
 
     try {
+      // Verify store is approved
+      const { data: storeDetails, error: storeError } = await supabaseClient
+        .from('stores')
+        .select('status, creator_id')
+        .eq('id', store_id)
+        .single();
+      if (storeError) throw storeError;
+      if (storeDetails?.status !== 'approved') {
+        const { data: { user } } = await supabaseClient.auth.getUser().catch(() => ({ data: { user: null } }));
+        const isOwner = user?.id && user.id === storeDetails.creator_id;
+        if (!isOwner) {
+          throw new Error('This store is currently under admin review and is not available for orders.');
+        }
+      }
+
       // 1. Insert Order
       const payload = {
         store_id,
@@ -77,7 +94,8 @@ export const orderService = {
         shipping_country: shipping_address_country || 'India',
         shipping_pincode: shipping_address_pincode,
         total_amount: parseFloat(total_amount) || 0,
-        status: 'pending_payment',
+        shipping_cost: parseFloat(shipping_cost) || 0,
+        status: payment_provider === 'COD' ? 'confirmed' : 'pending_payment',
         payment_status: 'pending',
         payment_provider,
         coupon_id: coupon_id || null,
@@ -226,7 +244,7 @@ export const orderService = {
               order_amount: order.total_amount,
               platform_fee: 0.00,
               creator_amount: order.total_amount,
-              status: 'pending',
+              status: 'completed',
               created_at: new Date().toISOString()
             });
           }

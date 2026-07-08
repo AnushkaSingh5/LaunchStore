@@ -10,7 +10,7 @@ export default function PlaceholderPage({ title = 'Module Under Development' }) 
       <p style={{ color: '#64748b', maxWidth: '400px' }}>This administrative module is currently being optimized for platform-wide scale. Check back soon for full integration.</p>
       
       <style jsx>{`
-        div { font-family: 'Inter', sans-serif; }
+        div { font-family: 'Outfit', sans-serif; }
       `}</style>
     </div>
   );

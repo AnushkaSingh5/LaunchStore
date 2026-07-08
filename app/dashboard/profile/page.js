@@ -506,6 +506,8 @@ export default function CreatorProfile() {
           display: flex;
           flex-direction: column;
           gap: 32px;
+          padding: 24px;
+          box-sizing: border-box;
         }
 
         .profile-header {
@@ -837,7 +839,7 @@ export default function CreatorProfile() {
           font-size: 16px;
         }
 
-        @media (max-width: 1024px) {
+        @media (max-width: 1280px) {
           .profile-content-grid {
             grid-template-columns: 1fr;
           }

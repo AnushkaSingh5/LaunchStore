@@ -101,7 +101,8 @@ export default function CheckoutSuccessPage({ params }) {
 
   const orderNum = orderId ? String(orderId).slice(0, 8).toUpperCase() : '';
   const totalAmount = orderDetails ? parseFloat(orderDetails.total_amount || 0).toFixed(2) : '0.00';
-  const paymentStatus = orderDetails?.payment_status || 'Paid';
+  const isCOD = orderDetails?.payment_provider === 'COD';
+  const displayPaymentStatus = isCOD && orderDetails?.payment_status === 'pending' ? 'Pay on Delivery' : (orderDetails?.payment_status || 'Paid');
 
   return (
     <div className="success-page">
@@ -114,7 +115,11 @@ export default function CheckoutSuccessPage({ params }) {
           </div>
           <h1>Order Placed Successfully!</h1>
           <p className="success-lead">
-            Thank you for shopping at <strong>{storeDetails?.name}</strong>! Your payment has been processed and your order is confirmed.
+            {isCOD ? (
+              <>Thank you for shopping at <strong>{storeDetails?.name}</strong>! Your order is confirmed and will be paid after delivery.</>
+            ) : (
+              <>Thank you for shopping at <strong>{storeDetails?.name}</strong>! Your payment has been processed and your order is confirmed.</>
+            )}
           </p>
           
           <div className="orders-summary-box">
@@ -124,13 +129,13 @@ export default function CheckoutSuccessPage({ params }) {
               <span className="order-val">#{orderNum}</span>
             </div>
             <div className="order-summary-item">
-              <span className="order-lbl">Total Paid</span>
+              <span className="order-lbl">{isCOD ? 'Total Amount' : 'Total Paid'}</span>
               <span className="order-val highlight">₹{totalAmount}</span>
             </div>
             <div className="order-summary-item">
               <span className="order-lbl">Payment Status</span>
-              <span className={`status-badge ${paymentStatus.toLowerCase()}`}>
-                {paymentStatus}
+              <span className={`status-badge ${displayPaymentStatus.replace(/\s+/g, '-').toLowerCase()}`}>
+                {displayPaymentStatus}
               </span>
             </div>
             {orderDetails?.payment_id && (
@@ -534,6 +539,10 @@ export default function CheckoutSuccessPage({ params }) {
         .status-badge.pending {
           background: #fef3c7;
           color: #92400e;
+        }
+        .status-badge.pay-on-delivery {
+          background: #fffbeb;
+          color: #b45309;
         }
         .status-badge.failed {
           background: #fee2e2;

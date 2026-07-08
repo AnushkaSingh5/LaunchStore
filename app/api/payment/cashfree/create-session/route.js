@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { Cashfree } from 'cashfree-pg';
+import { supabaseClient } from '@/lib/supabase';
 
 export async function POST(request) {
   try {
@@ -10,6 +11,23 @@ export async function POST(request) {
         { error: 'Missing required parameters: orderId, amount, and customer email are required.' },
         { status: 400 }
       );
+    }
+
+    if (supabaseClient && slug) {
+      const { data: storeDetails, error: storeError } = await supabaseClient
+        .from('stores')
+        .select('status')
+        .eq('slug', slug)
+        .single();
+      
+      if (storeError) {
+        console.error('Failed to query store details in Cashfree session API:', storeError);
+      } else if (storeDetails?.status !== 'approved') {
+        return NextResponse.json(
+          { error: 'This store is currently under admin review and is not available for orders.' },
+          { status: 400 }
+        );
+      }
     }
 
     const clientId = process.env.CASHFREE_CLIENT_ID;

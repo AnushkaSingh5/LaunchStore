@@ -4,15 +4,73 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { shippingService } from '@/services/shipping/shippingService';
+import { storeService } from '@/services/storeService';
 import Input from '@/components/UI/Input';
 import Button from '@/components/UI/Button';
 
 export default function CreatorShippingPage() {
-  const { store } = useAuth();
+  const { store, refreshStore } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+
+  const [shippingRules, setShippingRules] = useState({
+    shippingType: 'flat',
+    flatFee: 15,
+    shippingHandler: 'platform'
+  });
+  const [savingRules, setSavingRules] = useState(false);
+
+  useEffect(() => {
+    if (store) {
+      setShippingRules({
+        shippingType: store.theme_settings?.shippingType ?? 'flat',
+        flatFee: store.theme_settings?.flatFee ?? 15,
+        shippingHandler: store.theme_settings?.shippingHandler ?? 'platform'
+      });
+    }
+  }, [store]);
+
+  const handleRulesChange = (field, value) => {
+    setShippingRules(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSaveRules = async (e) => {
+    e.preventDefault();
+    if (!store?.id) return;
+    setSavingRules(true);
+    setSuccessMsg('');
+    setErrorMsg('');
+    try {
+      const existingSettings = store.theme_settings || {};
+      await storeService.updateStore(store.id, {
+        theme_settings: {
+          ...existingSettings,
+          shippingType: shippingRules.shippingType,
+          flatFee: parseFloat(shippingRules.flatFee) || 0,
+          shippingHandler: shippingRules.shippingHandler
+        }
+      });
+      await refreshStore();
+      setSuccessMsg('Shipping rules saved successfully!');
+    } catch (err) {
+      console.error(err);
+      setErrorMsg('Failed to save shipping rules: ' + err.message);
+    } finally {
+      setSavingRules(false);
+    }
+  };
+
+  const getRulesDescription = () => {
+    if (shippingRules.shippingType === 'free') {
+      return 'Shipping will be free for all orders placed on your store.';
+    } else if (shippingRules.shippingType === 'calculated') {
+      return 'Shipping costs will be calculated dynamically based on package weight and customer distance during checkout.';
+    } else {
+      return `A flat shipping fee of ₹${shippingRules.flatFee} will be applied to every order, regardless of the order value or destination.`;
+    }
+  };
   const [settings, setSettings] = useState({
     warehouse_name: '',
     contact_person: '',
@@ -183,7 +241,7 @@ export default function CreatorShippingPage() {
   }
 
   return (
-    <div className="shipping-dashboard-container" style={{ padding: '24px', maxWidth: '800px', margin: '0 auto' }}>
+    <div className="shipping-dashboard-container" style={{ padding: '24px', maxWidth: '100%' }}>
       <div className="shipping-header" style={{ marginBottom: '24px' }}>
         <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>Delhivery Shipping Configuration</h1>
         <p style={{ color: '#64748b', fontSize: '15px' }}>Configure your pickup warehouse details. This information will be sent directly to Delhivery to arrange order pickups.</p>
@@ -369,6 +427,83 @@ export default function CreatorShippingPage() {
               style={{ padding: '12px 24px', fontWeight: 700, fontSize: '14px', borderRadius: '12px' }}
             >
               {saving ? 'Saving...' : 'Save Settings'}
+            </Button>
+          </div>
+        </form>
+      </div>
+
+      <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid rgba(0,0,0,0.06)', padding: '28px', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', marginTop: '24px' }}>
+        <div style={{ marginBottom: '24px' }}>
+          <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#1e293b', margin: '0 0 4px 0' }}>Shipping Rules</h3>
+          <p style={{ fontSize: '14px', color: '#64748b', margin: 0 }}>Configure shipping cost calculation and delivery preferences.</p>
+        </div>
+
+        <form onSubmit={handleSaveRules} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' }}>
+            <div>
+              <label style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '8px' }}>Shipping Cost Calculation</label>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <select 
+                  value={shippingRules.shippingType} 
+                  onChange={(e) => handleRulesChange('shippingType', e.target.value)}
+                  style={{ width: '100%', appearance: 'none', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', fontSize: '14px', color: '#1e293b', outline: 'none' }}
+                >
+                  <option value="free">Free Shipping (All Orders)</option>
+                  <option value="flat">Flat Rate Fee</option>
+                  <option value="calculated">Calculated by Weight/Distance</option>
+                </select>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" style={{ position: 'absolute', right: '16px', pointerEvents: 'none' }}><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </div>
+              <span style={{ fontSize: '11px', color: '#94a3b8' }}>Charge a fixed shipping fee for every order.</span>
+            </div>
+
+            <div>
+              <label style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '8px' }}>Flat Shipping Fee (₹)</label>
+              <Input 
+                type="number" 
+                value={shippingRules.flatFee} 
+                onChange={(e) => handleRulesChange('flatFee', Number(e.target.value))}
+                placeholder="0.00"
+                disabled={shippingRules.shippingType !== 'flat'}
+              />
+              <span style={{ fontSize: '11px', color: '#94a3b8' }}>This amount will be added to every order.</span>
+            </div>
+
+            <div>
+              <label style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '8px' }}>Shipping Handled By</label>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <select 
+                  value={shippingRules.shippingHandler} 
+                  onChange={(e) => handleRulesChange('shippingHandler', e.target.value)}
+                  style={{ width: '100%', appearance: 'none', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', fontSize: '14px', color: '#1e293b', outline: 'none' }}
+                >
+                  <option value="platform">Platform Default Partner (Recommended)</option>
+                  <option value="manual">Creator Manual Fulfillment</option>
+                </select>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" style={{ position: 'absolute', right: '16px', pointerEvents: 'none' }}><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </div>
+              <span style={{ fontSize: '11px', color: '#94a3b8' }}>We'll choose the best delivery partner automatically.</span>
+            </div>
+          </div>
+
+          <div style={{ background: '#fbfaff', border: '1px solid #f5f3ff', borderRadius: '16px', padding: '16px 24px', display: 'flex', alignItems: 'center', gap: '20px' }}>
+            <div style={{ width: '40px', height: '40px', background: '#fff', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6366f1', border: '1px solid #f1f5f9' }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9.663 17h4.674M12 3v1m0 16v1m5.657-13.657l-.707.707m-9.9 9.9l-.707.707M18 12h-1M7 12H6m11.657 5.657l-.707-.707M6.343 6.343l-.707-.707M12 7a5 5 0 0 0-5 5 5 5 0 0 0 5 5 5 5 0 0 0 5-5 5 5 0 0 0-5-5z"></path></svg>
+            </div>
+            <div style={{ textAlign: 'left' }}>
+              <strong style={{ fontSize: '14px', color: '#1e293b', display: 'block', marginBottom: '2px' }}>How it works</strong>
+              <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>{getRulesDescription()}</p>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={savingRules}
+              style={{ padding: '12px 24px', fontWeight: 700, fontSize: '14px', borderRadius: '12px' }}
+            >
+              {savingRules ? 'Saving...' : 'Save Rules'}
             </Button>
           </div>
         </form>

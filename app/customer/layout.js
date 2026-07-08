@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useCustomerAuth } from '@/context/CustomerAuthContext';
+import { storeService } from '@/services/storeService';
+import StoreUnderReview from '@/components/StoreUnderReview';
 import PageLoader from '@/components/PageLoader';
 
 export default function CustomerPortalLayout({ children }) {
@@ -54,12 +56,35 @@ export default function CustomerPortalLayout({ children }) {
   }, [customer, customerProfile, loading, router, pathname]);
 
 
+  const [storeDetails, setStoreDetails] = useState(null);
+  const [checkingStore, setCheckingStore] = useState(false);
+
+  useEffect(() => {
+    if (backToStoreSlug) {
+      setCheckingStore(true);
+      storeService.getStoreBySlug(backToStoreSlug)
+        .then(data => setStoreDetails(data))
+        .catch(err => console.error('Failed to load store details in customer layout:', err))
+        .finally(() => setCheckingStore(false));
+    }
+  }, [backToStoreSlug]);
+
   if (isPublicRoute) {
     return <>{children}</>;
   }
 
-  if (loading || !customer || !customerProfile) {
+  if (loading || checkingStore || !customer || !customerProfile) {
     return <PageLoader />;
+  }
+
+  if (storeDetails && storeDetails.status !== 'approved') {
+    return (
+      <StoreUnderReview
+        storeName={storeDetails.name}
+        status={storeDetails.status}
+        statusReason={storeDetails.status_reason}
+      />
+    );
   }
 
   const navItems = [

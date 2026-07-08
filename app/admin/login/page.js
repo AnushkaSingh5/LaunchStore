@@ -42,10 +42,11 @@ export default function AdminLoginPage() {
 
   return (
     <div className="login-container">
-      {/* Royal Indigo Glow Overlay */}
-      <div className="glow-bg"></div>
+      {/* Light gradient glow overlays */}
+      <div className="glow-circle-1"></div>
+      <div className="glow-circle-2"></div>
 
-      <div className="login-card dashboard-card fade-in">
+      <div className="login-card fade-in">
         {/* Back navigation link */}
         <Link href="/" className="back-link">
           ← Return to public website
@@ -116,48 +117,61 @@ export default function AdminLoginPage() {
           display: flex;
           align-items: center;
           justify-content: center;
-          background: #0f172a; /* Sleek dark theme specifically for the Admin Login */
+          background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
           padding: 24px;
           position: relative;
           overflow: hidden;
           font-family: 'Outfit', sans-serif;
         }
 
-        .glow-bg {
+        .glow-circle-1 {
           position: absolute;
-          width: 700px;
-          height: 700px;
-          background: radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, rgba(79, 70, 229, 0.05) 50%, rgba(15, 23, 42, 0) 70%);
+          width: 600px;
+          height: 600px;
+          background: radial-gradient(circle, rgba(99, 102, 241, 0.12) 0%, rgba(99, 102, 241, 0.03) 50%, rgba(255, 255, 255, 0) 70%);
           filter: blur(80px);
           top: -200px;
-          left: -200px;
+          right: -100px;
+          z-index: 1;
+        }
+
+        .glow-circle-2 {
+          position: absolute;
+          width: 600px;
+          height: 600px;
+          background: radial-gradient(circle, rgba(236, 72, 153, 0.1) 0%, rgba(236, 72, 153, 0.02) 50%, rgba(255, 255, 255, 0) 70%);
+          filter: blur(80px);
+          bottom: -200px;
+          left: -100px;
           z-index: 1;
         }
 
         .login-card {
           width: 100%;
           max-width: 460px;
-          background: #1e293b; /* Dark slate card for admin portal feel */
+          background: rgba(255, 255, 255, 0.85);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
           padding: 40px;
-          border-radius: 24px;
+          border-radius: 32px;
           position: relative;
           z-index: 2;
-          border: 1px solid rgba(255, 255, 255, 0.05);
-          box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.4);
+          border: 1px solid rgba(255, 255, 255, 0.6);
+          box-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.06);
         }
 
         .back-link {
           font-size: 13px;
-          font-weight: 600;
-          color: #94a3b8;
+          font-weight: 700;
+          color: #64748b;
           text-decoration: none;
           display: inline-block;
           margin-bottom: 24px;
-          transition: var(--transition-fast);
+          transition: all 0.2s ease;
         }
 
         .back-link:hover {
-          color: #818cf8;
+          color: #4f46e5;
           transform: translateX(-2px);
         }
 
@@ -171,32 +185,33 @@ export default function AdminLoginPage() {
         }
 
         .logo-icon {
-          width: 44px;
-          height: 44px;
+          width: 48px;
+          height: 48px;
           background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-          color: var(--white);
-          border-radius: 12px;
+          color: #ffffff;
+          border-radius: 14px;
           display: flex;
           align-items: center;
           justify-content: center;
-          box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+          box-shadow: 0 4px 14px rgba(99, 102, 241, 0.25);
         }
 
         .brand-header h2 {
           font-size: 24px;
           font-weight: 800;
-          color: var(--white);
+          color: #0f172a;
           letter-spacing: -0.5px;
         }
 
         .brand-header p {
           font-size: 13px;
-          color: #94a3b8;
+          color: #64748b;
+          font-weight: 550;
         }
 
         .error-alert {
-          background: rgba(239, 68, 68, 0.1);
-          border: 1px solid rgba(239, 68, 68, 0.2);
+          background: rgba(239, 68, 68, 0.05);
+          border: 1px solid rgba(239, 68, 68, 0.15);
           border-radius: 12px;
           padding: 12px 16px;
           margin-bottom: 24px;
@@ -211,7 +226,7 @@ export default function AdminLoginPage() {
 
         .error-msg {
           font-size: 13px;
-          color: #fca5a5;
+          color: #dc2626;
           font-weight: 600;
         }
 
@@ -230,56 +245,63 @@ export default function AdminLoginPage() {
 
         .form-group label {
           font-size: 13px;
-          font-weight: 600;
-          color: #cbd5e1;
+          font-weight: 700;
+          color: #475569;
         }
 
         .form-group input {
           width: 100%;
           padding: 12px 16px;
           border-radius: 12px;
-          border: 1px solid rgba(255, 255, 255, 0.1);
+          border: 1px solid #e2e8f0;
           font-size: 14px;
-          color: var(--white);
+          color: #0f172a;
           outline: none;
-          background: #0f172a;
-          transition: var(--transition-fast);
+          background: #f8fafc;
+          transition: all 0.2s ease;
+        }
+
+        .form-group input::placeholder {
+          color: #cbd5e1;
         }
 
         .form-group input:focus {
           border-color: #6366f1;
-          box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+          background: #ffffff;
+          box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
         }
 
         .submit-btn {
           width: 100%;
           padding: 14px;
-          background: #4f46e5;
-          color: var(--white);
+          background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+          color: #ffffff;
           font-weight: 700;
           font-size: 14px;
+          border: none;
           border-radius: 12px;
           box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
-          transition: var(--transition-smooth);
+          cursor: pointer;
+          transition: all 0.2s ease;
         }
 
         .submit-btn:hover {
-          background: #6366f1;
-          box-shadow: 0 6px 20px rgba(99, 102, 241, 0.3);
           transform: translateY(-1px);
+          box-shadow: 0 6px 16px rgba(79, 70, 229, 0.3);
         }
 
         .submit-btn:disabled {
           opacity: 0.7;
           cursor: not-allowed;
+          transform: none;
         }
 
         .login-footer {
           text-align: center;
           font-size: 11px;
           line-height: 1.5;
-          color: #64748b;
-          border-top: 1px solid rgba(255, 255, 255, 0.05);
+          color: #94a3b8;
+          border-top: 1px solid #e2e8f0;
           padding-top: 20px;
         }
 

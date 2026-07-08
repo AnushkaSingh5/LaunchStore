@@ -4,6 +4,8 @@ import { useState, Suspense, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCustomerAuth } from '@/context/CustomerAuthContext';
+import { storeService } from '@/services/storeService';
+import StoreUnderReview from '@/components/StoreUnderReview';
 
 function SignupContent() {
   const router = useRouter();
@@ -20,6 +22,30 @@ function SignupContent() {
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
+  const [storeDetails, setStoreDetails] = useState(null);
+  const [checkingStore, setCheckingStore] = useState(false);
+
+  useEffect(() => {
+    const checkTargetStore = async () => {
+      const redirectPath = redirect || '';
+      if (redirectPath.startsWith('/store/')) {
+        const slug = redirectPath.split('/')[2];
+        if (slug) {
+          setCheckingStore(true);
+          try {
+            const store = await storeService.getStoreBySlug(slug);
+            setStoreDetails(store);
+          } catch (e) {
+            console.error('Failed to pre-check store status on customer signup:', e);
+          } finally {
+            setCheckingStore(false);
+          }
+        }
+      }
+    };
+    checkTargetStore();
+  }, [redirect]);
+
   // Calculate back URL to return to the active store instead of the root landing page
   const backUrl = redirect && redirect.startsWith('/store/') ? redirect : '/';
 
@@ -30,6 +56,15 @@ function SignupContent() {
       router.push(redirect);
     }
   }, [isAuthenticated, redirect, router]);
+
+  if (checkingStore) {
+    return <div className="loading-text">Verifying store details...</div>;
+  }
+
+  const isStoreUnderReview = storeDetails && storeDetails.status !== 'approved';
+  const displayError = isStoreUnderReview 
+    ? 'This store is currently under admin review. Customer access will be available once the store has been approved.' 
+    : errorMsg;
 
   const handleSignup = async (e) => {
     e.preventDefault();
@@ -89,9 +124,9 @@ function SignupContent() {
         <p className="subtitle">Sign up to buy premium home essentials, track order history, and save shipping addresses.</p>
       </div>
 
-      {errorMsg && (
+      {displayError && (
         <div className="banner error-banner">
-          {errorMsg}
+          {displayError}
         </div>
       )}
 
@@ -107,6 +142,7 @@ function SignupContent() {
           type="button" 
           onClick={() => handleSocialLogin('google')} 
           className="google-btn-full"
+          disabled={loading || isStoreUnderReview}
         >
           <svg className="social-icon" viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg">
             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -134,6 +170,7 @@ function SignupContent() {
             placeholder="John Doe"
             required
             autoComplete="off"
+            disabled={isStoreUnderReview}
           />
         </div>
 
@@ -147,6 +184,7 @@ function SignupContent() {
             placeholder="you@example.com"
             required
             autoComplete="off"
+            disabled={isStoreUnderReview}
           />
         </div>
 
@@ -160,6 +198,7 @@ function SignupContent() {
             placeholder="+1 (555) 019-2834"
             required
             autoComplete="off"
+            disabled={isStoreUnderReview}
           />
         </div>
 
@@ -174,6 +213,7 @@ function SignupContent() {
             minLength={6}
             required
             autoComplete="off"
+            disabled={isStoreUnderReview}
           />
         </div>
 
@@ -187,19 +227,26 @@ function SignupContent() {
             placeholder="Re-type password"
             required
             autoComplete="off"
+            disabled={isStoreUnderReview}
           />
         </div>
 
-        <button type="submit" className="submit-btn" disabled={loading}>
+        <button type="submit" className="submit-btn" disabled={loading || isStoreUnderReview}>
           {loading ? 'Creating Account...' : 'Sign Up'}
         </button>
       </form>
 
       <div className="signup-footer">
         Already have an account?{' '}
-        <Link href={`/customer/login?redirect=${encodeURIComponent(redirect)}`} className="register-link">
-          Log in
-        </Link>
+        {isStoreUnderReview ? (
+          <span className="register-link-disabled" style={{ color: '#94a3b8', cursor: 'not-allowed', textDecoration: 'underline' }}>
+            Log in
+          </span>
+        ) : (
+          <Link href={`/customer/login?redirect=${encodeURIComponent(redirect)}`} className="register-link">
+            Log in
+          </Link>
+        )}
       </div>
 
       <style jsx>{`

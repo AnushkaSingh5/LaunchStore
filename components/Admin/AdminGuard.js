@@ -16,30 +16,10 @@ export default function AdminGuard({ children }) {
         router.push('/admin/login');
       }
     }
-    // If user is already authenticated as an admin and visits the login page, redirect to the dashboard
-    if (!loading && pathname === '/admin/login' && adminUser) {
-      router.push('/admin');
-    }
   }, [adminUser, loading, router, pathname]);
 
   // Bypass protection for login route itself to prevent cycles
   if (pathname === '/admin/login') {
-    // If authenticated as admin, let the useEffect handle the redirect to /admin
-    if (adminUser) {
-      return (
-        <div style={{
-          height: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: '#0f172a',
-          color: '#fff',
-          fontFamily: 'Outfit, sans-serif'
-        }}>
-          Redirecting to Admin Dashboard...
-        </div>
-      );
-    }
     return children;
   }
 

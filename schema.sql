@@ -558,6 +558,8 @@ RETURNS TABLE (
   customer_phone TEXT,
   total_amount NUMERIC(10, 2),
   status TEXT,
+  payment_status TEXT,
+  payment_provider TEXT,
   shipping_address TEXT,
   created_at TIMESTAMP WITH TIME ZONE
 ) AS $$
@@ -567,7 +569,19 @@ BEGIN
   END IF;
 
   RETURN QUERY
-  SELECT o.id, o.store_id, s.name as store_name, o.customer_name, o.customer_email, o.customer_phone, o.total_amount, o.status, o.shipping_address, o.created_at
+  SELECT 
+    o.id, 
+    o.store_id, 
+    s.name as store_name, 
+    o.customer_name, 
+    o.customer_email, 
+    o.customer_phone, 
+    o.total_amount, 
+    o.status, 
+    o.payment_status,
+    o.payment_provider,
+    o.shipping_address, 
+    o.created_at
   FROM public.orders o
   LEFT JOIN public.stores s ON o.store_id = s.id
   ORDER BY o.created_at DESC;
@@ -846,7 +860,7 @@ BEGIN
     
     -- Insert into creator_earnings (prevent duplicates via UNIQUE constraint)
     INSERT INTO public.creator_earnings (creator_id, store_id, order_id, order_amount, platform_fee, creator_amount, status)
-    VALUES (v_store_creator_id, NEW.store_id, NEW.id, NEW.total_amount, 0.00, NEW.total_amount, 'pending')
+    VALUES (v_store_creator_id, NEW.store_id, NEW.id, NEW.total_amount, 0.00, NEW.total_amount, 'completed')
     ON CONFLICT (order_id) DO NOTHING;
   END IF;
 

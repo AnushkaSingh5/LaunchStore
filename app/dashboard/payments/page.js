@@ -8,11 +8,8 @@ export default function PaymentsPage() {
   const { store, refreshStore } = useAuth();
   const [payments, setPayments] = useState({
     enableCard: true,
-    enableUPI: false,
-    enableCOD: true,
-    shippingType: 'flat',
-    flatFee: 15,
-    shippingHandler: 'platform'
+    enableUPI: true,
+    enableCOD: true
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -21,11 +18,8 @@ export default function PaymentsPage() {
     if (store) {
       setPayments({
         enableCard: store.theme_settings?.enableCard ?? true,
-        enableUPI: store.theme_settings?.enableUPI ?? false,
-        enableCOD: store.theme_settings?.enableCOD ?? true,
-        shippingType: store.theme_settings?.shippingType ?? 'flat',
-        flatFee: store.theme_settings?.flatFee ?? 15,
-        shippingHandler: store.theme_settings?.shippingHandler ?? 'platform'
+        enableUPI: store.theme_settings?.enableUPI ?? true,
+        enableCOD: store.theme_settings?.enableCOD ?? true
       });
       setLoading(false);
     } else {
@@ -33,8 +27,29 @@ export default function PaymentsPage() {
     }
   }, [store]);
 
-  const handleChange = (field, value) => {
-    setPayments(prev => ({ ...prev, [field]: value }));
+  const handleChange = async (field, value) => {
+    const updatedPayments = { ...payments, [field]: value };
+    setPayments(updatedPayments);
+
+    if (!store) return;
+    setSaving(true);
+    try {
+      const existingSettings = store.theme_settings || {};
+      await storeService.updateStore(store.id, {
+        theme_settings: {
+          ...existingSettings,
+          enableCard: updatedPayments.enableCard,
+          enableUPI: updatedPayments.enableUPI,
+          enableCOD: updatedPayments.enableCOD
+        }
+      });
+      await refreshStore();
+    } catch (err) {
+      console.error(err);
+      alert('Failed to auto-save toggle state: ' + err.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleSave = async () => {
@@ -47,14 +62,11 @@ export default function PaymentsPage() {
           ...existingSettings,
           enableCard: payments.enableCard,
           enableUPI: payments.enableUPI,
-          enableCOD: payments.enableCOD,
-          shippingType: payments.shippingType,
-          flatFee: parseFloat(payments.flatFee) || 0,
-          shippingHandler: payments.shippingHandler
+          enableCOD: payments.enableCOD
         }
       });
       await refreshStore();
-      alert('Payments & Shipping configuration saved successfully!');
+      alert('Payments configuration saved successfully!');
     } catch (err) {
       console.error(err);
       alert('Failed to save configuration: ' + err.message);
@@ -69,13 +81,15 @@ export default function PaymentsPage() {
     <div className="payments-page">
       <div className="header-row">
         <div className="header-left">
-          <h1>Payments & Shipping</h1>
+          <h1>Payments</h1>
           <p>Configure how you accept payments and deliver products.</p>
         </div>
-        <button className="save-btn" onClick={handleSave} disabled={saving}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
-          {saving ? 'Saving...' : 'Save Configuration'}
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#f8fafc', padding: '8px 16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+          <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: saving ? '#f59e0b' : '#10b981', animation: saving ? 'pulse 1.5s infinite' : 'none' }}></span>
+          <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 700 }}>
+            {saving ? 'Auto-saving...' : 'Saved to cloud'}
+          </span>
+        </div>
       </div>
 
       <div className="settings-section">
@@ -162,62 +176,6 @@ export default function PaymentsPage() {
           </div>
         </div>
       </div>
-
-      <div className="settings-section">
-        <div className="section-header">
-          <h3>Shipping Rules</h3>
-          <p>Configure shipping cost calculation and delivery preferences.</p>
-        </div>
-
-        <div className="shipping-form">
-          <div className="form-group">
-            <label>Shipping Cost Calculation</label>
-            <div className="select-wrapper">
-              <select value={payments.shippingType} onChange={(e) => handleChange('shippingType', e.target.value)}>
-                <option value="free">Free Shipping (All Orders)</option>
-                <option value="flat">Flat Rate Fee</option>
-                <option value="calculated">Calculated by Weight/Distance</option>
-              </select>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
-            </div>
-            <span className="field-hint">Charge a fixed shipping fee for every order.</span>
-          </div>
-
-          <div className="form-group">
-            <label>Flat Shipping Fee (₹)</label>
-            <input 
-              type="number" 
-              value={payments.flatFee} 
-              onChange={(e) => handleChange('flatFee', Number(e.target.value))}
-              placeholder="0.00"
-            />
-            <span className="field-hint">This amount will be added to every order.</span>
-          </div>
-
-          <div className="form-group">
-            <label>Shipping Handled By</label>
-            <div className="select-wrapper">
-              <select value={payments.shippingHandler} onChange={(e) => handleChange('shippingHandler', e.target.value)}>
-                <option value="platform">Platform Default Partner (Recommended)</option>
-                <option value="manual">Creator Manual Fulfillment</option>
-              </select>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
-            </div>
-            <span className="field-hint">We&apos;ll choose the best delivery partner automatically.</span>
-          </div>
-        </div>
-
-        <div className="info-box">
-          <div className="info-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9.663 17h4.674M12 3v1m0 16v1m5.657-13.657l-.707.707m-9.9 9.9l-.707.707M18 12h-1M7 12H6m11.657 5.657l-.707-.707M6.343 6.343l-.707-.707M12 7a5 5 0 0 0-5 5 5 5 0 0 0 5 5 5 5 0 0 0 5-5 5 5 0 0 0-5-5z"></path></svg>
-          </div>
-          <div className="info-text">
-            <strong>How it works</strong>
-            <p>A flat shipping fee of ₹{payments.flatFee} will be applied to every order, regardless of the order value or destination.</p>
-          </div>
-        </div>
-      </div>
-
       <style jsx>{`
         .payments-page {
           display: flex;

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { supabaseClient } from '@/lib/supabase';
 
 export async function POST(request) {
   try {
@@ -9,6 +10,23 @@ export async function POST(request) {
         { error: 'Missing required parameters: orderId and amount are required.' },
         { status: 400 }
       );
+    }
+
+    if (supabaseClient) {
+      const { data: dbOrder, error: dbErr } = await supabaseClient
+        .from('orders')
+        .select('store:store_id(status)')
+        .eq('id', orderId)
+        .single();
+      
+      if (dbErr) {
+        console.error('Failed to query order details in payment API:', dbErr);
+      } else if (dbOrder?.store?.status !== 'approved') {
+        return NextResponse.json(
+          { error: 'This store is currently under admin review and is not available for orders.' },
+          { status: 400 }
+        );
+      }
     }
 
     const keyId = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;

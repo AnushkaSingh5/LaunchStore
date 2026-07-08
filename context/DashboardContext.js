@@ -110,10 +110,11 @@ export function DashboardProvider({ children }) {
         setOrders(ordData || []);
 
         // Derive customers from orders
-        if (ordData && ordData.length > 0) {
+        const paidOrders = (ordData || []).filter(o => o.status !== 'Cancelled' && o.status !== 'pending_payment');
+        if (paidOrders.length > 0) {
           const uniqueCustomers = [];
           const emailMap = new Set();
-          ordData.forEach((order, index) => {
+          paidOrders.forEach((order, index) => {
             if (!emailMap.has(order.customer_email)) {
               emailMap.add(order.customer_email);
               uniqueCustomers.push({
@@ -121,7 +122,7 @@ export function DashboardProvider({ children }) {
                 name: order.customer_name,
                 email: order.customer_email,
                 phone: order.customer_phone || 'N/A',
-                orders: ordData.filter(o => o.customer_email === order.customer_email).length,
+                orders: paidOrders.filter(o => o.customer_email === order.customer_email).length,
               });
             }
           });

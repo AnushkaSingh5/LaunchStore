@@ -145,7 +145,7 @@ export const payoutService = {
       const creatorErns = mockCreatorEarnings.filter(e => e.creator_id === creatorId);
       const total = creatorErns.reduce((sum, e) => sum + parseFloat(e.creator_amount || 0), 0);
       const pending = creatorErns.filter(e => e.status === 'pending').reduce((sum, e) => sum + parseFloat(e.creator_amount || 0), 0);
-      const available = creatorErns.filter(e => e.status === 'available').reduce((sum, e) => sum + parseFloat(e.creator_amount || 0), 0);
+      const available = creatorErns.filter(e => e.status === 'available' || e.status === 'completed').reduce((sum, e) => sum + parseFloat(e.creator_amount || 0), 0);
       return {
         totalEarnings: total,
         pendingEarnings: pending,
@@ -171,7 +171,7 @@ export const payoutService = {
       const list = data || [];
       const total = list.reduce((sum, e) => sum + parseFloat(e.creator_amount || 0), 0);
       const pending = list.filter(e => e.status === 'pending').reduce((sum, e) => sum + parseFloat(e.creator_amount || 0), 0);
-      const available = list.filter(e => e.status === 'available').reduce((sum, e) => sum + parseFloat(e.creator_amount || 0), 0);
+      const available = list.filter(e => e.status === 'available' || e.status === 'completed').reduce((sum, e) => sum + parseFloat(e.creator_amount || 0), 0);
 
       return {
         totalEarnings: total,

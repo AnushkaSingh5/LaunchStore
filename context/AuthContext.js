@@ -55,6 +55,7 @@ export function AuthProvider({ children }) {
       try {
         const activeToken = token || supabaseAnonKey;
         const response = await fetchWithTimeout(`${supabaseUrl}/rest/v1/profiles?id=eq.${userId}&select=*`, {
+          cache: 'no-store',
           headers: {
             'apikey': supabaseAnonKey,
             'Authorization': `Bearer ${activeToken}`,
@@ -139,6 +140,7 @@ export function AuthProvider({ children }) {
       try {
         const activeToken = token || supabaseAnonKey;
         const response = await fetchWithTimeout(`${supabaseUrl}/rest/v1/stores?creator_id=eq.${userId}&select=*`, {
+          cache: 'no-store',
           headers: {
             'apikey': supabaseAnonKey,
             'Authorization': `Bearer ${activeToken}`,

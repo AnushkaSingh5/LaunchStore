@@ -4,8 +4,10 @@ import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/context/StoreContext';
+import { useAuth } from '@/context/AuthContext';
 import { useCustomerAuth } from '@/context/CustomerAuthContext';
 import { storeService } from '@/services/storeService';
+import StoreUnderReview from '@/components/StoreUnderReview';
 import { checkoutService } from '@/services/checkoutService';
 import { customerService } from '@/services/customerService';
 import Navbar from '@/components/Navbar';
@@ -18,6 +20,7 @@ export default function StoreCheckoutPage({ params }) {
   const { slug } = use(params);
   const { cart: globalCart, setCart, clearCart } = useStore();
   const { customer: user, customerProfile: profile, loading: authLoading } = useCustomerAuth();
+  const { user: creatorUser } = useAuth();
   const router = useRouter();
 
   const [storeDetails, setStoreDetails] = useState(null);
@@ -43,6 +46,7 @@ export default function StoreCheckoutPage({ params }) {
 
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('online');
 
   // Coupon States
   const [couponCodeInput, setCouponCodeInput] = useState('');
@@ -286,6 +290,19 @@ export default function StoreCheckoutPage({ params }) {
     );
   }
 
+  const currentUserId = creatorUser?.id;
+  const isCreator = currentUserId && currentUserId === storeDetails?.creator_id;
+
+  if (storeDetails && storeDetails.status !== 'approved' && !isCreator) {
+    return (
+      <StoreUnderReview 
+        storeName={storeDetails.name} 
+        status={storeDetails.status} 
+        statusReason={storeDetails.status_reason} 
+      />
+    );
+  }
+
   // Filter global cart items to only purchase items belonging to this specific store
   const cart = (globalCart || []).filter(
     item => item.store_id === storeDetails?.id || item.store_slug === slug
@@ -294,6 +311,21 @@ export default function StoreCheckoutPage({ params }) {
   const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const tax = cartTotal * 0.08;
   
+  const shippingType = storeDetails?.theme_settings?.shippingType ?? 'flat';
+  const flatFee = parseFloat(storeDetails?.theme_settings?.flatFee) ?? 15;
+  
+  let shippingCost = 0;
+  if (cart.length > 0) {
+    if (shippingType === 'flat') {
+      shippingCost = flatFee;
+    } else if (shippingType === 'calculated') {
+      const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+      shippingCost = 40 + (totalItems * 10);
+    } else {
+      shippingCost = 0;
+    }
+  }
+
   const isCouponValidForTotal = !appliedCoupon || (
     (!appliedCoupon.minimum_order_amount || cartTotal >= appliedCoupon.minimum_order_amount)
   );
@@ -304,7 +336,7 @@ export default function StoreCheckoutPage({ params }) {
       : parseFloat(appliedCoupon.discount_value)
   ) : 0;
   
-  const total = Math.max(0, cartTotal + tax - discount);
+  const total = Math.max(0, cartTotal + tax - discount + shippingCost);
 
   const handleApplyCoupon = async (e) => {
     if (e) e.preventDefault();
@@ -381,10 +413,10 @@ export default function StoreCheckoutPage({ params }) {
         coupon_code: appliedCoupon.code,
         discount_amount: discount
       } : null;
-
       const response = await checkoutService.processCheckout(cart, {
         ...form,
-        id: profile?.id
+        id: profile?.id,
+        payment_provider: paymentMethod === 'cod' ? 'COD' : (process.env.NEXT_PUBLIC_ACTIVE_PAYMENT_PROVIDER || 'Razorpay')
       }, couponData);
       if (response.success && response.orders?.length > 0) {
         setPlacedOrder(response.orders[0]);
@@ -424,6 +456,12 @@ export default function StoreCheckoutPage({ params }) {
           }
         } catch (addrErr) {
           console.warn('⚠️ [Checkout] Failed to auto-save address to address book:', addrErr?.message || addrErr);
+        }
+
+        if (paymentMethod === 'cod') {
+          await clearCart();
+          router.push(`/store/${slug}/checkout/success?orderId=${response.orders[0].id}`);
+          return;
         }
 
         // Trigger payment flow
@@ -889,6 +927,68 @@ export default function StoreCheckoutPage({ params }) {
                 </div>
               </div>
 
+              {/* Payment Method Selector */}
+              {storeDetails?.theme_settings?.enableCOD !== false && (
+                <div className="payment-method-section" style={{ marginTop: '24px', marginBottom: '24px' }}>
+                  <h3 className="address-selector-title" style={{ fontSize: '15px', fontWeight: 800, color: '#1e293b', marginBottom: '12px' }}>Choose Payment Method</h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <div 
+                      onClick={() => setPaymentMethod('online')}
+                      style={{
+                        border: paymentMethod === 'online' ? '2px solid #8b5cf6' : '1px solid #e2e8f0',
+                        background: paymentMethod === 'online' ? '#f5f3ff' : '#fff',
+                        padding: '16px',
+                        borderRadius: '12px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      <input 
+                        type="radio" 
+                        name="paymentMethodRadio" 
+                        checked={paymentMethod === 'online'}
+                        onChange={() => setPaymentMethod('online')}
+                        style={{ accentColor: '#8b5cf6', width: '18px', height: '18px', cursor: 'pointer' }}
+                      />
+                      <div>
+                        <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 700, color: '#1e293b' }}>Online Payment</h4>
+                        <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#64748b' }}>UPI, Cards, Wallets, NetBanking</p>
+                      </div>
+                    </div>
+
+                    <div 
+                      onClick={() => setPaymentMethod('cod')}
+                      style={{
+                        border: paymentMethod === 'cod' ? '2px solid #8b5cf6' : '1px solid #e2e8f0',
+                        background: paymentMethod === 'cod' ? '#f5f3ff' : '#fff',
+                        padding: '16px',
+                        borderRadius: '12px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      <input 
+                        type="radio" 
+                        name="paymentMethodRadio" 
+                        checked={paymentMethod === 'cod'}
+                        onChange={() => setPaymentMethod('cod')}
+                        style={{ accentColor: '#8b5cf6', width: '18px', height: '18px', cursor: 'pointer' }}
+                      />
+                      <div>
+                        <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 700, color: '#1e293b' }}>Cash on Delivery (COD)</h4>
+                        <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#64748b' }}>Pay in cash/UPI upon delivery</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <button type="submit" className="submit-order-btn" disabled={loading}>
                 {loading ? 'Processing Your Purchase...' : 'Complete Order'}
               </button>
@@ -997,7 +1097,9 @@ export default function StoreCheckoutPage({ params }) {
                 </div>
                 <div className="sum-row">
                   <span>Shipping</span>
-                  <span className="free">FREE</span>
+                  <span className={shippingCost === 0 ? "free" : ""}>
+                    {shippingCost === 0 ? "FREE" : `₹${shippingCost.toLocaleString()}`}
+                  </span>
                 </div>
                 <div className="sum-row grand-total">
                   <span>Total</span>

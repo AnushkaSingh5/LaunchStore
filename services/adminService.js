@@ -3,7 +3,7 @@ import { supabaseClient } from '@/lib/supabase';
 const getAdminEmail = () => {
   try {
     if (typeof window !== 'undefined') {
-      const session = localStorage.getItem('admin_session');
+      const session = sessionStorage.getItem('admin_session');
       if (session) {
         return JSON.parse(session).email;
       }

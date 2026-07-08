@@ -4,6 +4,8 @@ import { useState, Suspense, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCustomerAuth } from '@/context/CustomerAuthContext';
+import { storeService } from '@/services/storeService';
+import StoreUnderReview from '@/components/StoreUnderReview';
 
 function LoginContent() {
   const router = useRouter();
@@ -29,6 +31,29 @@ function LoginContent() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  const [storeDetails, setStoreDetails] = useState(null);
+  const [checkingStore, setCheckingStore] = useState(false);
+
+  useEffect(() => {
+    const checkTargetStore = async () => {
+      const redirectPath = redirect || '';
+      if (redirectPath.startsWith('/store/')) {
+        const slug = redirectPath.split('/')[2];
+        if (slug) {
+          setCheckingStore(true);
+          try {
+            const store = await storeService.getStoreBySlug(slug);
+            setStoreDetails(store);
+          } catch (e) {
+            console.error('Failed to pre-check store status on customer login:', e);
+          } finally {
+            setCheckingStore(false);
+          }
+        }
+      }
+    };
+    checkTargetStore();
+  }, [redirect]);
 
   // Calculate back URL to return to the active store instead of the root landing page
   const backUrl = redirect && redirect.startsWith('/store/') ? redirect : '/';
@@ -47,6 +72,15 @@ function LoginContent() {
       setActiveTab(method);
     }
   }, [method]);
+
+  if (checkingStore) {
+    return <div className="loading-text">Verifying store details...</div>;
+  }
+
+  const isStoreUnderReview = storeDetails && storeDetails.status !== 'approved';
+  const displayError = isStoreUnderReview 
+    ? 'This store is currently under admin review. Customer access will be available once the store has been approved.' 
+    : errorMsg;
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -149,9 +183,9 @@ function LoginContent() {
         <p className="subtitle">Sign in to track orders, manage addresses, and shop securely.</p>
       </div>
 
-      {errorMsg && (
+      {displayError && (
         <div className="error-banner">
-          {errorMsg}
+          {displayError}
         </div>
       )}
 
@@ -167,6 +201,7 @@ function LoginContent() {
           type="button" 
           onClick={() => handleSocialLogin('google')} 
           className="social-btn google-btn-full"
+          disabled={loading || isStoreUnderReview}
         >
           <svg className="social-icon" viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg">
             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -187,22 +222,26 @@ function LoginContent() {
         <button 
           type="button" 
           onClick={() => {
+            if (isStoreUnderReview) return;
             setActiveTab('email');
             setErrorMsg('');
             setSuccessMsg('');
           }} 
           className={`tab-btn ${activeTab === 'email' ? 'active' : ''}`}
+          disabled={isStoreUnderReview}
         >
           Email
         </button>
         <button 
           type="button" 
           onClick={() => {
+            if (isStoreUnderReview) return;
             setActiveTab('phone');
             setErrorMsg('');
             setSuccessMsg('');
           }} 
           className={`tab-btn ${activeTab === 'phone' ? 'active' : ''}`}
+          disabled={isStoreUnderReview}
         >
           Mobile Number
         </button>
@@ -221,6 +260,7 @@ function LoginContent() {
               placeholder="you@example.com"
               required
               autoComplete="new-password"
+              disabled={isStoreUnderReview}
             />
           </div>
 
@@ -234,10 +274,11 @@ function LoginContent() {
               placeholder="••••••••"
               required
               autoComplete="new-password"
+              disabled={isStoreUnderReview}
             />
           </div>
 
-          <button type="submit" className="submit-btn" disabled={loading}>
+          <button type="submit" className="submit-btn" disabled={loading || isStoreUnderReview}>
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
@@ -258,11 +299,12 @@ function LoginContent() {
                   placeholder="+15551234567"
                   required
                   autoComplete="off"
+                  disabled={isStoreUnderReview}
                 />
                 <p className="form-tip">Include country code (e.g., +1 for USA, +91 for India).</p>
               </div>
 
-              <button type="submit" className="submit-btn" disabled={otpLoading}>
+              <button type="submit" className="submit-btn" disabled={otpLoading || isStoreUnderReview}>
                 {otpLoading ? 'Sending OTP...' : 'Send OTP'}
               </button>
             </form>
@@ -273,12 +315,14 @@ function LoginContent() {
                 <button 
                   type="button" 
                   onClick={() => {
+                    if (isStoreUnderReview) return;
                     setOtpSent(false);
                     setOtp('');
                     setErrorMsg('');
                     setSuccessMsg('');
                   }} 
                   className="change-phone-btn"
+                  disabled={isStoreUnderReview}
                 >
                   Change
                 </button>
@@ -295,10 +339,11 @@ function LoginContent() {
                   maxLength={6}
                   required
                   autoComplete="off"
+                  disabled={isStoreUnderReview}
                 />
               </div>
 
-              <button type="submit" className="submit-btn" disabled={loading}>
+              <button type="submit" className="submit-btn" disabled={loading || isStoreUnderReview}>
                 {loading ? 'Verifying...' : 'Verify & Sign In'}
               </button>
 
@@ -306,7 +351,7 @@ function LoginContent() {
                 type="button" 
                 onClick={handleSendOtp} 
                 className="resend-otp-link"
-                disabled={otpLoading}
+                disabled={otpLoading || isStoreUnderReview}
               >
                 {otpLoading ? 'Resending code...' : 'Resend verification code'}
               </button>
@@ -317,9 +362,15 @@ function LoginContent() {
 
       <div className="login-footer">
         New customer?{' '}
-        <Link href={`/customer/signup?redirect=${encodeURIComponent(redirect)}`} className="register-link">
-          Create account
-        </Link>
+        {isStoreUnderReview ? (
+          <span className="register-link-disabled" style={{ color: '#94a3b8', cursor: 'not-allowed', textDecoration: 'underline' }}>
+            Create account
+          </span>
+        ) : (
+          <Link href={`/customer/signup?redirect=${encodeURIComponent(redirect)}`} className="register-link">
+            Create account
+          </Link>
+        )}
       </div>
 
       <style jsx>{`

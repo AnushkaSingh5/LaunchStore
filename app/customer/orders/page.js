@@ -156,8 +156,8 @@ export default function CustomerOrdersPage() {
                     <span className={`status-pill ${getStatusClass(order.status)}`}>
                       {order.status}
                     </span>
-                    <span className={`status-pill ${getStatusClass(order.payment_status || 'Pending')}`} style={{ fontSize: '10px', padding: '2px 8px' }}>
-                      {order.payment_status || 'Pending'}
+                    <span className={`status-pill ${getStatusClass(order.payment_provider === 'COD' && order.payment_status === 'pending' ? 'pending' : (order.payment_status || 'Pending'))}`} style={{ fontSize: '10px', padding: '2px 8px' }}>
+                      {order.payment_provider === 'COD' && order.payment_status === 'pending' ? 'Pay on Delivery' : (order.payment_status || 'Pending')}
                     </span>
                   </div>
                 </span>
@@ -217,8 +217,8 @@ export default function CustomerOrdersPage() {
                 <div>
                   <span className="label">Payment Status</span>
                   <p>
-                    <span className={`status-pill ${getStatusClass(selectedOrder.payment_status || 'Pending')}`}>
-                      {selectedOrder.payment_status || 'Pending'}
+                    <span className={`status-pill ${getStatusClass(selectedOrder.payment_provider === 'COD' && selectedOrder.payment_status === 'pending' ? 'pending' : (selectedOrder.payment_status || 'Pending'))}`}>
+                      {selectedOrder.payment_provider === 'COD' && selectedOrder.payment_status === 'pending' ? 'Pay on Delivery' : (selectedOrder.payment_status || 'Pending')}
                     </span>
                   </p>
                 </div>

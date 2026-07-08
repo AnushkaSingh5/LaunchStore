@@ -35,7 +35,7 @@ const getDynamicChartData = (ordersList, timeframe) => {
       const daySales = ordersList
         .filter(o => {
           const od = new Date(o.created_at);
-          return od.toDateString() === d.toDateString() && o.status !== 'Cancelled';
+          return od.toDateString() === d.toDateString() && o.status !== 'Cancelled' && o.status !== 'pending_payment';
         })
         .reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
         
@@ -52,7 +52,7 @@ const getDynamicChartData = (ordersList, timeframe) => {
       const weekSales = ordersList
         .filter(o => {
           const od = new Date(o.created_at);
-          return od >= start && od <= end && o.status !== 'Cancelled';
+          return od >= start && od <= end && o.status !== 'Cancelled' && o.status !== 'pending_payment';
         })
         .reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
         
@@ -67,7 +67,7 @@ const getDynamicChartData = (ordersList, timeframe) => {
       const monthSales = ordersList
         .filter(o => {
           const od = new Date(o.created_at);
-          return od.getMonth() === d.getMonth() && od.getFullYear() === d.getFullYear() && o.status !== 'Cancelled';
+          return od.getMonth() === d.getMonth() && od.getFullYear() === d.getFullYear() && o.status !== 'Cancelled' && o.status !== 'pending_payment';
         })
         .reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
         
@@ -81,7 +81,7 @@ const getDynamicChartData = (ordersList, timeframe) => {
       const yearSales = ordersList
         .filter(o => {
           const od = new Date(o.created_at);
-          return od.getFullYear() === year && o.status !== 'Cancelled';
+          return od.getFullYear() === year && o.status !== 'Cancelled' && o.status !== 'pending_payment';
         })
         .reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
         
@@ -204,7 +204,7 @@ export default function DashboardOverview() {
   }, [orders, timeframe]);
 
   const totalSales = orders
-    .filter(o => o.status !== 'Cancelled')
+    .filter(o => o.status !== 'Cancelled' && o.status !== 'pending_payment')
     .reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
 
   const activeProducts = products.filter(p => p.status === 'Published').length;
@@ -218,8 +218,9 @@ export default function DashboardOverview() {
     total: parseFloat(order.total_amount || 0)
   }));
 
-  const avgOrderValue = orders.length > 0 
-    ? Math.round((totalSales / orders.length) * 100) / 100 
+  const paidOrdersCount = orders.filter(o => o.status !== 'Cancelled' && o.status !== 'pending_payment').length;
+  const avgOrderValue = paidOrdersCount > 0 
+    ? Math.round((totalSales / paidOrdersCount) * 100) / 100 
     : 0;
 
   const refunds = orders
@@ -230,18 +231,16 @@ export default function DashboardOverview() {
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
 
-  const currentPeriodOrders = orders.filter(o => new Date(o.created_at) >= thirtyDaysAgo);
+  const currentPeriodOrders = orders.filter(o => o.status !== 'Cancelled' && o.status !== 'pending_payment' && new Date(o.created_at) >= thirtyDaysAgo);
   const previousPeriodOrders = orders.filter(o => {
     const d = new Date(o.created_at);
-    return d >= sixtyDaysAgo && d < thirtyDaysAgo;
+    return o.status !== 'Cancelled' && o.status !== 'pending_payment' && d >= sixtyDaysAgo && d < thirtyDaysAgo;
   });
 
   // Sales trend
   const currentPeriodSales = currentPeriodOrders
-    .filter(o => o.status !== 'Cancelled')
     .reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
   const previousPeriodSales = previousPeriodOrders
-    .filter(o => o.status !== 'Cancelled')
     .reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
 
   let salesChangeText = '0.0% from last month';
@@ -301,11 +300,11 @@ export default function DashboardOverview() {
   }
 
   // Conversion rate (simulate dynamically: 0.0% if 0 orders, 2.4% if orders exist)
-  const conversionRate = orders.length > 0 ? '2.4%' : '0.0%';
+  const conversionRate = paidOrdersCount > 0 ? '2.4%' : '0.0%';
 
   const stats = {
     totalSales,
-    totalOrders: orders.length,
+    totalOrders: paidOrdersCount,
     activeProducts,
     totalCustomers,
     recentOrders,
@@ -489,67 +488,6 @@ export default function DashboardOverview() {
             </div>
           </div>
           <span className={`stat-change ${customersChangeClass}`}>{customersChangeText}</span>
-        </div>
-      </div>
-
-      <div className="dashboard-section-header" style={{ marginTop: '32px', marginBottom: '16px' }}>
-        <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#1e293b', margin: 0 }}>Earnings & Payouts</h3>
-        <p style={{ fontSize: '14px', color: '#64748b', margin: '4px 0 0 0' }}>Manage your revenue balance and payout eligibility.</p>
-      </div>
-
-      <div className="stats-grid" style={{ marginBottom: '32px' }}>
-        <div className="stat-card">
-          <div className="stat-card-inner">
-            <div className="icon-wrapper" style={{ background: '#ecfdf5', color: '#10b981' }}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
-            </div>
-            <div className="stat-info">
-              <h3>Total Earnings</h3>
-              <p className="stat-value">₹{earningsSummary.totalEarnings.toLocaleString()}</p>
-            </div>
-          </div>
-          <span className="stat-change positive">Lifetime sales revenue</span>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-card-inner">
-            <div className="icon-wrapper" style={{ background: '#fffbeb', color: '#f59e0b' }}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-            </div>
-            <div className="stat-info">
-              <h3>Pending Earnings</h3>
-              <p className="stat-value">₹{earningsSummary.pendingEarnings.toLocaleString()}</p>
-            </div>
-          </div>
-          <span className="stat-change warning">7-day holding period</span>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-card-inner">
-            <div className="icon-wrapper" style={{ background: '#f5f3ff', color: '#8b5cf6' }}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
-            </div>
-            <div className="stat-info">
-              <h3>Available Earnings</h3>
-              <p className="stat-value">₹{earningsSummary.availableEarnings.toLocaleString()}</p>
-            </div>
-          </div>
-          <span className="stat-change positive" style={{ color: '#8b5cf6', cursor: 'pointer', fontWeight: 700 }} onClick={() => router.push('/dashboard/earnings')}>
-            Ready for Payout →
-          </span>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-card-inner">
-            <div className="icon-wrapper" style={{ background: '#eff6ff', color: '#3b82f6' }}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
-            </div>
-            <div className="stat-info">
-              <h3>Lifetime Orders</h3>
-              <p className="stat-value">{earningsSummary.lifetimeOrders}</p>
-            </div>
-          </div>
-          <span className="stat-change neutral">Completed orders</span>
         </div>
       </div>
 

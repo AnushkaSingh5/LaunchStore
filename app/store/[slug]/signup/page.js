@@ -7,6 +7,7 @@ import { authService } from '@/services/authService';
 import { storeService } from '@/services/storeService';
 import { supabaseClient } from '@/lib/supabase';
 import { useLoading } from '@/components/TopLoader';
+import StoreUnderReview from '@/components/StoreUnderReview';
 
 export default function StoreSignupPage({ params }) {
   const { slug } = use(params);
@@ -96,6 +97,11 @@ export default function StoreSignupPage({ params }) {
     }
   };
 
+  const isStoreUnderReview = storeDetails && storeDetails.status !== 'approved';
+  const displayError = isStoreUnderReview 
+    ? "This store is currently under admin review. Customer access will be available once the store has been approved."
+    : errorMsg;
+
   return (
     <div className="signup-container">
       <div className="glow-bg"></div>
@@ -115,9 +121,9 @@ export default function StoreSignupPage({ params }) {
           <p>Register to start shopping at <strong>{storeDetails?.name || 'Store'}</strong></p>
         </div>
 
-        {errorMsg && (
+        {displayError && (
           <div className="error-banner">
-            {errorMsg}
+            {displayError}
           </div>
         )}
 
@@ -133,6 +139,7 @@ export default function StoreSignupPage({ params }) {
             type="button" 
             onClick={() => handleSocialLogin('google')} 
             className="social-btn"
+            disabled={loading || isStoreUnderReview}
           >
             <svg className="social-icon" viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: '10px' }}>
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -158,6 +165,7 @@ export default function StoreSignupPage({ params }) {
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. John Doe"
               required
+              disabled={isStoreUnderReview}
             />
           </div>
 
@@ -170,6 +178,7 @@ export default function StoreSignupPage({ params }) {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="john@example.com"
               required
+              disabled={isStoreUnderReview}
             />
           </div>
 
@@ -182,6 +191,7 @@ export default function StoreSignupPage({ params }) {
               onChange={(e) => setPhone(e.target.value)}
               placeholder="e.g. +1 (555) 019-2834"
               required
+              disabled={isStoreUnderReview}
             />
           </div>
 
@@ -195,19 +205,26 @@ export default function StoreSignupPage({ params }) {
               placeholder="Choose a password (min. 6 characters)"
               minLength={6}
               required
+              disabled={isStoreUnderReview}
             />
           </div>
 
-          <button type="submit" className="submit-btn" disabled={loading}>
+          <button type="submit" className="submit-btn" disabled={loading || isStoreUnderReview}>
             {loading ? 'Creating account...' : 'Create Account'}
           </button>
         </form>
 
         <div className="signup-footer">
           Already have an account?{' '}
-          <Link href={`/store/${slug}/login?redirect=${encodeURIComponent(redirect)}`} className="register-link">
-            Log in
-          </Link>
+          {isStoreUnderReview ? (
+            <span className="register-link-disabled" style={{ color: '#94a3b8', cursor: 'not-allowed', textDecoration: 'underline' }}>
+              Log in
+            </span>
+          ) : (
+            <Link href={`/store/${slug}/login?redirect=${encodeURIComponent(redirect)}`} className="register-link">
+              Log in
+            </Link>
+          )}
         </div>
       </div>
 

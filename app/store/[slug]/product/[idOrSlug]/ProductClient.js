@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useStore } from '@/context/StoreContext';
+import { useAuth } from '@/context/AuthContext';
+import StoreUnderReview from '@/components/StoreUnderReview';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
@@ -28,6 +30,20 @@ export default function ProductClient({ slug, initialStoreDetails, initialProduc
     addToCart(product, quantity);
     router.push(`/store/${slug}/cart`);
   };
+
+  const { user } = useAuth();
+  const currentUserId = user?.id;
+  const isCreator = currentUserId && currentUserId === storeDetails?.creator_id;
+
+  if (storeDetails && storeDetails.status !== 'approved' && !isCreator) {
+    return (
+      <StoreUnderReview 
+        storeName={storeDetails.name} 
+        status={storeDetails.status} 
+        statusReason={storeDetails.status_reason} 
+      />
+    );
+  }
 
   if (!storeDetails) {
     return (

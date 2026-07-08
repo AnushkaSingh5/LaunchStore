@@ -3,13 +3,16 @@
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { useStore } from '@/context/StoreContext';
+import { useAuth } from '@/context/AuthContext';
 import { storeService } from '@/services/storeService';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import StoreUnderReview from '@/components/StoreUnderReview';
 
 export default function CartPage({ params }) {
   const { slug } = use(params);
   const { cart: globalCart, updateQuantity, removeFromCart, clearCart } = useStore();
+  const { user } = useAuth();
   const [storeDetails, setStoreDetails] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -125,13 +128,40 @@ export default function CartPage({ params }) {
     );
   }
 
+  const currentUserId = user?.id;
+  const isCreator = currentUserId && currentUserId === storeDetails?.creator_id;
+
+  if (storeDetails && storeDetails.status !== 'approved' && !isCreator) {
+    return (
+      <StoreUnderReview 
+        storeName={storeDetails.name} 
+        status={storeDetails.status} 
+        statusReason={storeDetails.status_reason} 
+      />
+    );
+  }
+
   const cart = (globalCart || []).filter(
     item => item.store_id === storeDetails?.id || item.store_slug === slug
   );
   const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const hasInventoryErrors = cart.some(item => item.stock === 0 || item.quantity > item.stock);
 
-  const shipping = cart.length > 0 ? 0 : 0; // Free shipping for now
+  const shippingType = storeDetails?.theme_settings?.shippingType ?? 'flat';
+  const flatFee = parseFloat(storeDetails?.theme_settings?.flatFee) ?? 15;
+  
+  let shipping = 0;
+  if (cart.length > 0) {
+    if (shippingType === 'flat') {
+      shipping = flatFee;
+    } else if (shippingType === 'calculated') {
+      const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+      shipping = 40 + (totalItems * 10);
+    } else {
+      shipping = 0;
+    }
+  }
+
   const tax = cartTotal * 0.08;
   const total = cartTotal + tax + shipping;
 
@@ -225,7 +255,9 @@ export default function CartPage({ params }) {
               </div>
               <div className="summary-row">
                 <span>Shipping</span>
-                <span className="free">FREE</span>
+                <span className={shipping === 0 ? "free" : ""}>
+                  {shipping === 0 ? "FREE" : `₹${shipping.toLocaleString()}`}
+                </span>
               </div>
 
               <div className="summary-total">

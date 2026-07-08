@@ -94,7 +94,8 @@ export default function OrdersPage() {
     date: o.created_at,
     total: parseFloat(o.total_amount || 0),
     status: o.status,
-    payment: o.payment_status || 'Pending',
+    payment: o.payment_provider === 'COD' && o.payment_status === 'pending' ? 'Pay on Delivery' : (o.payment_status || 'Pending'),
+    payment_provider: o.payment_provider,
     shipping_address: o.shipping_address,
     shipping_address_line1: o.shipping_address_line1,
     shipping_address_line2: o.shipping_address_line2,
@@ -1760,7 +1761,7 @@ export default function OrdersPage() {
             <div className="info-divider"></div>
             <div className="info-item status">
               <span className="info-label">Update Status</span>
-              {selectedOrder?.payment.toLowerCase() === 'paid' ? (
+              {selectedOrder?.payment.toLowerCase() === 'paid' || selectedOrder?.payment_provider === 'COD' || selectedOrder?.payment === 'Pay on Delivery' ? (
                 <div className="val-select-wrapper">
                   <select value={selectedOrder?.status} onChange={(e) => handleStatusChange(e.target.value)}>
                     <option value="Pending">Pending</option>

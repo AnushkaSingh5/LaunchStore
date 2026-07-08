@@ -105,6 +105,7 @@ export const storeService = {
       const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
       const response = await fetch(`${supabaseUrl}/rest/v1/stores?slug=eq.${slug}&select=*`, {
+        cache: 'no-store',
         headers: {
           'apikey': supabaseAnonKey,
           'Authorization': `Bearer ${supabaseAnonKey}`,
@@ -192,7 +193,11 @@ export const storeService = {
    * Update existing store configuration
    */
   updateStore: async (storeId, updateData) => {
-    if (!supabaseClient) throw new Error('Supabase client is not initialized.');
+    if (!supabaseClient) {
+      console.warn('[storeService]: Offline mode. Mocking store update.');
+      Object.assign(storeData, updateData);
+      return storeData;
+    }
     return runWithTimeoutAndRetry(async () => {
       const { data, error } = await supabaseClient
         .from('stores')

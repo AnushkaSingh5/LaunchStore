@@ -29,10 +29,10 @@ export default function AdminSidebar({ isOpen, onClose, isCollapsed, onToggle })
   const handleLogout = async () => {
     try {
       await adminSignOut();
-      window.location.href = '/admin/login';
+      window.location.href = '/';
     } catch (e) {
       console.error('Logout error:', e);
-      window.location.href = '/admin/login';
+      window.location.href = '/';
     }
   };
 

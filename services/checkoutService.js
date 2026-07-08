@@ -102,7 +102,31 @@ export const checkoutService = {
       const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
       const tax = subtotal * 0.08;
       const discount = couponData ? parseFloat(couponData.discount_amount) || 0 : 0;
-      const totalAmount = Math.max(0, subtotal + tax - discount); // Free shipping
+      
+      let shippingCost = 0;
+      if (supabaseClient && storeId !== 'unknown') {
+        const { data: storeData } = await supabaseClient
+          .from('stores')
+          .select('theme_settings')
+          .eq('id', storeId)
+          .maybeSingle();
+
+        if (storeData) {
+          const themeSettings = storeData.theme_settings || {};
+          const shippingType = themeSettings.shippingType ?? 'flat';
+          const flatFee = parseFloat(themeSettings.flatFee) ?? 15;
+          if (shippingType === 'flat') {
+            shippingCost = flatFee;
+          } else if (shippingType === 'calculated') {
+            const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+            shippingCost = 40 + (totalItems * 10);
+          } else {
+            shippingCost = 0;
+          }
+        }
+      }
+
+      const totalAmount = Math.max(0, subtotal + tax - discount + shippingCost);
 
       const orderData = {
         store_id: storeId === 'unknown' ? null : storeId,
@@ -125,6 +149,8 @@ export const checkoutService = {
         shipping_pincode: customerInfo.pincode,
 
         total_amount: totalAmount,
+        shipping_cost: shippingCost,
+        payment_provider: customerInfo.payment_provider || 'Razorpay',
         items,
         coupon_id: couponData?.coupon_id || null,
         coupon_code: couponData?.coupon_code || null,

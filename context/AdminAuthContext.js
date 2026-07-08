@@ -13,7 +13,7 @@ export function AdminAuthProvider({ children }) {
   useEffect(() => {
     // Initial mount session restore
     try {
-      const persistedSession = localStorage.getItem('admin_session');
+      const persistedSession = sessionStorage.getItem('admin_session');
       if (persistedSession) {
         setAdminUser(JSON.parse(persistedSession));
       }
@@ -33,7 +33,7 @@ export function AdminAuthProvider({ children }) {
         if (email.toLowerCase() === 'admin@launchcart.com' && password === 'admin123') {
           const mockUser = { id: 'admin-mock-uuid', email: 'admin@launchcart.com', full_name: 'Local Administrator' };
           setAdminUser(mockUser);
-          localStorage.setItem('admin_session', JSON.stringify(mockUser));
+          sessionStorage.setItem('admin_session', JSON.stringify(mockUser));
           return { success: true };
         }
         throw new Error('Supabase client is not initialized.');
@@ -60,7 +60,7 @@ export function AdminAuthProvider({ children }) {
         if (!rpcError && data && data.length > 0) {
           const authenticatedAdmin = data[0];
           setAdminUser(authenticatedAdmin);
-          localStorage.setItem('admin_session', JSON.stringify(authenticatedAdmin));
+          sessionStorage.setItem('admin_session', JSON.stringify(authenticatedAdmin));
           return { success: true };
         }
         
@@ -87,7 +87,7 @@ export function AdminAuthProvider({ children }) {
           if (user.password_hash === password || password === 'admin123') {
             const admin = { id: user.id, email: user.email, full_name: user.full_name };
             setAdminUser(admin);
-            localStorage.setItem('admin_session', JSON.stringify(admin));
+            sessionStorage.setItem('admin_session', JSON.stringify(admin));
             return { success: true };
           }
         }
@@ -99,7 +99,7 @@ export function AdminAuthProvider({ children }) {
       if (email.toLowerCase() === 'admin@launchcart.com' && password === 'admin123') {
         const fallbackAdmin = { id: 'admin-fallback-uuid', email: 'admin@launchcart.com', full_name: 'Fallback Administrator' };
         setAdminUser(fallbackAdmin);
-        localStorage.setItem('admin_session', JSON.stringify(fallbackAdmin));
+        sessionStorage.setItem('admin_session', JSON.stringify(fallbackAdmin));
         return { success: true };
       }
 
@@ -115,7 +115,7 @@ export function AdminAuthProvider({ children }) {
   const adminSignOut = async () => {
     setLoading(true);
     try {
-      localStorage.removeItem('admin_session');
+      sessionStorage.removeItem('admin_session');
       setAdminUser(null);
     } catch (e) {
       console.error('Logout error:', e);

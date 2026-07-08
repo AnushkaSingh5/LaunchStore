@@ -176,7 +176,7 @@ export default function SettingsPage() {
                 accept="image/*"
                 onChange={(e) => handleFileUpload('logo', e)}
               />
-              <div className="upload-box" onClick={() => logoInputRef.current.click()}>
+              <div className={`upload-box logo-upload-box ${settings.logo ? 'has-preview' : ''}`} onClick={() => logoInputRef.current.click()}>
                 {settings.logo ? (
                   <div className="preview-container">
                     <img src={settings.logo} alt="Logo preview" className="logo-preview" />
@@ -205,7 +205,7 @@ export default function SettingsPage() {
                 accept="image/*"
                 onChange={(e) => handleFileUpload('banner', e)}
               />
-              <div className="upload-box banner" onClick={() => bannerInputRef.current.click()}>
+              <div className={`upload-box banner-upload-box ${settings.banner ? 'has-preview' : ''}`} onClick={() => bannerInputRef.current.click()}>
                 {settings.banner ? (
                   <div className="preview-container">
                     <img src={settings.banner} alt="Banner preview" className="banner-preview" />
@@ -508,11 +508,28 @@ export default function SettingsPage() {
           gap: 4px;
           cursor: pointer;
           transition: all 0.2s;
+          box-sizing: border-box;
         }
 
         .upload-box:hover {
           border-color: #8b5cf6;
           background: #fbfaff;
+        }
+
+        .logo-upload-box {
+          width: 150px;
+          height: 150px;
+          aspect-ratio: 1 / 1;
+        }
+
+        .banner-upload-box {
+          width: 100%;
+          height: 150px;
+        }
+
+        .upload-box.has-preview {
+          padding: 0;
+          border-style: solid;
         }
 
         .upload-circle {
@@ -544,19 +561,22 @@ export default function SettingsPage() {
           display: flex;
           align-items: center;
           justify-content: center;
+          overflow: hidden;
+          border-radius: 14px;
         }
 
         .logo-preview {
-          max-width: 100px;
-          max-height: 100px;
-          object-fit: contain;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          border-radius: 14px;
         }
 
         .banner-preview {
           width: 100%;
           height: 100%;
           object-fit: cover;
-          border-radius: 12px;
+          border-radius: 14px;
         }
 
         .preview-overlay {
@@ -570,7 +590,7 @@ export default function SettingsPage() {
           gap: 8px;
           opacity: 0;
           transition: opacity 0.2s;
-          border-radius: 12px;
+          border-radius: 14px;
         }
 
         .preview-container:hover .preview-overlay {

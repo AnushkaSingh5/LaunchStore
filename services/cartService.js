@@ -83,6 +83,22 @@ export const cartService = {
   addOrUpdateCartItem: async (cartId, productId, quantity) => {
     if (!supabaseClient) return;
 
+    // Verify product's store is approved
+    const { data: product, error: prodError } = await supabaseClient
+      .from('products')
+      .select('store:store_id(status, creator_id)')
+      .eq('id', productId)
+      .single();
+    if (prodError) throw prodError;
+    
+    if (product?.store?.status !== 'approved') {
+      const { data: { user } } = await supabaseClient.auth.getUser().catch(() => ({ data: { user: null } }));
+      const isOwner = user?.id && user.id === product.store.creator_id;
+      if (!isOwner) {
+        throw new Error('This store is currently under admin review and is not available to customers.');
+      }
+    }
+
     // Check if the item already exists in the cart
     const { data: existing, error: fetchError } = await supabaseClient
       .from('cart_items')
