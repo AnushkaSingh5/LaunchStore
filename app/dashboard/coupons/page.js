@@ -90,6 +90,17 @@ export default function CouponsPage() {
       return;
     }
 
+    if (expiryDate) {
+      const selected = new Date(expiryDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      selected.setHours(0, 0, 0, 0);
+      if (selected < today) {
+        setFormError('Expiry date cannot be in the past.');
+        return;
+      }
+    }
+
     const payload = {
       code: trimmedCode,
       discount_type: discountType,
@@ -152,6 +163,9 @@ export default function CouponsPage() {
   
   const mostUsedCoupon = [...coupons]
     .sort((a, b) => (b.current_uses || 0) - (a.current_uses || 0))[0] || null;
+
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
   return (
     <div className="coupons-page">
@@ -480,13 +494,14 @@ export default function CouponsPage() {
             </div>
 
             <div className="form-group">
-              <label>Expiry Date</label>
-              <input 
-                type="date" 
-                value={expiryDate}
-                onChange={(e) => setExpiryDate(e.target.value)}
-              />
-            </div>
+               <label>Expiry Date</label>
+               <input 
+                 type="date" 
+                 value={expiryDate}
+                 onChange={(e) => setExpiryDate(e.target.value)}
+                 min={todayStr}
+               />
+             </div>
           </div>
 
           <div className="form-group" style={{ marginTop: '10px' }}>
