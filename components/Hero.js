@@ -181,10 +181,15 @@ export default function Hero({ bannerUrl, storeName, description }) {
           font-size: 14px;
           line-height: 1.6;
           color: #C1BCB2;
-          margin-bottom: 40px;
+          margin-bottom: 24px;
           font-weight: 400;
           word-break: break-word;
           overflow-wrap: break-word;
+          display: -webkit-box;
+          -webkit-line-clamp: 3;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
 
         .hero-actions {

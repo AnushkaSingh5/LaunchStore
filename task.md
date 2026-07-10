@@ -1,2 +1,2 @@
-- `[x]` Add `word-break: break-word` and `overflow-wrap: break-word` to `.hero-subtitle` in `components/Hero.js`.
+- `[x]` Add line-clamping and reduce `margin-bottom` for `.hero-subtitle` in `components/Hero.js`.
 - `[x]` Verify compilation with `npm run build`.

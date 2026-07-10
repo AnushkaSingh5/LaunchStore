@@ -458,7 +458,7 @@ export default function CouponsPage() {
 
           <div className="form-row">
             <div className="form-group">
-              <label>Discount Value <span className="required">*</span></label>
+              <label>Discount Value ({discountType === 'percentage' ? '%' : '₹'}) <span className="required">*</span></label>
               <input 
                 type="number" 
                 placeholder={discountType === 'percentage' ? 'e.g. 10' : 'e.g. 150'}
