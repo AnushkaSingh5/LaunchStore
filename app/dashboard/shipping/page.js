@@ -78,6 +78,7 @@ export default function CreatorShippingPage() {
     phone: '',
     address: '',
     pickup_address_line2: '',
+    alternative_phone: '',
     city: '',
     state: '',
     country: 'India',
@@ -95,13 +96,23 @@ export default function CreatorShippingPage() {
         try {
           const data = await shippingService.getShippingSettings(store.id);
           if (data) {
+            const rawLine2 = data.pickup_address_line2 || '';
+            let cleanLine2 = rawLine2;
+            let altPhone = '';
+            if (rawLine2.includes(' | altPhone:')) {
+              const parts = rawLine2.split(' | altPhone:');
+              cleanLine2 = parts[0];
+              altPhone = parts[1];
+            }
+
             setSettings({
               warehouse_name: data.warehouse_name || '',
               contact_person: data.contact_person || '',
               email: data.email || '',
               phone: data.phone || '',
               address: data.address || '',
-              pickup_address_line2: data.pickup_address_line2 || '',
+              pickup_address_line2: cleanLine2,
+              alternative_phone: altPhone,
               city: data.city || '',
               state: data.state || '',
               country: data.country || 'India',
@@ -149,6 +160,8 @@ export default function CreatorShippingPage() {
     const trimmedBusinessName = (settings.business_name || '').trim();
     const trimmedLandmark = (settings.landmark || '').trim();
 
+    const trimmedAltPhone = (settings.alternative_phone || '').trim();
+
     // Front-end validations
     if (!trimmedWarehouseName) {
       setErrorMsg('Warehouse Name / Nickname is required.');
@@ -174,6 +187,13 @@ export default function CreatorShippingPage() {
       return;
     }
 
+    // Alt Phone validation: exactly 10 digits if provided
+    const digitsOnlyAltPhone = trimmedAltPhone.replace(/\D/g, '');
+    if (trimmedAltPhone && (trimmedAltPhone !== digitsOnlyAltPhone || trimmedAltPhone.length !== 10)) {
+      setErrorMsg('Alternative Mobile Number must be exactly 10 digits.');
+      return;
+    }
+
     // Pincode validation: exactly 6 digits
     const digitsOnlyPincode = trimmedPincode.replace(/\D/g, '');
     if (trimmedPincode !== digitsOnlyPincode || trimmedPincode.length !== 6) {
@@ -194,13 +214,15 @@ export default function CreatorShippingPage() {
       return;
     }
 
+    const combinedLine2 = trimmedAddressLine2 + (trimmedAltPhone ? ` | altPhone:${trimmedAltPhone}` : '');
+
     const trimmedSettings = {
       warehouse_name: trimmedWarehouseName,
       contact_person: trimmedContactPerson,
       email: trimmedEmail,
       phone: trimmedPhone,
       address: trimmedAddress,
-      pickup_address_line2: trimmedAddressLine2,
+      pickup_address_line2: combinedLine2,
       city: trimmedCity,
       state: trimmedState,
       country: trimmedCountry,
@@ -219,6 +241,8 @@ export default function CreatorShippingPage() {
         setSettings(prev => ({
           ...prev,
           ...trimmedSettings,
+          pickup_address_line2: trimmedAddressLine2,
+          alternative_phone: trimmedAltPhone,
           pickup_location_name: updated.pickup_location_name || prev.pickup_location_name,
           pickup_location_id: updated.pickup_location_id || prev.pickup_location_id
         }));
@@ -293,7 +317,7 @@ export default function CreatorShippingPage() {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
             <div>
               <label style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '8px' }}>Contact Person</label>
               <Input
@@ -306,6 +330,19 @@ export default function CreatorShippingPage() {
             </div>
 
             <div>
+              <label style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '8px' }}>Email Address</label>
+              <Input
+                type="email"
+                placeholder="contact@store.com"
+                value={settings.email}
+                onChange={(e) => handleChange('email', e.target.value)}
+                required
+              />
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+            <div>
               <label style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '8px' }}>Contact Mobile Number</label>
               <Input
                 type="tel"
@@ -317,13 +354,12 @@ export default function CreatorShippingPage() {
             </div>
 
             <div>
-              <label style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '8px' }}>Email Address</label>
+              <label style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '8px' }}>Alternative Mobile Number (Optional)</label>
               <Input
-                type="email"
-                placeholder="contact@store.com"
-                value={settings.email}
-                onChange={(e) => handleChange('email', e.target.value)}
-                required
+                type="tel"
+                placeholder="Alternative 10-digit mobile"
+                value={settings.alternative_phone || ''}
+                onChange={(e) => handleChange('alternative_phone', e.target.value.replace(/[^0-9]/g, ''))}
               />
             </div>
           </div>

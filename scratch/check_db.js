@@ -27,7 +27,7 @@ console.log('Connecting to Supabase REST endpoint:', supabaseUrl);
 async function run() {
   try {
     // Let's request the table structure or query store_shipping_settings
-    const url = `${supabaseUrl}/rest/v1/store_shipping_settings?limit=1`;
+    const url = `${supabaseUrl}/rest/v1/orders?id=eq.7991dbea-35c1-48ac-8dec-47aaf3d2f554&select=*`;
     const response = await fetch(url, {
       headers: {
         'apikey': supabaseAnonKey,
@@ -36,21 +36,8 @@ async function run() {
     });
 
     console.log('Status:', response.status);
-    console.log('Status Text:', response.statusText);
-    const bodyText = await response.text();
-    console.log('Response body:', bodyText);
-
-    // Let's query one that we know might fail if country doesn't exist
-    const urlWithCountry = `${supabaseUrl}/rest/v1/store_shipping_settings?select=country&limit=1`;
-    const resCountry = await fetch(urlWithCountry, {
-      headers: {
-        'apikey': supabaseAnonKey,
-        'Authorization': `Bearer ${supabaseAnonKey}`
-      }
-    });
-    console.log('Country select status:', resCountry.status);
-    console.log('Country select response:', await resCountry.text());
-
+    const bodyText = await response.json();
+    console.log('Order Details:', JSON.stringify(bodyText[0], null, 2));
   } catch (err) {
     console.error('Exception:', err);
   }

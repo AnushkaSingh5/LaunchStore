@@ -1,2 +1,5 @@
-- `[x]` Remove description paragraph (`footer-brand-desc`) in `components/Footer.js`.
+- `[x]` Create `fix_creator_earnings_trigger.sql` script in workspace root.
+- `[x]` Update trigger query in `creator_earnings_migration.sql`.
+- `[x]` Update trigger query in `schema.sql`.
+- `[x]` Add defensive exception filtering in `services/orderService.js`.
 - `[x]` Verify compilation with `npm run build`.

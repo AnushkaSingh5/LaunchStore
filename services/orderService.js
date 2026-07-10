@@ -295,9 +295,10 @@ export const orderService = {
 
         const isCheckConstraintError = error.code === '23514';
         const isColumnMissingError = error.code === '42703' || error.message?.includes('payment_status');
+        const isCreatorEarningsError = error.message?.includes('creator_earnings') || error.details?.includes('creator_earnings');
 
         // Check if the check constraint violation is due to stock exhaustion trigger
-        if (isCheckConstraintError && (status === 'confirmed' || status === 'Confirmed' || error.message?.includes('stock') || error.details?.includes('stock'))) {
+        if (isCheckConstraintError && !isCreatorEarningsError && (status === 'confirmed' || status === 'Confirmed' || error.message?.includes('stock') || error.details?.includes('stock'))) {
           throw new Error('Some products are no longer available in requested quantity.');
         }
 

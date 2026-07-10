@@ -70,7 +70,7 @@ BEGIN
     
     -- Insert into creator_earnings (prevent duplicates via UNIQUE constraint)
     INSERT INTO public.creator_earnings (creator_id, store_id, order_id, order_amount, platform_fee, creator_amount, status)
-    VALUES (v_store_creator_id, NEW.store_id, NEW.id, NEW.total_amount, 0.00, NEW.total_amount, 'completed')
+    VALUES (v_store_creator_id, NEW.store_id, NEW.id, NEW.total_amount, 0.00, NEW.total_amount, 'pending')
     ON CONFLICT (order_id) DO NOTHING;
   END IF;
 
