@@ -191,7 +191,7 @@ export default function CategoryCard({ category, productCount }) {
         /* Active State */
         .category-arched-card.active .arched-image-wrapper {
           transform: translateY(-8px);
-          box-shadow: 0 0 0 2.5px #232724, 0 15px 30px rgba(0, 0, 0, 0.06);
+          box-shadow: 0 0 0 3px #ffffff, 0 0 0 4.5px #232724, 0 15px 30px rgba(0, 0, 0, 0.06);
         }
 
         .category-arched-card.active .icon-overlay-circle {
