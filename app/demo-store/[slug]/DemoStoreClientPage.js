@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
@@ -16,6 +16,18 @@ export default function DemoStoreClientPage({ slug }) {
   const { selectedCategory, setSelectedCategory, searchQuery } = useStore();
   const [storeDetails, setStoreDetails] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const categoriesRef = useRef(null);
+
+  const scrollCategories = (direction) => {
+    if (categoriesRef.current) {
+      const scrollAmount = 300;
+      categoriesRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
 
   useEffect(() => {
     setSelectedCategory('All');
@@ -145,7 +157,7 @@ export default function DemoStoreClientPage({ slug }) {
     trendingProducts.push(...products.slice(0, 4));
   }
 
-  const isFilteringActive = searchQuery !== '' || selectedCategory !== 'All';
+  const isFilteringActive = searchQuery !== '';
 
   return (
     <main className="dashboard-store">
@@ -188,7 +200,6 @@ export default function DemoStoreClientPage({ slug }) {
           </section>
         ) : (
           <>
-            {/* 1. Explore Categories Section */}
             <section className="categories-section" id="categories-section">
               <div className="section-header">
                 <div className="header-meta">
@@ -196,19 +207,35 @@ export default function DemoStoreClientPage({ slug }) {
                   <span className="accent-underline"></span>
                 </div>
                 <p className="section-subtitle">{categorySubtitle}</p>
-                <button onClick={() => setSelectedCategory('All')} className="section-action-link">
-                  View All Categories <span className="link-arrow">→</span>
-                </button>
               </div>
               
-              <div className="categories-grid-5">
-                {categoriesWithCount.filter(c => c.id !== 'all').slice(0, 5).map(category => (
-                  <CategoryCard 
-                    key={category.id} 
-                    category={category} 
-                    productCount={category.productCount} 
-                  />
-                ))}
+              <div className="carousel-wrapper">
+                <button 
+                  className="carousel-nav-btn left" 
+                  onClick={() => scrollCategories('left')}
+                  aria-label="Scroll categories left"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
+
+                <div className="categories-carousel-track" ref={categoriesRef}>
+                  {categoriesWithCount.filter(c => c.id !== 'all').map(category => (
+                    <div key={category.id} className="carousel-item-card">
+                      <CategoryCard 
+                        category={category} 
+                        productCount={category.productCount} 
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                <button 
+                  className="carousel-nav-btn right" 
+                  onClick={() => scrollCategories('right')}
+                  aria-label="Scroll categories right"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
               </div>
             </section>
 
@@ -395,11 +422,64 @@ export default function DemoStoreClientPage({ slug }) {
           transform: translateX(3px);
         }
 
-        /* Categories Row (5 Columns) */
-        .categories-grid-5 {
-          display: grid;
-          grid-template-columns: repeat(5, 1fr);
+        /* Categories Carousel Slider */
+        .carousel-wrapper {
+          position: relative;
+          display: flex;
+          align-items: center;
+          width: 100%;
+        }
+
+        .categories-carousel-track {
+          display: flex;
           gap: 24px;
+          overflow-x: auto;
+          scroll-behavior: smooth;
+          scrollbar-width: none; /* Firefox */
+          padding: 12px 0;
+          width: 100%;
+        }
+
+        .categories-carousel-track::-webkit-scrollbar {
+          display: none; /* Safari and Chrome */
+        }
+
+        .carousel-item-card {
+          width: 240px;
+          flex-shrink: 0;
+        }
+
+        .carousel-nav-btn {
+          position: absolute;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 44px;
+          height: 44px;
+          border-radius: 50%;
+          background: rgba(250, 248, 245, 0.9);
+          border: 1px solid rgba(0, 0, 0, 0.06);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+          color: #121212;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          z-index: 10;
+          transition: all 0.2s ease;
+        }
+
+        .carousel-nav-btn:hover {
+          background: #ffffff;
+          transform: translateY(-50%) scale(1.08);
+          box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+        }
+
+        .carousel-nav-btn.left {
+          left: -22px;
+        }
+
+        .carousel-nav-btn.right {
+          right: -22px;
         }
 
         /* New Arrivals Dark Banner Section */
@@ -596,8 +676,8 @@ export default function DemoStoreClientPage({ slug }) {
 
         /* Responsive breakpoints */
         @media (max-width: 1024px) {
-          .categories-grid-5 {
-            grid-template-columns: repeat(3, 1fr);
+          .carousel-item-card {
+            width: 220px;
           }
           .new-arrivals-grid {
             grid-template-columns: 1fr;
@@ -626,9 +706,11 @@ export default function DemoStoreClientPage({ slug }) {
             grid-template-columns: 1fr;
             gap: 16px;
           }
-          .categories-grid-5 {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 16px;
+          .carousel-nav-btn {
+            display: none;
+          }
+          .carousel-item-card {
+            width: 180px;
           }
           .products-grid-4, .products-grid {
             grid-template-columns: repeat(2, 1fr);

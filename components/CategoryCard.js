@@ -1,9 +1,24 @@
 'use client';
 
+import { useRouter, usePathname } from 'next/navigation';
 import { useStore } from '@/context/StoreContext';
 
 export default function CategoryCard({ category, productCount }) {
   const { selectedCategory, setSelectedCategory } = useStore();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const handleCategoryClick = () => {
+    setSelectedCategory(category.title);
+    const pathParts = pathname ? pathname.split('/') : [];
+    const isDemo = pathParts[1] === 'demo-store';
+    const isStorePage = (pathParts[1] === 'store' || isDemo) && pathParts[2];
+    const storeSlug = isStorePage ? pathParts[2] : null;
+
+    if (storeSlug) {
+      router.push(`/${pathParts[1]}/${storeSlug}/products?category=${encodeURIComponent(category.title)}`);
+    }
+  };
   const isActive = selectedCategory === category.title;
 
   const displayCount = productCount !== undefined ? productCount : (category.count || 0);
@@ -87,7 +102,7 @@ export default function CategoryCard({ category, productCount }) {
   return (
     <div 
       className={`category-arched-card ${isActive ? 'active' : ''}`}
-      onClick={() => setSelectedCategory(category.title)}
+      onClick={handleCategoryClick}
     >
       <div className="arched-image-wrapper">
         <img 

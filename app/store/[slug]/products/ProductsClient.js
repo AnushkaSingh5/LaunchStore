@@ -6,6 +6,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
 import StoreUnderReview from '@/components/StoreUnderReview';
+import { useSearchParams } from 'next/navigation';
 import { useStore } from '@/context/StoreContext';
 import { useAuth } from '@/context/AuthContext';
 import { productService } from '@/services/productService';
@@ -19,6 +20,15 @@ export default function ProductsClient({ slug, initialStoreDetails, initialProdu
   const [storeDetails, setStoreDetails] = useState(initialStoreDetails);
   const [sortBy, setSortBy] = useState('default');
   const { user } = useAuth();
+
+  const searchParams = useSearchParams();
+  const categoryParam = searchParams ? searchParams.get('category') : null;
+
+  useEffect(() => {
+    if (categoryParam) {
+      setSelectedCategory(categoryParam);
+    }
+  }, [categoryParam, setSelectedCategory]);
 
   const currentUserId = user?.id;
   const isCreator = currentUserId && currentUserId === storeDetails?.creator_id;

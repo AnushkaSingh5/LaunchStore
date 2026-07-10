@@ -1,0 +1,3 @@
+- `[x]` Implement category carousel in `app/store/[slug]/StoreClient.js` using React Ref scrolling and navigation buttons.
+- `[x]` Replicate category carousel in `app/demo-store/[slug]/DemoStoreClientPage.js`.
+- `[x]` Verify compilation with `npm run build`.

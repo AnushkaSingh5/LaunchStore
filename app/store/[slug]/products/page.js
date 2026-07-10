@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { storeService } from '@/services/storeService';
 import { productService } from '@/services/productService';
 import { categoryService } from '@/services/categoryService';
@@ -79,11 +80,17 @@ export default async function StoreProductsPage({ params }) {
   }
 
   return (
-    <ProductsClient 
-      slug={slug} 
-      initialStoreDetails={storeDetails} 
-      initialProducts={initialProducts} 
-      initialCategories={initialCategories} 
-    />
+    <Suspense fallback={
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'sans-serif', color: '#64748b' }}>
+        Loading catalog...
+      </div>
+    }>
+      <ProductsClient 
+        slug={slug} 
+        initialStoreDetails={storeDetails} 
+        initialProducts={initialProducts} 
+        initialCategories={initialCategories} 
+      />
+    </Suspense>
   );
 }
