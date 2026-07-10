@@ -75,6 +75,16 @@ export default function ProductsPage() {
       return;
     }
 
+    if (productImages.length === 0) {
+      alert('Please upload at least 1 product image.');
+      return;
+    }
+
+    if (productImages.length > 6) {
+      alert('You can upload a maximum of 6 images.');
+      return;
+    }
+
     const productData = {
       ...formData,
       price: parseFloat(formData.price),
@@ -208,10 +218,26 @@ export default function ProductsPage() {
 
   const handleProductImageUpload = (e) => {
     const files = Array.from(e.target.files);
-    files.forEach(file => {
+    
+    if (productImages.length >= 6) {
+      alert('You can upload a maximum of 6 images.');
+      return;
+    }
+    
+    const remainingSlots = 6 - productImages.length;
+    const filesToUpload = files.slice(0, remainingSlots);
+    
+    if (files.length > remainingSlots) {
+      alert(`You can only add up to ${remainingSlots} more image(s). Only the first ${remainingSlots} will be uploaded.`);
+    }
+
+    filesToUpload.forEach(file => {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setProductImages(prev => [...prev, reader.result]);
+        setProductImages(prev => {
+          if (prev.length >= 6) return prev;
+          return [...prev, reader.result];
+        });
       };
       reader.readAsDataURL(file);
     });
@@ -219,6 +245,15 @@ export default function ProductsPage() {
 
   const removeProductImage = (index) => {
     setProductImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const setAsMain = (index) => {
+    setProductImages(prev => {
+      const newImages = [...prev];
+      const [target] = newImages.splice(index, 1);
+      newImages.unshift(target);
+      return newImages;
+    });
   };
 
   const totalProducts = (products || []).length;
@@ -539,8 +574,8 @@ export default function ProductsPage() {
           </div>
 
           <div className="form-group">
-            <label>Product Images</label>
-            <p className="help-text">Upload one or more images of your product.</p>
+            <label>Product Images <span style={{ color: '#ef4444' }}>*</span></label>
+            <p className="help-text">Upload between 1 and 6 images of your product. (Current: {productImages.length}/6)</p>
             
             <input 
               type="file" 
@@ -565,9 +600,20 @@ export default function ProductsPage() {
             {productImages.length > 0 && (
               <div className="images-preview-grid">
                 {productImages.map((img, index) => (
-                  <div key={index} className="image-preview-item">
+                  <div key={index} className={`image-preview-item ${index === 0 ? 'is-main' : ''}`}>
                     <img src={img} alt={`Preview ${index}`} />
-                    <button className="remove-image-btn" onClick={(e) => { e.stopPropagation(); removeProductImage(index); }}>
+                    {index === 0 ? (
+                      <span className="main-image-badge">⭐ Main</span>
+                    ) : (
+                      <button 
+                        type="button" 
+                        className="set-main-action-btn" 
+                        onClick={(e) => { e.stopPropagation(); setAsMain(index); }}
+                      >
+                        Set Main
+                      </button>
+                    )}
+                    <button type="button" className="remove-image-btn" onClick={(e) => { e.stopPropagation(); removeProductImage(index); }}>
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                     </button>
                   </div>
@@ -1626,18 +1672,24 @@ export default function ProductsPage() {
         .images-preview-grid {
           display: flex;
           flex-wrap: wrap;
-          gap: 8px;
+          gap: 12px;
           margin-top: 12px;
         }
 
         .image-preview-item {
-          width: 60px;
-          height: 60px;
-          border-radius: 8px;
+          width: 80px;
+          height: 80px;
+          border-radius: 12px;
           position: relative;
           overflow: hidden;
-          border: 1px solid #e2e8f0;
+          border: 2px solid #e2e8f0;
           background: #f8fafc;
+          transition: all 0.2s ease;
+        }
+
+        .image-preview-item.is-main {
+          border-color: #8b5cf6;
+          box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.15);
         }
 
         .image-preview-item img {
@@ -1646,26 +1698,63 @@ export default function ProductsPage() {
           object-fit: cover;
         }
 
+        .main-image-badge {
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          background: #8b5cf6;
+          color: white;
+          font-size: 10px;
+          font-weight: 700;
+          text-align: center;
+          padding: 3px 0;
+          z-index: 5;
+        }
+
+        .set-main-action-btn {
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          background: rgba(15, 23, 42, 0.7);
+          color: white;
+          font-size: 10px;
+          font-weight: 600;
+          text-align: center;
+          padding: 3px 0;
+          border: none;
+          cursor: pointer;
+          transition: background 0.2s;
+          z-index: 5;
+        }
+
+        .set-main-action-btn:hover {
+          background: #8b5cf6;
+        }
+
         .remove-image-btn {
           position: absolute;
-          top: 2px;
-          right: 2px;
-          width: 18px;
-          height: 18px;
+          top: 4px;
+          right: 4px;
+          width: 20px;
+          height: 20px;
           background: rgba(239, 68, 68, 0.9);
           color: white;
           border: none;
-          border-radius: 4px;
+          border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
           cursor: pointer;
-          opacity: 0;
-          transition: opacity 0.2s;
+          opacity: 0.8;
+          transition: opacity 0.2s, transform 0.2s;
+          z-index: 10;
         }
 
-        .image-preview-item:hover .remove-image-btn {
+        .remove-image-btn:hover {
           opacity: 1;
+          transform: scale(1.1);
         }
 
         .modal-footer-btns {

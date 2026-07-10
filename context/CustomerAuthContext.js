@@ -183,8 +183,6 @@ export function CustomerAuthProvider({ children }) {
           return;
         }
 
-        setLoading(true);
-        startLoading();
         try {
           if (session && session.user) {
             const profileData = await fetchCustomerProfile(session.user.id, session.user);
@@ -200,11 +198,6 @@ export function CustomerAuthProvider({ children }) {
           }
         } catch (err) {
           console.warn('❌ [LaunchCart - CustomerAuth]: Auth state change error:', err);
-        } finally {
-          if (isSubscribed) {
-            setLoading(false);
-          }
-          completeLoading();
         }
       }, 0);
     });

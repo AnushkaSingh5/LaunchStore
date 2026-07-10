@@ -1,3 +1,4 @@
-- `[x]` Implement category carousel in `app/store/[slug]/StoreClient.js` using React Ref scrolling and navigation buttons.
-- `[x]` Replicate category carousel in `app/demo-store/[slug]/DemoStoreClientPage.js`.
+- `[x]` Remove blocking loading wraps in `onAuthStateChange` in `context/AuthContext.js`.
+- `[x]` Remove blocking loading wraps in `onAuthStateChange` in `context/CustomerAuthContext.js`.
+- `[x]` Prevent background `fetchStoreOnly` calls from setting `storeLoading` state using the `isSilent` parameter.
 - `[x]` Verify compilation with `npm run build`.

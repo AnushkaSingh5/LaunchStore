@@ -16,6 +16,7 @@ export default function ProductClient({ slug, initialStoreDetails, initialProduc
   const [relatedProducts, setRelatedProducts] = useState(initialRelatedProducts || []);
   const [quantity, setQuantity] = useState(1);
   const [storeDetails, setStoreDetails] = useState(initialStoreDetails);
+  const [activeImage, setActiveImage] = useState(initialProduct?.image || initialProduct?.image_url);
   const router = useRouter();
 
   useEffect(() => {
@@ -23,7 +24,24 @@ export default function ProductClient({ slug, initialStoreDetails, initialProduc
     setStoreDetails(initialStoreDetails);
     setRelatedProducts(initialRelatedProducts || []);
     setQuantity(1);
+    setActiveImage(initialProduct?.image || initialProduct?.image_url);
   }, [initialProduct, initialStoreDetails, initialRelatedProducts]);
+
+  const handlePrevImage = (e) => {
+    e.stopPropagation();
+    if (!product || !product.images || product.images.length <= 1) return;
+    const currentIndex = product.images.indexOf(activeImage);
+    const prevIndex = currentIndex <= 0 ? product.images.length - 1 : currentIndex - 1;
+    setActiveImage(product.images[prevIndex]);
+  };
+
+  const handleNextImage = (e) => {
+    e.stopPropagation();
+    if (!product || !product.images || product.images.length <= 1) return;
+    const currentIndex = product.images.indexOf(activeImage);
+    const nextIndex = currentIndex >= product.images.length - 1 ? 0 : currentIndex + 1;
+    setActiveImage(product.images[nextIndex]);
+  };
 
   const handleBuyNow = () => {
     if (!product) return;
@@ -181,9 +199,33 @@ export default function ProductClient({ slug, initialStoreDetails, initialProduc
         <div className="product-layout dashboard-card fade-in">
           <div className="product-gallery">
             <div className="main-image">
-              <img src={product.image || product.image_url} alt={product.name} />
+              <img src={activeImage} alt={product.name} />
               {product.trending && <span className="badge">Trending</span>}
+
+              {product.images && product.images.length > 1 && (
+                <>
+                  <button type="button" className="gallery-arrow-btn prev" onClick={handlePrevImage} aria-label="Previous image">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                  </button>
+                  <button type="button" className="gallery-arrow-btn next" onClick={handleNextImage} aria-label="Next image">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                  </button>
+                </>
+              )}
             </div>
+            {product.images && product.images.length > 1 && (
+              <div className="thumbnails-grid">
+                {product.images.map((img, idx) => (
+                  <div 
+                    key={idx} 
+                    className={`thumbnail-item ${activeImage === img ? 'active' : ''}`}
+                    onClick={() => setActiveImage(img)}
+                  >
+                    <img src={img} alt={`Thumbnail ${idx + 1}`} />
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="product-info">
@@ -327,6 +369,76 @@ export default function ProductClient({ slug, initialStoreDetails, initialProduc
           font-weight: 700;
           font-size: 12px;
           text-transform: uppercase;
+        }
+
+        .gallery-arrow-btn {
+          position: absolute;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.75);
+          backdrop-filter: blur(8px);
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          color: var(--text-main);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          opacity: 0;
+          transition: var(--transition-smooth);
+          z-index: 10;
+        }
+
+        .gallery-arrow-btn:hover {
+          background: var(--white);
+          color: var(--accent);
+          transform: translateY(-50%) scale(1.1);
+          box-shadow: var(--shadow-md);
+        }
+
+        .gallery-arrow-btn.prev {
+          left: 16px;
+        }
+
+        .gallery-arrow-btn.next {
+          right: 16px;
+        }
+
+        .main-image:hover .gallery-arrow-btn {
+          opacity: 1;
+        }
+
+        .thumbnails-grid {
+          display: flex;
+          gap: 12px;
+          margin-top: 16px;
+          overflow-x: auto;
+          padding-bottom: 4px;
+        }
+
+        .thumbnail-item {
+          width: 70px;
+          height: 70px;
+          border-radius: var(--radius-sm);
+          overflow: hidden;
+          cursor: pointer;
+          border: 2px solid transparent;
+          transition: var(--transition-fast);
+          flex-shrink: 0;
+          background: var(--bg-main);
+        }
+
+        .thumbnail-item.active {
+          border-color: var(--accent);
+          transform: scale(0.95);
+        }
+
+        .thumbnail-item img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
         }
 
         .breadcrumb {

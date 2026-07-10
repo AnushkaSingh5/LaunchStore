@@ -124,10 +124,12 @@ export function AuthProvider({ children }) {
     console.log("Profile fetch complete");
   };
 
-  const fetchStoreOnly = async (userId, token = null) => {
+  const fetchStoreOnly = async (userId, token = null, isSilent = false) => {
     const startTime = performance.now();
     console.log("Store fetch started");
-    setStoreLoading(true);
+    if (!isSilent) {
+      setStoreLoading(true);
+    }
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -156,7 +158,9 @@ export function AuthProvider({ children }) {
           console.log("Fetched Store:", storeRecord);
           setStore(storeRecord);
           console.log("Store fetch complete");
-          setStoreLoading(false);
+          if (!isSilent) {
+            setStoreLoading(false);
+          }
           return;
         } else {
           console.warn(`❌ [LaunchCart - Auth]: Store HTTP Error ${response.status}:`, response.statusText);
@@ -177,7 +181,9 @@ export function AuthProvider({ children }) {
 
     setStore(null);
     console.log("Store fetch complete");
-    setStoreLoading(false);
+    if (!isSilent) {
+      setStoreLoading(false);
+    }
   };
 
   const refreshStore = async (userId) => {
@@ -186,7 +192,7 @@ export function AuthProvider({ children }) {
       console.warn('⚠️ [LaunchCart - Auth]: Cannot refreshStore. No active user ID available.');
       return;
     }
-    await fetchStoreOnly(activeUserId);
+    await fetchStoreOnly(activeUserId, null, true);
   };
 
   const refreshProfile = async (userId) => {
@@ -299,15 +305,13 @@ export function AuthProvider({ children }) {
         if (!isSubscribed) return;
 
         try {
-          setLoading(true);
-          startLoading();
           setSession(activeSession);
           const currentUser = activeSession?.user ?? null;
           setUser(currentUser);
 
           if (currentUser) {
             await fetchProfileOnly(currentUser.id, currentUser.email, activeSession?.access_token);
-            fetchStoreOnly(currentUser.id, activeSession?.access_token).catch(e => {
+            fetchStoreOnly(currentUser.id, activeSession?.access_token, true).catch(e => {
               console.warn("Background store fetch failed:", e);
             });
           } else {
@@ -317,11 +321,6 @@ export function AuthProvider({ children }) {
           }
         } catch (err) {
           console.warn('❌ [LaunchCart - Auth]: Error handling onAuthStateChange:', err);
-        } finally {
-          if (isSubscribed) {
-            setLoading(false);
-          }
-          completeLoading();
         }
       }, 0);
     });
