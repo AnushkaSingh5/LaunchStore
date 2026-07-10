@@ -459,7 +459,7 @@ export default function StoreCheckoutPage({ params }) {
         }
 
         if (paymentMethod === 'cod') {
-          await clearCart();
+          await clearCart(storeDetails?.id || slug);
           router.push(`/store/${slug}/checkout/success?orderId=${response.orders[0].id}`);
           return;
         }
@@ -528,7 +528,7 @@ export default function StoreCheckoutPage({ params }) {
                   paymentOrderId: paymentRes.razorpay_order_id,
                   status: 'confirmed'
                 });
-                await clearCart();
+                await clearCart(storeDetails?.id || slug);
                 router.push(`/store/${slug}/checkout/success?orderId=${response.orders[0].id}`);
               } else {
                 alert('Signature verification failed. Payment was not authenticated.');
@@ -589,7 +589,7 @@ export default function StoreCheckoutPage({ params }) {
           paymentOrderId: provider.name === 'Cashfree' ? mockDetails.payment_order_id : mockDetails.razorpay_order_id,
           status: 'confirmed'
         });
-        await clearCart();
+        await clearCart(storeDetails?.id || slug);
         router.push(`/store/${slug}/checkout/success?orderId=${mockPaymentData.orderId}`);
       } else {
         router.push(`/store/${slug}/checkout/failed?orderId=${mockPaymentData.orderId}`);

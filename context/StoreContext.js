@@ -206,9 +206,37 @@ export function StoreProvider({ children }) {
     await saveCartToStorage(updatedCart, productId, newQty);
   };
 
-  const clearCart = async () => {
-    setCart([]);
-    await saveCartToStorage([], null, null);
+  const clearCart = async (storeIdOrSlug = null) => {
+    if (storeIdOrSlug) {
+      const updatedCart = cart.filter(
+        (item) => item.store_id !== storeIdOrSlug && item.store_slug !== storeIdOrSlug
+      );
+      setCart(updatedCart);
+      if (customerProfile) {
+        try {
+          let activeCartId = dbCartId;
+          if (!activeCartId) {
+            const dbCart = await cartService.getOrCreateCart(customerProfile.id);
+            activeCartId = dbCart.id;
+            setDbCartId(activeCartId);
+          }
+          const itemsToRemove = cart.filter(
+            (item) => item.store_id === storeIdOrSlug || item.store_slug === storeIdOrSlug
+          );
+          for (const item of itemsToRemove) {
+            await cartService.removeCartItem(activeCartId, item.id);
+          }
+        } catch (err) {
+          console.warn('Failed to clear store cart in DB:', err);
+        }
+      } else {
+        sessionStorage.setItem('luxe_cart_guest', JSON.stringify(updatedCart));
+        localStorage.setItem('luxe_cart_guest', JSON.stringify(updatedCart));
+      }
+    } else {
+      setCart([]);
+      await saveCartToStorage([], null, null);
+    }
   };
 
   const toggleWishlist = (product) => {
