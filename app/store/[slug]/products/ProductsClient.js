@@ -200,8 +200,14 @@ export default function ProductsClient({ slug, initialStoreDetails, initialProdu
             <span className="separator">&rarr;</span>
             <span className="current">Products Catalog</span>
           </div>
-          <h1 className="catalog-title">Explore Store Collection</h1>
-          <p className="catalog-subtitle">Browse through our premium selection of curated products.</p>
+          <div className="header-banner-card">
+            <div className="header-banner-content">
+              <span className="banner-tag">Our Collection</span>
+              <h1 className="catalog-title">Explore Store Collection</h1>
+              <p className="catalog-subtitle">Browse through our premium selection of curated products.</p>
+            </div>
+            <div className="header-banner-decorative-circle"></div>
+          </div>
         </section>
 
         {/* Category Filter Pills */}
@@ -279,14 +285,14 @@ export default function ProductsClient({ slug, initialStoreDetails, initialProdu
           background: #FAF8F5; /* Warm aesthetic cream background */
           min-height: 100vh;
           font-family: 'Outfit', sans-serif;
-          padding-top: 100px; /* Spacer for fixed Navbar */
+          padding-top: 76px; /* Reduced from 100px */
         }
 
         .catalog-container {
           padding-bottom: 80px;
           display: flex;
           flex-direction: column;
-          gap: 32px;
+          gap: 16px; /* Reduced from 24px */
         }
 
         /* Banner styling */
@@ -321,7 +327,7 @@ export default function ProductsClient({ slug, initialStoreDetails, initialProdu
           gap: 8px;
           font-size: 13px;
           color: #706f6c;
-          margin-bottom: 16px;
+          margin-bottom: 8px;
         }
         .breadcrumb-link {
           color: #706f6c;
@@ -339,21 +345,56 @@ export default function ProductsClient({ slug, initialStoreDetails, initialProdu
           font-weight: 600;
         }
 
-        /* Header */
+        /* Header Banner Card */
         .catalog-header-section {
           text-align: left;
         }
+        .header-banner-card {
+          background: linear-gradient(135deg, #2D322F 0%, #1A1D1B 100%); /* Dark charcoal/charcoal olive matching the New Arrivals banner color */
+          border-radius: 20px;
+          padding: 28px 36px; /* Reduced from 40px 48px */
+          color: #FAF8F5;
+          position: relative;
+          overflow: hidden;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        }
+        .header-banner-content {
+          position: relative;
+          z-index: 2;
+        }
+        .banner-tag {
+          display: inline-block;
+          font-size: 11px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 1.5px;
+          color: #A3A8A5;
+          margin-bottom: 12px;
+        }
         .catalog-title {
-          font-size: 32px;
+          font-size: 36px;
           font-weight: 800;
-          color: #121212;
-          letter-spacing: -0.8px;
+          color: #FAF8F5;
+          letter-spacing: -1px;
           margin: 0 0 8px 0;
         }
         .catalog-subtitle {
           font-size: 15px;
-          color: #706f6c;
+          color: #A3A8A5;
           margin: 0;
+          max-width: 480px;
+          line-height: 1.5;
+        }
+        .header-banner-decorative-circle {
+          position: absolute;
+          right: -50px;
+          top: -50px;
+          width: 200px;
+          height: 200px;
+          border-radius: 50%;
+          background: rgba(250, 248, 245, 0.03);
+          border: 1px solid rgba(250, 248, 245, 0.05);
+          pointer-events: none;
         }
 
         /* Category pills list */
@@ -371,26 +412,31 @@ export default function ProductsClient({ slug, initialStoreDetails, initialProdu
           white-space: nowrap;
         }
         .category-pill {
-          background: #ffffff;
-          border: 1px solid rgba(0, 0, 0, 0.06);
+          background: rgba(255, 255, 255, 0.7);
+          backdrop-filter: blur(8px);
+          border: 1px solid rgba(0, 0, 0, 0.05);
           border-radius: 40px;
-          padding: 10px 20px;
+          padding: 10px 22px;
           font-size: 13px;
           font-weight: 600;
           color: #555350;
           cursor: pointer;
-          transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+          transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
         }
         .category-pill:hover {
-          background: #F2EFEA;
+          background: #ffffff;
           color: #121212;
-          transform: translateY(-1px);
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+          border-color: rgba(0, 0, 0, 0.1);
         }
         .category-pill.active {
           background: #121212;
           color: #FAF8F5;
           border-color: #121212;
-          box-shadow: 0 4px 12px rgba(18, 18, 18, 0.08);
+          box-shadow: 0 8px 20px rgba(18, 18, 18, 0.15);
+          transform: translateY(-2px);
         }
 
         /* Filters and Sorting */
@@ -398,11 +444,11 @@ export default function ProductsClient({ slug, initialStoreDetails, initialProdu
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 16px 24px;
+          padding: 18px 28px;
           background: #ffffff;
-          border: 1px solid rgba(0, 0, 0, 0.04);
+          border: 1px solid rgba(0, 0, 0, 0.05);
           border-radius: 16px;
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.01);
+          box-shadow: 0 8px 30px rgba(0, 0, 0, 0.02);
           flex-wrap: wrap;
           gap: 16px;
         }
