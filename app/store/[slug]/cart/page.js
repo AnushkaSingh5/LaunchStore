@@ -337,17 +337,19 @@ export default function CartPage({ params }) {
           line-height: 1.6;
         }
 
-        .shop-btn {
+        :global(.shop-btn) {
           margin-top: 20px;
           padding: 14px 40px;
           background: var(--primary);
-          color: var(--white);
+          color: var(--white) !important;
           border-radius: 12px;
           font-weight: 700;
           transition: var(--transition-smooth);
+          display: inline-block;
+          text-decoration: none;
         }
 
-        .shop-btn:hover {
+        :global(.shop-btn:hover) {
           background: var(--accent);
           transform: translateY(-2px);
         }
@@ -487,7 +489,7 @@ export default function CartPage({ params }) {
           transform: scale(1.08);
         }
 
-        .row-buy-btn {
+        :global(.row-buy-btn) {
           display: inline-block;
           padding: 8px 20px;
           background: var(--accent);
@@ -501,7 +503,7 @@ export default function CartPage({ params }) {
           box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
 
-        .row-buy-btn:hover {
+        :global(.row-buy-btn:hover) {
           background: var(--primary);
           transform: scale(1.05);
           box-shadow: 0 4px 12px rgba(0,0,0,0.15);
@@ -589,11 +591,11 @@ export default function CartPage({ params }) {
           margin-bottom: 40px;
         }
 
-        .checkout-btn {
+        :global(.checkout-btn) {
           width: 100%;
           padding: 16px;
           background: var(--primary);
-          color: white;
+          color: white !important;
           border-radius: 12px;
           font-weight: 700;
           font-size: 16px;
@@ -601,7 +603,7 @@ export default function CartPage({ params }) {
           transition: var(--transition-smooth);
         }
 
-        .checkout-btn:hover {
+        :global(.checkout-btn:hover) {
           background: var(--accent);
           transform: translateY(-2px);
           box-shadow: var(--shadow-md);

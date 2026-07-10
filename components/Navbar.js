@@ -9,7 +9,7 @@ import { demoStores } from '@/lib/demoData';
 
 export default function Navbar({ storeName, logoUrl }) {
   const [isScrolled, setIsScrolled] = useState(false);
-  const { cartCount, searchQuery, setSearchQuery } = useStore();
+  const { cart, searchQuery, setSearchQuery } = useStore();
   const { customer, customerProfile, logout, loginWithProvider } = useCustomerAuth();
   const user = customer;
   const profile = customerProfile;
@@ -23,6 +23,11 @@ export default function Navbar({ storeName, logoUrl }) {
   const isStorePage = (pathParts[1] === 'store' || isDemo) && pathParts[2];
   const storeSlug = isStorePage ? pathParts[2] : null;
   const storeLogo = logoUrl || (isDemo && storeSlug ? demoStores[storeSlug]?.logo : null);
+
+  const currentStoreCart = storeSlug 
+    ? (cart || []).filter(item => item.store_slug === storeSlug)
+    : (cart || []);
+  const storeCartCount = currentStoreCart.reduce((count, item) => count + item.quantity, 0);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
@@ -191,7 +196,7 @@ export default function Navbar({ storeName, logoUrl }) {
               )}
               <Link href={storeSlug ? `/${pathParts[1]}/${storeSlug}/cart` : "/cart"} className="action-btn cart-btn">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><path d="M3 6h18"></path><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
-                {cartCount > 0 && <span className="badge">{cartCount}</span>}
+                {storeCartCount > 0 && <span className="badge">{storeCartCount}</span>}
               </Link>
             </div>
           </div>
