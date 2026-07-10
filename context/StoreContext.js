@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import { useCustomerAuth } from '@/context/CustomerAuthContext';
 import { useAuth } from '@/context/AuthContext';
 import { cartService } from '@/services/cartService';
+import { supabaseClient } from '@/lib/supabase';
 
 const StoreContext = createContext();
 
@@ -69,7 +70,36 @@ export function StoreProvider({ children }) {
         try {
           const parsed = JSON.parse(savedGuestCart);
           setCart(parsed);
-          sessionStorage.setItem('luxe_cart_guest', savedGuestCart);
+          
+          // Verify with database in background
+          if (supabaseClient && parsed.length > 0) {
+            const productIds = parsed.map(item => item.id).filter(Boolean);
+            if (productIds.length > 0) {
+              supabaseClient
+                .from('products')
+                .select('id, price, stock, is_deleted')
+                .in('id', productIds)
+                .then(({ data: dbProducts, error }) => {
+                  if (dbProducts && !error) {
+                    const updatedParsed = parsed.map(item => {
+                      const dbProduct = dbProducts.find(p => p.id === item.id);
+                      if (!dbProduct || dbProduct.is_deleted) {
+                        return { ...item, is_deleted: true };
+                      }
+                      return { 
+                        ...item, 
+                        is_deleted: false,
+                        price: parseFloat(dbProduct.price) || item.price,
+                        stock: dbProduct.stock !== undefined ? dbProduct.stock : item.stock
+                      };
+                    });
+                    setCart(updatedParsed);
+                    sessionStorage.setItem('luxe_cart_guest', JSON.stringify(updatedParsed));
+                    localStorage.setItem('luxe_cart_guest', JSON.stringify(updatedParsed));
+                  }
+                }).catch(() => {});
+            }
+          }
         } catch (e) {
           setCart([]);
         }

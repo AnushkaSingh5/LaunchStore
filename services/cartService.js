@@ -47,6 +47,7 @@ export const cartService = {
           image_url,
           stock,
           store_id,
+          is_deleted,
           store:store_id (
             slug
           ),
@@ -62,7 +63,20 @@ export const cartService = {
     // Map items to the format expected by the frontend CartContext state
     return (data || []).map(item => {
       const p = item.products;
-      if (!p) return null;
+      if (!p) {
+        return {
+          id: item.product_id,
+          name: 'Deleted Product',
+          price: 0,
+          image: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=800',
+          category: 'Uncategorized',
+          store_id: null,
+          store_slug: '',
+          stock: 0,
+          quantity: item.quantity,
+          is_deleted: true
+        };
+      }
       return {
         id: p.id,
         name: p.name,
@@ -72,9 +86,10 @@ export const cartService = {
         store_id: p.store_id,
         store_slug: p.store?.slug || '',
         stock: p.stock !== undefined ? p.stock : 999,
-        quantity: item.quantity
+        quantity: item.quantity,
+        is_deleted: p.is_deleted || false
       };
-    }).filter(Boolean);
+    });
   },
 
   /**

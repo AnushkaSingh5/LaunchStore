@@ -181,11 +181,13 @@ export const productService = {
       const { data, error } = await query;
       if (error) throw error;
 
-      return (data || []).map(p => ({
-        ...p,
-        image: p.image_url || 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=800',
-        images: p.images || [p.image_url],
-      }));
+      return (data || [])
+        .filter(p => !p.is_deleted)
+        .map(p => ({
+          ...p,
+          image: p.image_url || 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=800',
+          images: p.images || [p.image_url],
+        }));
     } catch (e) {
       console.error('Error fetching products by store:', e);
       return [];
@@ -370,15 +372,13 @@ export const productService = {
     };
   },
 
-  /**
-   * Delete product record
-   */
   deleteProduct: async (productId) => {
     if (!supabaseClient) throw new Error('Supabase client is not initialized.');
 
+    // Soft delete product by setting is_deleted = true
     const { error } = await supabaseClient
       .from('products')
-      .delete()
+      .update({ is_deleted: true })
       .eq('id', productId);
 
     if (error) {

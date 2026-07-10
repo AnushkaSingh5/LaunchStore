@@ -116,6 +116,16 @@ export default function StoreCheckoutPage({ params }) {
     loadCustomerAddresses();
   }, [user, profile, authLoading, slug, router]);
 
+  // Redirect back to cart if any items are deleted/unavailable
+  useEffect(() => {
+    if (!authLoading && cart && cart.length > 0) {
+      const hasDeleted = cart.some(item => item.is_deleted);
+      if (hasDeleted) {
+        router.push(`/store/${slug}/cart`);
+      }
+    }
+  }, [cart, authLoading, slug, router]);
+
   const handleSelectSavedAddress = (addr) => {
     setSelectedAddressId(addr.id);
     setForm(prev => ({

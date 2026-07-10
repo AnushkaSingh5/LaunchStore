@@ -1,2 +1,2 @@
-- `[x]` Replace active state box-shadow styles in `components/CategoryCard.js`.
+- `[x]` Remove active outline styling in `components/CategoryCard.js`.
 - `[x]` Verify compilation with `npm run build`.

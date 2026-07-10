@@ -27,7 +27,7 @@ console.log('Connecting to Supabase REST endpoint:', supabaseUrl);
 async function run() {
   try {
     // Let's request the table structure or query store_shipping_settings
-    const url = `${supabaseUrl}/rest/v1/orders?id=eq.7991dbea-35c1-48ac-8dec-47aaf3d2f554&select=*`;
+    const url = `${supabaseUrl}/rest/v1/products?limit=1`;
     const response = await fetch(url, {
       headers: {
         'apikey': supabaseAnonKey,
@@ -37,7 +37,7 @@ async function run() {
 
     console.log('Status:', response.status);
     const bodyText = await response.json();
-    console.log('Order Details:', JSON.stringify(bodyText[0], null, 2));
+    console.log('Keys in products:', Object.keys(bodyText[0] || {}));
   } catch (err) {
     console.error('Exception:', err);
   }

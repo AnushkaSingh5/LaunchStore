@@ -145,7 +145,8 @@ export default function CartPage({ params }) {
     item => item.store_id === storeDetails?.id || item.store_slug === slug
   );
   const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const hasInventoryErrors = cart.some(item => item.stock === 0 || item.quantity > item.stock);
+  const tax = cartTotal * 0.08;
+  const hasInventoryErrors = cart.some(item => item.stock === 0 || item.quantity > item.stock || item.is_deleted);
 
   const shippingType = storeDetails?.theme_settings?.shippingType ?? 'flat';
   const flatFee = parseFloat(storeDetails?.theme_settings?.flatFee) ?? 15;
@@ -162,7 +163,6 @@ export default function CartPage({ params }) {
     }
   }
 
-  const tax = cartTotal * 0.08;
   const total = cartTotal + tax + shipping;
 
   return (
@@ -190,7 +190,13 @@ export default function CartPage({ params }) {
               </div>
 
               {cart.map((item) => (
-                <div key={item.id} className="cart-item">
+                <div key={item.id} className={`cart-item ${item.is_deleted ? 'unavailable' : ''}`} style={{ position: 'relative' }}>
+                  {item.is_deleted && (
+                    <div className="product-unavailable-overlay">
+                      <span>Product is not available</span>
+                    </div>
+                  )}
+
                   <div className="item-info">
                     <div className="item-image">
                       <img src={item.image} alt={item.name} />
@@ -202,7 +208,9 @@ export default function CartPage({ params }) {
                       <h3>{item.name}</h3>
                       <p className="category">{item.category}</p>
                       <p className="price">₹{item.price.toLocaleString()}</p>
-                      {item.stock === 0 ? (
+                      {item.is_deleted ? (
+                        <p className="stock-warning out-of-stock">Unavailable</p>
+                      ) : item.stock === 0 ? (
                         <p className="stock-warning out-of-stock">Out of Stock</p>
                       ) : item.quantity > item.stock ? (
                         <p className="stock-warning low-stock">Only {item.stock} items available.</p>
@@ -212,9 +220,9 @@ export default function CartPage({ params }) {
 
                   <div className="item-quantity">
                     <div className="quantity-selector">
-                      <button onClick={() => updateQuantity(item.id, -1)}>-</button>
+                      <button onClick={() => updateQuantity(item.id, -1)} disabled={item.is_deleted}>-</button>
                       <span>{item.quantity}</span>
-                      <button onClick={() => updateQuantity(item.id, 1)}>+</button>
+                      <button onClick={() => updateQuantity(item.id, 1)} disabled={item.is_deleted}>+</button>
                     </div>
                   </div>
 
@@ -223,7 +231,7 @@ export default function CartPage({ params }) {
                   </div>
 
                   <div className="item-action">
-                    {item.stock === 0 || item.quantity > item.stock ? (
+                    {item.is_deleted || item.stock === 0 || item.quantity > item.stock ? (
                       <button className="row-buy-btn disabled-btn" disabled>
                         Buy
                       </button>
@@ -386,6 +394,50 @@ export default function CartPage({ params }) {
           align-items: center;
           padding: 30px 40px;
           border-bottom: 1px solid var(--secondary);
+        }
+
+        .cart-item.unavailable .item-info,
+        .cart-item.unavailable .item-quantity,
+        .cart-item.unavailable .item-total,
+        .cart-item.unavailable .row-buy-btn {
+          filter: grayscale(1) opacity(0.55);
+        }
+
+        .cart-item.unavailable .item-quantity,
+        .cart-item.unavailable .item-total,
+        .cart-item.unavailable .row-buy-btn {
+          pointer-events: none;
+        }
+
+        .product-unavailable-overlay {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(255, 255, 255, 0.85);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          opacity: 0;
+          transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+          pointer-events: none;
+          z-index: 10;
+        }
+
+        .product-unavailable-overlay span {
+          color: #dc2626;
+          font-weight: 800;
+          font-size: 14px;
+          background: #fee2e2;
+          padding: 8px 16px;
+          border-radius: 30px;
+          border: 1px solid #fecaca;
+          box-shadow: 0 4px 12px rgba(220, 38, 38, 0.1);
+        }
+
+        .cart-item:hover .product-unavailable-overlay {
+          opacity: 1;
         }
 
         .item-info {
