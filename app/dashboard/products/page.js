@@ -437,6 +437,7 @@ export default function ProductsPage() {
 
       <Modal 
         isOpen={isModalOpen} 
+        onClose={() => { setIsModalOpen(false); resetForm(); }} 
         footer={
           <div className="modal-footer-btns">
             <button className="cancel-btn" onClick={() => { setIsModalOpen(false); resetForm(); }}>Cancel</button>
