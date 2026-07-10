@@ -18,7 +18,12 @@ export default function ProductsClient({ slug, initialStoreDetails, initialProdu
   const [products, setProducts] = useState(initialProducts || []);
   const [categories, setCategories] = useState(initialCategories || []);
   const [storeDetails, setStoreDetails] = useState(initialStoreDetails);
-  const [sortBy, setSortBy] = useState('default');
+  const [sortBy, setSortBy] = useState(() => {
+    const savedSort = initialStoreDetails?.theme_settings?.defaultSort;
+    if (savedSort === 'price_asc') return 'price-asc';
+    if (savedSort === 'price_desc') return 'price-desc';
+    return 'default';
+  });
   const { user } = useAuth();
 
   const searchParams = useSearchParams();
@@ -168,7 +173,20 @@ export default function ProductsClient({ slug, initialStoreDetails, initialProdu
     if (sortBy === 'name-asc') {
       return a.name.localeCompare(b.name);
     }
-    return 0; // Default sorting (insertion order)
+    // Default sorting based on store settings preference
+    const defaultSort = storeDetails?.theme_settings?.defaultSort || 'newest';
+    if (defaultSort === 'price_asc') {
+      return parseFloat(a.price) - parseFloat(b.price);
+    }
+    if (defaultSort === 'price_desc') {
+      return parseFloat(b.price) - parseFloat(a.price);
+    }
+    if (defaultSort === 'newest') {
+      const dateA = new Date(a.created_at || a.id);
+      const dateB = new Date(b.created_at || b.id);
+      return dateB - dateA;
+    }
+    return 0; // default/popular (preserves insertion order)
   });
 
   return (

@@ -261,67 +261,71 @@ export default function StoreClient({ slug, initialStoreDetails, initialProducts
           </div>
         ) : (
           <>
-            <section className="categories-section" id="categories-section">
-              <div className="section-header">
-                <div className="header-meta">
-                  <h2 className="section-title">{categoryTitle}</h2>
-                  <span className="accent-underline"></span>
-                </div>
-                <p className="section-subtitle">{categorySubtitle}</p>
-              </div>
-              
-              <div className="carousel-wrapper">
-                <button 
-                  className="carousel-nav-btn left" 
-                  onClick={() => scrollCategories('left')}
-                  aria-label="Scroll categories left"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-                </button>
-
-                <div className="categories-carousel-track" ref={categoriesRef}>
-                  {categoriesWithCount.filter(c => c.id !== 'all').map(category => (
-                    <div key={category.id} className="carousel-item-card">
-                      <CategoryCard 
-                        category={category} 
-                        productCount={category.productCount} 
-                      />
-                    </div>
-                  ))}
-                </div>
-
-                <button 
-                  className="carousel-nav-btn right" 
-                  onClick={() => scrollCategories('right')}
-                  aria-label="Scroll categories right"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                </button>
-              </div>
-            </section>
-
-            {/* 2. New Arrivals (Fresh Finds) Split Banner */}
-            <section className="new-arrivals-banner-section" id="new-arrivals-section">
-              <div className="new-arrivals-grid">
-                <div className="arrivals-info-pane">
-                  <span className="pane-tag">New Arrivals</span>
-                  <h2 className="pane-title">{arrivalsTitle}</h2>
-                  <p className="pane-desc">{arrivalsSubtitle}</p>
-                  <button onClick={() => {
-                    const el = document.getElementById('trending-section');
-                    if (el) el.scrollIntoView({ behavior: 'smooth' });
-                  }} className="pane-discover-btn">
-                    Discover Now <span className="arrow">→</span>
-                  </button>
+            {(!storeDetails?.theme_settings || storeDetails.theme_settings.showCategories !== false) && (
+              <section className="categories-section" id="categories-section">
+                <div className="section-header">
+                  <div className="header-meta">
+                    <h2 className="section-title">{categoryTitle}</h2>
+                    <span className="accent-underline"></span>
+                  </div>
+                  <p className="section-subtitle">{categorySubtitle}</p>
                 </div>
                 
-                <div className="arrivals-products-pane">
-                  {freshFindsProducts.map(product => (
-                    <ProductCard key={product.id} product={product} />
-                  ))}
+                <div className="carousel-wrapper">
+                  <button 
+                    className="carousel-nav-btn left" 
+                    onClick={() => scrollCategories('left')}
+                    aria-label="Scroll categories left"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                  </button>
+
+                  <div className="categories-carousel-track" ref={categoriesRef}>
+                    {categoriesWithCount.filter(c => c.id !== 'all').map(category => (
+                      <div key={category.id} className="carousel-item-card">
+                        <CategoryCard 
+                          category={category} 
+                          productCount={category.productCount} 
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  <button 
+                    className="carousel-nav-btn right" 
+                    onClick={() => scrollCategories('right')}
+                    aria-label="Scroll categories right"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                  </button>
                 </div>
-              </div>
-            </section>
+              </section>
+            )}
+
+            {/* 2. New Arrivals (Fresh Finds) Split Banner */}
+            {(!storeDetails?.theme_settings || storeDetails.theme_settings.showFeatured !== false) && (
+              <section className="new-arrivals-banner-section" id="new-arrivals-section">
+                <div className="new-arrivals-grid">
+                  <div className="arrivals-info-pane">
+                    <span className="pane-tag">New Arrivals</span>
+                    <h2 className="pane-title">{arrivalsTitle}</h2>
+                    <p className="pane-desc">{arrivalsSubtitle}</p>
+                    <button onClick={() => {
+                      const el = document.getElementById('trending-section');
+                      if (el) el.scrollIntoView({ behavior: 'smooth' });
+                    }} className="pane-discover-btn">
+                      Discover Now <span className="arrow">→</span>
+                    </button>
+                  </div>
+                  
+                  <div className="arrivals-products-pane">
+                    {freshFindsProducts.map(product => (
+                      <ProductCard key={product.id} product={product} />
+                    ))}
+                  </div>
+                </div>
+              </section>
+            )}
 
             {/* 3. Value Proposition Bar */}
             <div className="value-props-bar">

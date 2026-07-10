@@ -59,16 +59,18 @@ export default function SettingsPage() {
   }, [store]);
 
   const handleSave = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     if (!store) return;
     setSaving(true);
     try {
+      const existingSettings = store.theme_settings || {};
       await storeService.updateStore(store.id, {
         name: settings.storeName,
         description: settings.description,
         logo_url: settings.logo,
         banner_url: settings.banner,
         theme_settings: {
+          ...existingSettings,
           showCategories: settings.showCategories,
           showFeatured: settings.showFeatured,
           defaultSort: settings.defaultSort
