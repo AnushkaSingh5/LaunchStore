@@ -1,4 +1,2 @@
-- `[x]` Remove blocking loading wraps in `onAuthStateChange` in `context/AuthContext.js`.
-- `[x]` Remove blocking loading wraps in `onAuthStateChange` in `context/CustomerAuthContext.js`.
-- `[x]` Prevent background `fetchStoreOnly` calls from setting `storeLoading` state using the `isSilent` parameter.
+- `[x]` Add `word-break: break-word` and `overflow-wrap: break-word` to `.hero-subtitle` in `components/Hero.js`.
 - `[x]` Verify compilation with `npm run build`.

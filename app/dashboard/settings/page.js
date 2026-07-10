@@ -164,7 +164,9 @@ export default function SettingsPage() {
                 onChange={(e) => handleChange('description', e.target.value)}
                 placeholder="Enter store description"
                 rows="3"
+                maxLength={160}
               />
+              <span className="help-text">Max 160 characters. Current: {settings.description.length}/160</span>
             </div>
           </div>
 

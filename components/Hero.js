@@ -11,6 +11,12 @@ export default function Hero({ bannerUrl, storeName, description }) {
   const [subheading, setSubheading] = useState('Handpicked pieces that bring beauty, comfort and character to your home.');
   const [banner, setBanner] = useState('https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&q=80&w=1200');
 
+  const truncateDescription = (text) => {
+    if (!text) return '';
+    if (text.length <= 160) return text;
+    return text.substring(0, 157) + '...';
+  };
+
   useEffect(() => {
     // Dynamically choose themed content based on store details
     const fallback = getDefaultStoreData(storeName || '', description || '');
@@ -24,28 +30,28 @@ export default function Hero({ bannerUrl, storeName, description }) {
       // Determine themed defaults
       if (fallback.niche === 'fashion') {
         setHeadline(storeName ? `Curated Style at ${storeName}` : 'Express Your Style, Define Your Look');
-        setSubheading(description || 'Carefully curated garments that bring elegance, comfort and confidence to your wardrobe.');
+        setSubheading(truncateDescription(description) || 'Carefully curated garments that bring elegance, comfort and confidence to your wardrobe.');
         setBanner(bannerUrl || 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&q=80&w=1200');
       } else if (fallback.niche === 'beauty') {
         setHeadline(storeName ? `Radiate Beauty with ${storeName}` : 'Reveal Your Glow, Define Your Beauty');
-        setSubheading(description || 'Botanical formulations that bring nourishment, radiance and clarity to your skin.');
+        setSubheading(truncateDescription(description) || 'Botanical formulations that bring nourishment, radiance and clarity to your skin.');
         setBanner(bannerUrl || 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&q=80&w=1200');
       } else if (fallback.niche === 'electronics') {
         setHeadline(storeName ? `Future Tech at ${storeName}` : 'Elevate Your Sound, Define Your Beat');
-        setSubheading(description || 'High-performance tech gear that brings precision, comfort and innovation to your daily life.');
+        setSubheading(truncateDescription(description) || 'High-performance tech gear that brings precision, comfort and innovation to your daily life.');
         setBanner(bannerUrl || 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80&w=1200');
       } else if (fallback.niche === 'food') {
         setHeadline(storeName ? `A Taste of ${storeName}` : 'Savor the Taste, Define Your Flavor');
-        setSubheading(description || 'Artisanal ingredients and fresh bakes that bring joy, warmth and comfort to your table.');
+        setSubheading(truncateDescription(description) || 'Artisanal ingredients and fresh bakes that bring joy, warmth and comfort to your table.');
         setBanner(bannerUrl || 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=1200');
       } else if (fallback.niche === 'home-decor') {
         setHeadline(storeName ? `Elevated Living with ${storeName}` : 'Design Your Space, Define Your Style');
-        setSubheading(description || 'Handpicked pieces that bring beauty, comfort and character to your home.');
+        setSubheading(truncateDescription(description) || 'Handpicked pieces that bring beauty, comfort and character to your home.');
         setBanner(bannerUrl || 'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&q=80&w=1200');
       } else {
         // general / default
         setHeadline(storeName ? `Curated Collection at ${storeName}` : 'Welcome to Our Store');
-        setSubheading(description || 'Curating high-quality products to bring value, utility, and delight to your life.');
+        setSubheading(truncateDescription(description) || 'Curating high-quality products to bring value, utility, and delight to your life.');
         setBanner(bannerUrl || 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&q=80&w=1200');
       }
     }
@@ -177,6 +183,8 @@ export default function Hero({ bannerUrl, storeName, description }) {
           color: #C1BCB2;
           margin-bottom: 40px;
           font-weight: 400;
+          word-break: break-word;
+          overflow-wrap: break-word;
         }
 
         .hero-actions {

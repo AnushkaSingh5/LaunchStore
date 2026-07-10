@@ -409,7 +409,9 @@ export default function OnboardingPage() {
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Tell customers what your store sells..."
                   rows="3"
+                  maxLength={160}
                 />
+                <span className="help-text" style={{ fontSize: '11px', color: '#94a3b8', display: 'block', marginTop: '4px' }}>Max 160 characters. Current: {description.length}/160</span>
               </div>
 
               <div className="upload-grid">
