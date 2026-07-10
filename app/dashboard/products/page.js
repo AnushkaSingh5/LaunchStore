@@ -492,6 +492,9 @@ export default function ProductsPage() {
                   placeholder="0.00" 
                   value={formData.price}
                   onChange={(e) => setFormData({...formData, price: e.target.value})}
+                  onKeyDown={(e) => {
+                    if (['e', 'E', '+', '-'].includes(e.key)) e.preventDefault();
+                  }}
                 />
               </div>
             </div>
@@ -506,6 +509,9 @@ export default function ProductsPage() {
                   placeholder="0" 
                   value={formData.stock}
                   onChange={(e) => setFormData({...formData, stock: e.target.value})}
+                  onKeyDown={(e) => {
+                    if (['e', 'E', '+', '-', '.'].includes(e.key)) e.preventDefault();
+                  }}
                 />
               </div>
             </div>
@@ -727,6 +733,9 @@ export default function ProductsPage() {
                 placeholder="Min Price" 
                 value={filters.minPrice}
                 onChange={(e) => handleFilterChange('minPrice', e.target.value)}
+                onKeyDown={(e) => {
+                  if (['e', 'E', '+', '-'].includes(e.key)) e.preventDefault();
+                }}
               />
               <span>-</span>
               <input 
@@ -734,6 +743,9 @@ export default function ProductsPage() {
                 placeholder="Max Price" 
                 value={filters.maxPrice}
                 onChange={(e) => handleFilterChange('maxPrice', e.target.value)}
+                onKeyDown={(e) => {
+                  if (['e', 'E', '+', '-'].includes(e.key)) e.preventDefault();
+                }}
               />
             </div>
           </div>

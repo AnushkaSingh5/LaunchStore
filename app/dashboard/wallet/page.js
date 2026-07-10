@@ -250,6 +250,9 @@ export default function CreatorWallet() {
               onChange={(e) => setPayoutAmount(e.target.value)}
               min="500"
               max={overview.availableBalance}
+              onKeyDown={(e) => {
+                if (['e', 'E', '+', '-'].includes(e.key)) e.preventDefault();
+              }}
               required
             />
             <span className="field-hint">Minimum payout request ₹500. Maximum is your available balance.</span>

@@ -1,6 +1,6 @@
 import styles from './Input.module.css';
 
-export default function Input({ label, type = 'text', value, onChange, placeholder, required, disabled }) {
+export default function Input({ label, type = 'text', value, onChange, placeholder, required, disabled, ...rest }) {
   return (
     <div className={styles.inputGroup}>
       {label && <label className={styles.label}>{label} {required && '*'}</label>}
@@ -13,6 +13,7 @@ export default function Input({ label, type = 'text', value, onChange, placehold
           required={required}
           disabled={disabled}
           rows="4"
+          {...rest}
         />
       ) : (
         <input
@@ -23,6 +24,7 @@ export default function Input({ label, type = 'text', value, onChange, placehold
           placeholder={placeholder}
           required={required}
           disabled={disabled}
+          {...rest}
         />
       )}
     </div>

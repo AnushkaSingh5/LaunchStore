@@ -237,6 +237,9 @@ export default function EarningsPage() {
               onChange={(e) => setPayoutAmount(e.target.value)}
               min="500"
               max={summary.availableEarnings}
+              onKeyDown={(e) => {
+                if (['e', 'E', '+', '-'].includes(e.key)) e.preventDefault();
+              }}
               required
             />
             <span className="field-hint">Minimum payout request ₹500. Maximum is your available balance.</span>

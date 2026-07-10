@@ -260,9 +260,9 @@ export default function CreatorProfile() {
                 <input
                   id="phone"
                   type="tel"
-                  placeholder="+91 99999 99999"
+                  placeholder="9999999999"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={(e) => setPhone(e.target.value.replace(/[^0-9]/g, ''))}
                 />
               </div>
 
@@ -392,7 +392,7 @@ export default function CreatorProfile() {
                   type="text"
                   placeholder="e.g. 110001"
                   value={postalCode}
-                  onChange={(e) => setPostalCode(e.target.value)}
+                  onChange={(e) => setPostalCode(e.target.value.replace(/[^0-9]/g, ''))}
                   required
                 />
               </div>

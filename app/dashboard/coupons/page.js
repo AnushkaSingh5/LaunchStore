@@ -464,6 +464,9 @@ export default function CouponsPage() {
                 onChange={(e) => setDiscountValue(e.target.value)}
                 min="0.01"
                 step="any"
+                onKeyDown={(e) => {
+                  if (['e', 'E', '+', '-'].includes(e.key)) e.preventDefault();
+                }}
               />
             </div>
 
@@ -476,6 +479,9 @@ export default function CouponsPage() {
                 onChange={(e) => setMinimumOrderAmount(e.target.value)}
                 min="0"
                 step="any"
+                onKeyDown={(e) => {
+                  if (['e', 'E', '+', '-'].includes(e.key)) e.preventDefault();
+                }}
               />
             </div>
           </div>
@@ -489,6 +495,9 @@ export default function CouponsPage() {
                 value={maxUses}
                 onChange={(e) => setMaxUses(e.target.value)}
                 min="0"
+                onKeyDown={(e) => {
+                  if (['e', 'E', '+', '-', '.'].includes(e.key)) e.preventDefault();
+                }}
               />
               <span className="help-text">Set to 0 if there is no total limit.</span>
             </div>

@@ -311,7 +311,7 @@ export default function CreatorShippingPage() {
                 type="tel"
                 placeholder="10-digit mobile"
                 value={settings.phone}
-                onChange={(e) => handleChange('phone', e.target.value)}
+                onChange={(e) => handleChange('phone', e.target.value.replace(/[^0-9]/g, ''))}
                 required
               />
             </div>
@@ -380,7 +380,7 @@ export default function CreatorShippingPage() {
                 type="text"
                 placeholder="6-digit PIN"
                 value={settings.pincode}
-                onChange={(e) => handleChange('pincode', e.target.value)}
+                onChange={(e) => handleChange('pincode', e.target.value.replace(/[^0-9]/g, ''))}
                 required
               />
             </div>
@@ -465,6 +465,9 @@ export default function CreatorShippingPage() {
                 onChange={(e) => handleRulesChange('flatFee', Number(e.target.value))}
                 placeholder="0.00"
                 disabled={shippingRules.shippingType !== 'flat'}
+                onKeyDown={(e) => {
+                  if (['e', 'E', '+', '-'].includes(e.key)) e.preventDefault();
+                }}
               />
               <span style={{ fontSize: '11px', color: '#94a3b8' }}>This amount will be added to every order.</span>
             </div>
