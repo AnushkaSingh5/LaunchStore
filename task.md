@@ -1,2 +1,2 @@
-- `[x]` Add line-clamping and reduce `margin-bottom` for `.hero-subtitle` in `components/Hero.js`.
+- `[x]` Remove description paragraph (`footer-brand-desc`) in `components/Footer.js`.
 - `[x]` Verify compilation with `npm run build`.

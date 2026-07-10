@@ -42,7 +42,6 @@ export default function Footer({ storeName, description }) {
         <div className="footer-main-grid">
           <div className="footer-brand-col">
             <h3 className="footer-brand-logo">{displayTitle}</h3>
-            <p className="footer-brand-desc">{brandDesc}</p>
             <div className="social-links-pill">
               <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="social-pill-link">Instagram</a>
               <a href="https://pinterest.com" target="_blank" rel="noopener noreferrer" className="social-pill-link">Pinterest</a>
@@ -212,6 +211,8 @@ export default function Footer({ storeName, description }) {
           color: #706f6c;
           line-height: 1.6;
           margin-bottom: 24px;
+          word-break: break-word;
+          overflow-wrap: break-word;
         }
 
         .social-links-pill {
