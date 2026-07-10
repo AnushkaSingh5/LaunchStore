@@ -257,9 +257,9 @@ export default function StoreClient({ slug, initialStoreDetails, initialProducts
                   <span className="accent-underline"></span>
                 </div>
                 <p className="section-subtitle">{categorySubtitle}</p>
-                <button onClick={() => setSelectedCategory('All')} className="section-action-link">
+                <Link href={`/store/${slug}/products`} className="section-action-link">
                   View All Categories <span className="link-arrow">→</span>
-                </button>
+                </Link>
               </div>
               
               <div className="categories-grid-5">
@@ -353,9 +353,9 @@ export default function StoreClient({ slug, initialStoreDetails, initialProducts
                   <span className="accent-underline"></span>
                 </div>
                 <p className="section-subtitle">Most-loved pieces by our customers.</p>
-                <button onClick={() => setSelectedCategory('All')} className="section-action-link">
+                <Link href={`/store/${slug}/products`} className="section-action-link">
                   View All Products <span className="link-arrow">→</span>
-                </button>
+                </Link>
               </div>
 
               <div className="products-grid-4">

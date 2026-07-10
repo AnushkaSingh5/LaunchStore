@@ -50,10 +50,11 @@ export default function Navbar({ storeName, logoUrl }) {
     const value = e.target.value;
     setSearchQuery(value);
     
-    // If user starts typing and is not on home page, redirect to home
+    // If user starts typing and is not on home page or products catalog page, redirect to home
     if (value.trim() !== '') {
       const homePath = storeSlug ? `/${pathParts[1]}/${storeSlug}` : '/';
-      if (pathname !== homePath) {
+      const productsPath = storeSlug ? `/${pathParts[1]}/${storeSlug}/products` : '/products';
+      if (pathname !== homePath && pathname !== productsPath) {
         router.push(homePath);
       }
     }
