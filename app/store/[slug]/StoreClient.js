@@ -305,7 +305,7 @@ export default function StoreClient({ slug, initialStoreDetails, initialProducts
             {/* 2. New Arrivals (Fresh Finds) Split Banner */}
             {(!storeDetails?.theme_settings || storeDetails.theme_settings.showFeatured !== false) && (
               <section className="new-arrivals-banner-section" id="new-arrivals-section">
-                <div className="new-arrivals-grid">
+                <div className={`new-arrivals-grid ${freshFindsProducts.length === 0 ? 'no-products' : ''}`}>
                   <div className="arrivals-info-pane">
                     <span className="pane-tag">New Arrivals</span>
                     <h2 className="pane-title">{arrivalsTitle}</h2>
@@ -608,6 +608,21 @@ export default function StoreClient({ slug, initialStoreDetails, initialProducts
           align-items: center;
         }
 
+        .new-arrivals-grid.no-products {
+          grid-template-columns: 1fr;
+          max-width: 800px;
+          margin: 0 auto;
+          text-align: center;
+        }
+
+        .new-arrivals-grid.no-products .arrivals-info-pane {
+          align-items: center;
+        }
+
+        .new-arrivals-grid.no-products .pane-discover-btn {
+          align-self: center;
+        }
+
         .arrivals-info-pane {
           display: flex;
           flex-direction: column;
@@ -629,6 +644,8 @@ export default function StoreClient({ slug, initialStoreDetails, initialProducts
           font-weight: 700;
           line-height: 1.25;
           margin-bottom: 16px;
+          word-break: normal;
+          overflow-wrap: break-word;
         }
 
         .pane-desc {
@@ -636,6 +653,8 @@ export default function StoreClient({ slug, initialStoreDetails, initialProducts
           color: #C1BCB2;
           line-height: 1.6;
           margin-bottom: 32px;
+          word-break: normal;
+          overflow-wrap: break-word;
         }
 
         .pane-discover-btn {

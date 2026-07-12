@@ -330,6 +330,29 @@ export default function Footer({ storeName, description }) {
             text-align: center;
           }
         }
+
+        @media (max-width: 480px) {
+          .newsletter-form-box {
+            flex-direction: column;
+            background: transparent;
+            border: none;
+            padding: 0;
+            gap: 12px;
+            box-shadow: none;
+          }
+          .newsletter-input {
+            background: #FAF8F5;
+            border-radius: 30px;
+            border: 1px solid rgba(0, 0, 0, 0.04);
+            width: 100%;
+            height: 48px;
+          }
+          .newsletter-subscribe-btn {
+            width: 100%;
+            height: 48px;
+            text-align: center;
+          }
+        }
       `}</style>
     </footer>
   );

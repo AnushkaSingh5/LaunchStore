@@ -183,7 +183,7 @@ export default function Hero({ bannerUrl, storeName, description }) {
           color: #C1BCB2;
           margin-bottom: 24px;
           font-weight: 400;
-          word-break: break-word;
+          word-break: normal;
           overflow-wrap: break-word;
           display: -webkit-box;
           -webkit-line-clamp: 3;
@@ -379,12 +379,12 @@ export default function Hero({ bannerUrl, storeName, description }) {
 
         @media (max-width: 768px) {
           .hero-section {
-            padding-top: 160px; /* Adjust for mobile navbar space */
+            padding-top: 90px; /* Adjust for mobile navbar space */
             padding-bottom: 20px;
           }
 
           .hero-section.demo-mode-hero {
-            padding-top: 236px;
+            padding-top: 138px;
           }
 
           .hero-left-pane {

@@ -1,4 +1,4 @@
-- `[x]` Center-align buy button text on mobile via flexbox in `app/store/[slug]/product/[idOrSlug]/ProductClient.js`.
-- `[x]` Constrain max width and height of the product main image to 320px on mobile to preserve 1:1 aspect ratio.
-- `[x]` Hide horizontal scrollbars on thumbnail gallery on mobile while maintaining swiping action.
+- `[x]` Revert `word-break` from `break-all` to `normal` for `.pane-title` and `.pane-desc` in `app/store/[slug]/StoreClient.js`.
+- `[x]` Revert `word-break` from `break-all` to `normal` for `.hero-subtitle` in `components/Hero.js`.
+- `[x]` Keep `overflow-wrap: break-word` to ensure long continuous strings wrap but normal words (like "1store") stay together.
 - `[x]` Verify compilation with `npm run build`.
