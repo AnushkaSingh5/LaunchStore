@@ -589,8 +589,8 @@ export default function ProductClient({ slug, initialStoreDetails, initialProduc
         @media (max-width: 1024px) {
           .product-layout {
             grid-template-columns: 1fr;
-            gap: 40px;
-            padding: 40px;
+            gap: 32px;
+            padding: 30px;
           }
           .products-grid {
             grid-template-columns: repeat(2, 1fr);
@@ -598,14 +598,79 @@ export default function ProductClient({ slug, initialStoreDetails, initialProduc
         }
 
         @media (max-width: 768px) {
+          .main-content {
+            padding-top: 90px;
+            padding-bottom: 40px;
+          }
+          .product-layout {
+            padding: 20px 16px;
+            gap: 24px;
+            margin-bottom: 40px;
+            border-radius: var(--radius-md);
+          }
+          .product-gallery .main-image {
+            aspect-ratio: 1/1;
+            max-height: 320px;
+            max-width: 320px;
+            margin: 0 auto;
+          }
+          .thumbnails-grid {
+            margin-top: 12px;
+            gap: 8px;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+          }
+          .thumbnails-grid::-webkit-scrollbar {
+            display: none;
+          }
           .title {
-            font-size: 32px;
+            font-size: 24px;
+            margin-bottom: 8px;
+          }
+          .price {
+            font-size: 22px;
+            margin-bottom: 16px;
+          }
+          .description {
+            font-size: 14px;
+            margin-bottom: 24px;
           }
           .actions {
-            flex-direction: column;
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            gap: 12px;
+            margin-bottom: 24px;
+          }
+          .add-to-cart-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            height: 48px;
+            font-size: 15px;
           }
           .quantity-selector {
+            height: 48px;
             justify-content: space-between;
+          }
+          .quantity-selector button {
+            width: 36px;
+            height: 36px;
+            font-size: 16px;
+          }
+          .quantity-selector span {
+            width: 36px;
+          }
+          .features {
+            grid-template-columns: 1fr;
+            gap: 16px;
+            padding-top: 20px;
+          }
+          .related-section {
+            margin-top: 24px;
+          }
+          .section-title {
+            font-size: 24px;
           }
         }
 

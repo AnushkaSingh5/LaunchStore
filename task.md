@@ -1,4 +1,4 @@
-- `[x]` Append unique suffix to retry order ID on the failed page `app/store/[slug]/checkout/failed/page.js`.
-- `[x]` Normalize orderId parameter in `updateOrderPayment` inside `services/orderService.js` to strip any suffixes before doing DB operations.
-- `[x]` Normalize orderId parameter in `/api/payment/cashfree/verify/route.js` and use `rawOrderId` to query Cashfree.
+- `[x]` Center-align buy button text on mobile via flexbox in `app/store/[slug]/product/[idOrSlug]/ProductClient.js`.
+- `[x]` Constrain max width and height of the product main image to 320px on mobile to preserve 1:1 aspect ratio.
+- `[x]` Hide horizontal scrollbars on thumbnail gallery on mobile while maintaining swiping action.
 - `[x]` Verify compilation with `npm run build`.
