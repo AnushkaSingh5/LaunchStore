@@ -1,4 +1,4 @@
-- `[x]` Replace payment option emojis in `app/store/[slug]/cart/page.js` with premium SVGs.
-- `[x]` Replace payment option emojis in `app/cart/page.js` with premium SVGs.
-- `[x]` Replace payment option emojis in `app/demo-store/[slug]/cart/CartClientPage.js` with premium SVGs.
+- `[x]` Append unique suffix to retry order ID on the failed page `app/store/[slug]/checkout/failed/page.js`.
+- `[x]` Normalize orderId parameter in `updateOrderPayment` inside `services/orderService.js` to strip any suffixes before doing DB operations.
+- `[x]` Normalize orderId parameter in `/api/payment/cashfree/verify/route.js` and use `rawOrderId` to query Cashfree.
 - `[x]` Verify compilation with `npm run build`.

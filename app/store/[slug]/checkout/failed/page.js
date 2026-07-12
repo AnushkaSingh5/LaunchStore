@@ -50,8 +50,12 @@ export default function CheckoutFailedPage({ params }) {
     try {
       const activeProviderName = process.env.NEXT_PUBLIC_ACTIVE_PAYMENT_PROVIDER || 'Razorpay';
       const provider = paymentFactory.getProvider(activeProviderName);
+      
+      // Append a unique suffix to ensure Cashfree receives a unique order ID for each retry
+      const retryOrderId = `${orderDetails.id}-${Date.now().toString().slice(-4)}`;
+      
       const paymentOrder = await provider.createPaymentOrder(
-        orderDetails.id,
+        retryOrderId,
         orderDetails.total_amount,
         {
           name: orderDetails.customer_name,

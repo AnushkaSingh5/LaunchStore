@@ -213,7 +213,8 @@ export const orderService = {
   /**
    * Update order payment information safely, checking for database columns presence.
    */
-  updateOrderPayment: async (orderId, { paymentStatus, paymentProvider, paymentId, paymentOrderId, status }) => {
+  updateOrderPayment: async (rawOrderId, { paymentStatus, paymentProvider, paymentId, paymentOrderId, status }) => {
+    const orderId = rawOrderId && rawOrderId.length >= 36 ? rawOrderId.slice(0, 36) : rawOrderId;
     if (!supabaseClient) {
       const order = mockOrders.find(o => o.id === orderId);
       if (order) {

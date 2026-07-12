@@ -4,7 +4,7 @@ import { orderService } from '@/services/orderService';
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
-  const orderId = searchParams.get('order_id');
+  const rawOrderId = searchParams.get('order_id');
   const slug = searchParams.get('slug') || 'store1';
 
   const envUrl = process.env.NEXT_PUBLIC_BASE_URL;
@@ -14,14 +14,16 @@ export async function GET(request) {
     ? `${protocol}://${host}`
     : ((envUrl && envUrl.trim() !== '') ? envUrl : `${protocol}://${host}`);
 
-  if (!orderId) {
+  if (!rawOrderId) {
     return NextResponse.redirect(`${baseUrl}/store/${slug}`);
   }
 
+  const orderId = rawOrderId.length >= 36 ? rawOrderId.slice(0, 36) : rawOrderId;
+
   try {
     // 1. Handle mock payment redirection verification
-    if (orderId.startsWith('cf_mock_order_') || orderId.startsWith('rzp_mock_') || orderId.startsWith('mock_')) {
-      console.log(`ℹ️ [verify-redirect]: Processing mock transaction verification for: ${orderId}`);
+    if (rawOrderId.startsWith('cf_mock_order_') || rawOrderId.startsWith('rzp_mock_') || rawOrderId.startsWith('mock_')) {
+      console.log(`ℹ️ [verify-redirect]: Processing mock transaction verification for: ${rawOrderId}`);
       await orderService.updateOrderPayment(orderId, {
         paymentStatus: 'paid',
         status: 'confirmed',
@@ -45,8 +47,8 @@ export async function GET(request) {
       : Cashfree.SANDBOX;
     const cashfree = new Cashfree(environment, clientId, clientSecret);
 
-    console.log(`🔄 [verify-redirect]: Fetching order status from Cashfree for ID: ${orderId}`);
-    const response = await cashfree.PGFetchOrder(orderId);
+    console.log(`🔄 [verify-redirect]: Fetching order status from Cashfree for ID: ${rawOrderId}`);
+    const response = await cashfree.PGFetchOrder(rawOrderId);
     const cfOrder = response.data;
 
     if (cfOrder && cfOrder.order_status === 'PAID') {
