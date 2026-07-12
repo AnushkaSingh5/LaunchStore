@@ -9,7 +9,7 @@ import Input from '@/components/UI/Input';
 import { useDashboard } from '@/context/DashboardContext';
 
 export default function CategoriesPage() {
-  const { categories, products, loading, addCategory, updateCategory, deleteCategory } = useDashboard();
+  const { categories, products, loading, addCategory, updateCategory, deleteCategory, reorderCategories } = useDashboard();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -17,7 +17,7 @@ export default function CategoriesPage() {
   const [filters, setFilters] = useState({
     status: [],
     productCount: 'All',
-    sortBy: 'most_products',
+    sortBy: 'custom',
     dateRange: 'all',
     visibility: []
   });
@@ -100,6 +100,8 @@ export default function CategoriesPage() {
     if (filters.sortBy === 'least_products') return aCount - bCount;
     if (filters.sortBy === 'az') return aName.localeCompare(bName);
     if (filters.sortBy === 'za') return bName.localeCompare(aName);
+    if (filters.sortBy === 'recent') return new Date(b.created_at) - new Date(a.created_at);
+    if (filters.sortBy === 'updated') return new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at);
     return 0;
   });
 
@@ -119,6 +121,24 @@ export default function CategoriesPage() {
     }
   };
 
+  const handleMoveCategory = async (index, direction) => {
+    const displayedCats = [...filteredCategories];
+    if (index + direction < 0 || index + direction >= displayedCats.length) return;
+
+    const itemToMove = displayedCats[index];
+    const targetItem = displayedCats[index + direction];
+
+    const newGlobalOrder = [...categories];
+    const globalIdx1 = newGlobalOrder.findIndex(c => c.id === itemToMove.id);
+    const globalIdx2 = newGlobalOrder.findIndex(c => c.id === targetItem.id);
+
+    if (globalIdx1 !== -1 && globalIdx2 !== -1) {
+      newGlobalOrder[globalIdx1] = targetItem;
+      newGlobalOrder[globalIdx2] = itemToMove;
+      await reorderCategories(newGlobalOrder);
+    }
+  };
+
   const handleFilterChange = (field, value) => {
     setFilters(prev => ({ ...prev, [field]: value }));
   };
@@ -127,7 +147,7 @@ export default function CategoriesPage() {
     setFilters({
       status: [],
       productCount: 'All',
-      sortBy: 'most_products',
+      sortBy: 'custom',
       dateRange: 'all',
       visibility: []
     });
@@ -261,6 +281,7 @@ export default function CategoriesPage() {
         <div className="list-header">
           <div className="col-name">CATEGORY NAME</div>
           <div className="col-products">PRODUCTS</div>
+          {filters.sortBy === 'custom' && <div className="col-order">ORDER</div>}
           <div className="col-actions">ACTIONS</div>
         </div>
         <div className="list-body">
@@ -300,6 +321,26 @@ export default function CategoriesPage() {
                     {products.filter(p => p.category === cat.name).length} items
                   </span>
                 </div>
+                {filters.sortBy === 'custom' && (
+                  <div className="cat-order">
+                    <button 
+                      className="order-btn" 
+                      onClick={() => handleMoveCategory(idx, -1)} 
+                      disabled={idx === 0} 
+                      title="Move Up"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                    </button>
+                    <button 
+                      className="order-btn" 
+                      onClick={() => handleMoveCategory(idx, 1)} 
+                      disabled={idx === filteredCategories.length - 1} 
+                      title="Move Down"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </button>
+                  </div>
+                )}
                 <div className="cat-actions">
                   <button className="row-btn edit" onClick={() => handleEditClick(cat)}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
@@ -457,6 +498,7 @@ export default function CategoriesPage() {
               value={filters.sortBy}
               onChange={(e) => handleFilterChange('sortBy', e.target.value)}
             >
+              <option value="custom">Custom Order</option>
               <option value="most_products">Most Products</option>
               <option value="least_products">Least Products</option>
               <option value="az">Alphabetical A-Z</option>
@@ -938,7 +980,41 @@ export default function CategoriesPage() {
 
         .col-name { flex: 2; }
         .col-products { flex: 1; text-align: center; }
+        .col-order { flex: 0 0 100px; text-align: center; }
         .col-actions { flex: 1; text-align: right; }
+
+        .cat-order {
+          flex: 0 0 100px;
+          display: flex;
+          justify-content: center;
+          gap: 8px;
+        }
+
+        .order-btn {
+          width: 32px;
+          height: 32px;
+          border-radius: 8px;
+          border: 1px solid #e2e8f0;
+          background: #fff;
+          color: #64748b;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .order-btn:hover:not(:disabled) {
+          border-color: #6366f1;
+          color: #6366f1;
+          background: #f5f3ff;
+        }
+
+        .order-btn:disabled {
+          opacity: 0.4;
+          cursor: not-allowed;
+          background: #f8fafc;
+        }
 
         .category-row {
           padding: 24px 32px;

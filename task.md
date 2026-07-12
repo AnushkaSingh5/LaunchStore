@@ -1,2 +1,4 @@
-- `[x]` Remove active outline styling in `components/CategoryCard.js`.
+- `[x]` Replace payment option emojis in `app/store/[slug]/cart/page.js` with premium SVGs.
+- `[x]` Replace payment option emojis in `app/cart/page.js` with premium SVGs.
+- `[x]` Replace payment option emojis in `app/demo-store/[slug]/cart/CartClientPage.js` with premium SVGs.
 - `[x]` Verify compilation with `npm run build`.

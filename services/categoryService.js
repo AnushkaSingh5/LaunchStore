@@ -54,6 +54,7 @@ export const categoryService = {
         .from('categories')
         .select('*')
         .eq('store_id', storeId)
+        .order('sort_order', { ascending: true })
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -170,6 +171,26 @@ export const categoryService = {
       throw new Error(error.message || 'Failed to delete category');
     }
     return true;
+  },
+
+  /**
+   * Update category sort orders in bulk
+   */
+  updateCategoriesOrder: async (categoriesList) => {
+    if (!supabaseClient) return true;
+    try {
+      const promises = categoriesList.map(item => 
+        supabaseClient
+          .from('categories')
+          .update({ sort_order: item.sort_order })
+          .eq('id', item.id)
+      );
+      await Promise.all(promises);
+      return true;
+    } catch (e) {
+      console.error('[LaunchCart - CategoryService] Error updating categories sort order:', e);
+      throw e;
+    }
   }
 };
 

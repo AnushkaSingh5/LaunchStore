@@ -24,6 +24,9 @@ export default function StoreCheckoutPage({ params }) {
   const router = useRouter();
 
   const [storeDetails, setStoreDetails] = useState(null);
+  const cart = (globalCart || []).filter(
+    item => item.store_id === storeDetails?.id || item.store_slug === slug
+  );
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -125,6 +128,8 @@ export default function StoreCheckoutPage({ params }) {
       }
     }
   }, [cart, authLoading, slug, router]);
+
+
 
   const handleSelectSavedAddress = (addr) => {
     setSelectedAddressId(addr.id);
@@ -314,9 +319,7 @@ export default function StoreCheckoutPage({ params }) {
   }
 
   // Filter global cart items to only purchase items belonging to this specific store
-  const cart = (globalCart || []).filter(
-    item => item.store_id === storeDetails?.id || item.store_slug === slug
-  );
+
   
   const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const tax = cartTotal * 0.08;

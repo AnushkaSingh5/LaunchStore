@@ -182,6 +182,23 @@ export function DashboardProvider({ children }) {
     }
   };
 
+  const reorderCategories = async (newOrderedCategories) => {
+    try {
+      // Optimistic update
+      setCategories(newOrderedCategories);
+
+      // Update database
+      const updatePayload = newOrderedCategories.map((cat, idx) => ({
+        id: cat.id,
+        sort_order: idx
+      }));
+      await categoryService.updateCategoriesOrder(updatePayload);
+    } catch (e) {
+      console.error('Error reordering categories:', e);
+      alert('Failed to save category order: ' + e.message);
+    }
+  };
+
   // Product Actions
   const addProduct = async (productData) => {
     if (!store) {
@@ -326,6 +343,7 @@ export function DashboardProvider({ children }) {
       addCategory,
       updateCategory,
       deleteCategory,
+      reorderCategories,
       addProduct,
       updateProduct,
       deleteProduct,
