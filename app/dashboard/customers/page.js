@@ -693,7 +693,7 @@ export default function CustomersPage() {
                   <div style={{ padding: '16px', textAlign: 'center', color: '#94a3b8' }}>Loading items...</div>
                 ) : orderItems.length > 0 ? (
                   orderItems.map((item) => {
-                    const productName = item.product?.name || 'Product Details (Archived)';
+                    const productName = item.snap_product_name || item.product?.name || 'Product Details (Archived)';
                     const itemPrice = parseFloat(item.price || item.product?.price || 0);
                     const itemQty = parseInt(item.quantity || 1);
                     const itemTotal = itemPrice * itemQty;

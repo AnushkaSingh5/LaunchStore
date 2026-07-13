@@ -1,3 +1,4 @@
-- `[x]` Conditionally hide the `<Hero>` section in `app/store/[slug]/StoreClient.js` when search query filtering is active.
-- `[x]` Conditionally hide the `<Hero>` section in `app/demo-store/[slug]/DemoStoreClientPage.js` when search query filtering is active.
+- `[x]` Redesign `app/store/[slug]/products/ProductsClient.js` to match the mockup layout: replace the dark banner section with a clean title header, display star rating filter pills instead of categories, and integrate the total product count and sorting controls next to the title.
+- `[x]` Redesign `components/ProductCard.js`: position the rating row (`★ 4.3 (reviewsCount)`) below the name, place the price below the rating, and style the "+" and "->" arrow action buttons.
+- `[x]` Redesign `components/Footer.js`: add the envelope icon circle to the newsletter banner, add a description and circular social icons under the logo, restructure into a 4-column layout including supported payment badges, and style the legal links.
 - `[x]` Verify compilation with `npm run build`.

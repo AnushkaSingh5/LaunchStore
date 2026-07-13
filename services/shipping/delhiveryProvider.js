@@ -433,8 +433,8 @@ export class DelhiveryProvider {
           if (dbItems && dbItems.length > 0) {
             itemsList = dbItems.map(item => ({
               ...item,
-              productName: (item.product?.name || 'Store Product').trim(),
-              productImage: (item.product?.image_url || '').trim()
+              productName: (item.snap_product_name || item.product?.name || 'Store Product').trim(),
+              productImage: (item.snap_product_image || item.product?.image_url || '').trim()
             }));
           }
         }

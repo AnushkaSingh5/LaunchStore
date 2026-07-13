@@ -6,20 +6,167 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- 1. PROFILES TABLE
--- Stores user identity metadata synced from Supabase Auth
-CREATE TABLE IF NOT EXISTS public.profiles (
+-- 1. PROFILES BASE TABLE
+-- Stores core user identity metadata synced from Supabase Auth
+CREATE TABLE IF NOT EXISTS public.profiles_base (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  name TEXT,
   email TEXT UNIQUE NOT NULL,
   role TEXT NOT NULL DEFAULT 'creator' CHECK (role IN ('creator', 'admin', 'customer')),
-  onboarding_completed BOOLEAN NOT NULL DEFAULT FALSE,
-  onboarding_step INTEGER NOT NULL DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Enable RLS for Profiles
-ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+-- Enable RLS for Profiles Base
+ALTER TABLE public.profiles_base ENABLE ROW LEVEL SECURITY;
+
+-- 1.2. SELLERS (CREATORS) TABLE
+-- Stores profile metadata for content creators / store owners
+CREATE TABLE IF NOT EXISTS public.sellers (
+  id UUID PRIMARY KEY REFERENCES public.profiles_base(id) ON DELETE CASCADE,
+  name TEXT,
+  phone TEXT,
+  onboarding_completed BOOLEAN NOT NULL DEFAULT FALSE,
+  onboarding_step INTEGER NOT NULL DEFAULT 0,
+  date_of_birth DATE,
+  gender TEXT CHECK (gender IN ('Male', 'Female', 'Other', 'Prefer not to say')),
+  profile_image TEXT,
+  bio TEXT,
+  business_name TEXT,
+  business_type TEXT,
+  address TEXT,
+  city TEXT,
+  state TEXT,
+  country TEXT,
+  postal_code TEXT,
+  verification_status TEXT CHECK (verification_status IN ('Not Submitted', 'Under Review', 'Verified', 'Rejected')) DEFAULT 'Not Submitted',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Enable RLS for Sellers
+ALTER TABLE public.sellers ENABLE ROW LEVEL SECURITY;
+
+-- 1.3. PROFILES BACKWARD-COMPATIBLE VIEW
+-- Joins profiles_base and sellers to act as a seamless drop-in replacement for queries/code expecting profiles table
+CREATE OR REPLACE VIEW public.profiles 
+WITH (security_invoker = true) AS
+SELECT 
+  p.id,
+  p.email,
+  p.role,
+  p.created_at,
+  s.name,
+  s.phone,
+  s.onboarding_completed,
+  s.onboarding_step,
+  s.date_of_birth,
+  s.gender,
+  s.profile_image,
+  s.bio,
+  s.business_name,
+  s.business_type,
+  s.address,
+  s.city,
+  s.state,
+  s.country,
+  s.postal_code,
+  s.verification_status,
+  s.updated_at
+FROM public.profiles_base p
+LEFT JOIN public.sellers s ON p.id = s.id;
+
+-- Trigger function to handle insertions through profiles view
+CREATE OR REPLACE FUNCTION public.handle_profiles_view_insert()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles_base (id, email, role, created_at)
+  VALUES (NEW.id, NEW.email, COALESCE(NEW.role, 'creator'), COALESCE(NEW.created_at, now()))
+  ON CONFLICT (id) DO UPDATE
+  SET email = EXCLUDED.email,
+      role = COALESCE(EXCLUDED.role, profiles_base.role);
+
+  IF COALESCE(NEW.role, 'creator') = 'creator' THEN
+    INSERT INTO public.sellers (
+      id, name, phone, onboarding_completed, onboarding_step, date_of_birth, gender,
+      profile_image, bio, business_name, business_type, address, city, state, country,
+      postal_code, verification_status
+    ) VALUES (
+      NEW.id, NEW.name, NEW.phone, 
+      COALESCE(NEW.onboarding_completed, FALSE), 
+      COALESCE(NEW.onboarding_step, 0),
+      NEW.date_of_birth, NEW.gender, NEW.profile_image, NEW.bio, 
+      NEW.business_name, NEW.business_type, NEW.address, NEW.city, NEW.state, NEW.country,
+      NEW.postal_code, COALESCE(NEW.verification_status, 'Not Submitted')
+    )
+    ON CONFLICT (id) DO UPDATE SET
+      name = EXCLUDED.name,
+      phone = EXCLUDED.phone,
+      onboarding_completed = EXCLUDED.onboarding_completed,
+      onboarding_step = EXCLUDED.onboarding_step,
+      date_of_birth = EXCLUDED.date_of_birth,
+      gender = EXCLUDED.gender,
+      profile_image = EXCLUDED.profile_image,
+      bio = EXCLUDED.bio,
+      business_name = EXCLUDED.business_name,
+      business_type = EXCLUDED.business_type,
+      address = EXCLUDED.address,
+      city = EXCLUDED.city,
+      state = EXCLUDED.state,
+      country = EXCLUDED.country,
+      postal_code = EXCLUDED.postal_code,
+      verification_status = EXCLUDED.verification_status,
+      updated_at = now();
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE TRIGGER tr_profiles_view_insert
+  INSTEAD OF INSERT ON public.profiles
+  FOR EACH ROW EXECUTE FUNCTION public.handle_profiles_view_insert();
+
+-- Trigger function to handle updates through profiles view
+CREATE OR REPLACE FUNCTION public.handle_profiles_view_update()
+RETURNS TRIGGER AS $$
+BEGIN
+  UPDATE public.profiles_base
+  SET email = COALESCE(NEW.email, OLD.email),
+      role = COALESCE(NEW.role, OLD.role)
+  WHERE id = OLD.id;
+
+  IF COALESCE(NEW.role, OLD.role) = 'creator' THEN
+    INSERT INTO public.sellers (id)
+    VALUES (OLD.id)
+    ON CONFLICT (id) DO NOTHING;
+
+    UPDATE public.sellers
+    SET name = NEW.name,
+        phone = NEW.phone,
+        onboarding_completed = NEW.onboarding_completed,
+        onboarding_step = NEW.onboarding_step,
+        date_of_birth = NEW.date_of_birth,
+        gender = NEW.gender,
+        profile_image = NEW.profile_image,
+        bio = NEW.bio,
+        business_name = NEW.business_name,
+        business_type = NEW.business_type,
+        address = NEW.address,
+        city = NEW.city,
+        state = NEW.state,
+        country = NEW.country,
+        postal_code = NEW.postal_code,
+        verification_status = NEW.verification_status,
+        updated_at = now()
+    WHERE id = OLD.id;
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE TRIGGER tr_profiles_view_update
+  INSTEAD OF UPDATE ON public.profiles
+  FOR EACH ROW EXECUTE FUNCTION public.handle_profiles_view_update();
 
 -- 1.5. CUSTOMERS TABLE
 -- Stores profile metadata for retail customers
@@ -62,7 +209,7 @@ ALTER TABLE public.customer_addresses ENABLE ROW LEVEL SECURITY;
 -- Stores individual merchant shop instances
 CREATE TABLE IF NOT EXISTS public.stores (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  creator_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  creator_id UUID NOT NULL REFERENCES public.sellers(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   slug TEXT UNIQUE NOT NULL,
   description TEXT,
@@ -188,6 +335,8 @@ CREATE TABLE IF NOT EXISTS public.order_items (
   product_id UUID REFERENCES public.products(id) ON DELETE SET NULL,
   quantity INTEGER NOT NULL CHECK (quantity > 0),
   price NUMERIC(10, 2) NOT NULL CHECK (price >= 0),
+  snap_product_name TEXT NOT NULL,
+  snap_product_image TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -206,24 +355,23 @@ DECLARE
   v_role TEXT;
   v_name TEXT;
   v_phone TEXT;
+-- Automatically create appropriate profiles on signup
 BEGIN
   v_role := COALESCE(new.raw_user_meta_data->>'role', 'creator');
   v_name := COALESCE(new.raw_user_meta_data->>'name', 'User');
   v_phone := new.raw_user_meta_data->>'phone';
 
-  -- 1. Insert into public.profiles
-  INSERT INTO public.profiles (id, name, email, role)
+  -- 1. Insert into public.profiles_base
+  INSERT INTO public.profiles_base (id, email, role)
   VALUES (
     new.id,
-    v_name,
     new.email,
     v_role
   )
   ON CONFLICT (id) DO UPDATE
-  SET name = EXCLUDED.name,
-      role = EXCLUDED.role;
+  SET role = EXCLUDED.role;
 
-  -- 2. If customer role, automatically create public.customers record
+  -- 2. If customer role, create customer record. If creator role, create seller record.
   IF v_role = 'customer' THEN
     INSERT INTO public.customers (id, auth_id, full_name, email, phone)
     VALUES (
@@ -236,6 +384,17 @@ BEGIN
     ON CONFLICT (email) DO UPDATE
     SET auth_id = EXCLUDED.auth_id,
         full_name = EXCLUDED.full_name,
+        phone = EXCLUDED.phone;
+  ELSIF v_role = 'creator' THEN
+    INSERT INTO public.sellers (id, name, phone, verification_status)
+    VALUES (
+      new.id,
+      v_name,
+      v_phone,
+      'Not Submitted'
+    )
+    ON CONFLICT (id) DO UPDATE
+    SET name = EXCLUDED.name,
         phone = EXCLUDED.phone;
   END IF;
 
@@ -253,11 +412,15 @@ CREATE OR REPLACE TRIGGER on_auth_user_created
 -- ROW LEVEL SECURITY (RLS) POLICIES
 -- ==========================================
 
--- A. PROFILES POLICIES
--- Users can view their own profile; Admins can view all
-CREATE POLICY "Allow public read of profiles" ON public.profiles FOR SELECT USING (true);
-CREATE POLICY "Allow user updates of own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
-CREATE POLICY "Allow user inserts of own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
+-- A. PROFILES BASE POLICIES
+CREATE POLICY "Allow public read of profiles_base" ON public.profiles_base FOR SELECT USING (true);
+CREATE POLICY "Allow user updates of own profile_base" ON public.profiles_base FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Allow user inserts of own profile_base" ON public.profiles_base FOR INSERT WITH CHECK (auth.uid() = id);
+
+-- A.1 SELLERS POLICIES
+CREATE POLICY "Allow public read of sellers" ON public.sellers FOR SELECT USING (true);
+CREATE POLICY "Allow user updates of own seller profile" ON public.sellers FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Allow user inserts of own seller profile" ON public.sellers FOR INSERT WITH CHECK (auth.uid() = id);
 
 -- A.2 CUSTOMERS POLICIES
 CREATE POLICY "Allow customer read of own profile" ON public.customers FOR SELECT USING (auth.uid() = auth_id);
@@ -364,16 +527,18 @@ CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS boolean AS $$
 BEGIN
   RETURN EXISTS (
-    SELECT 1 FROM public.profiles
+    SELECT 1 FROM public.profiles_base
     WHERE id = auth.uid() AND role = 'admin'
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 
--- A. ADMIN PROFILES POLICIES
-CREATE POLICY "Allow admin updates of all profiles" ON public.profiles FOR UPDATE USING (public.is_admin());
-CREATE POLICY "Allow admin deletes of all profiles" ON public.profiles FOR DELETE USING (public.is_admin());
+-- A. ADMIN PROFILES BASE AND SELLERS POLICIES
+CREATE POLICY "Allow admin updates of all profiles_base" ON public.profiles_base FOR UPDATE USING (public.is_admin());
+CREATE POLICY "Allow admin deletes of all profiles_base" ON public.profiles_base FOR DELETE USING (public.is_admin());
+CREATE POLICY "Allow admin updates of all sellers" ON public.sellers FOR UPDATE USING (public.is_admin());
+CREATE POLICY "Allow admin deletes of all sellers" ON public.sellers FOR DELETE USING (public.is_admin());
 
 -- A.2 ADMIN CUSTOMERS POLICIES
 CREATE POLICY "Allow admin to view all customers" ON public.customers FOR SELECT USING (public.is_admin());
@@ -794,7 +959,7 @@ WITH CHECK (true);
 -- Creator Earnings table
 CREATE TABLE IF NOT EXISTS public.creator_earnings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  creator_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  creator_id UUID NOT NULL REFERENCES public.sellers(id) ON DELETE CASCADE,
   store_id UUID NOT NULL REFERENCES public.stores(id) ON DELETE CASCADE,
   order_id UUID NOT NULL REFERENCES public.orders(id) ON DELETE CASCADE UNIQUE,
   order_amount NUMERIC(10, 2) NOT NULL,
@@ -807,7 +972,7 @@ CREATE TABLE IF NOT EXISTS public.creator_earnings (
 -- Payout Requests table
 CREATE TABLE IF NOT EXISTS public.payout_requests (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  creator_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  creator_id UUID NOT NULL REFERENCES public.sellers(id) ON DELETE CASCADE,
   amount NUMERIC(10, 2) NOT NULL CHECK (amount > 0),
   payout_method TEXT NOT NULL CHECK (payout_method IN ('Bank Transfer', 'UPI')),
   account_details TEXT NOT NULL,
@@ -933,27 +1098,10 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- LAUNCHCART - CREATOR PROFILE & WALLET SYSTEM (PHASE 13)
 -- ==========================================
 
--- 1. Extend profiles table with personal and business details
-ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS full_name TEXT;
-ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS phone TEXT;
-ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS date_of_birth DATE;
-ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS gender TEXT CHECK (gender IN ('Male', 'Female', 'Other', 'Prefer not to say'));
-ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS profile_image TEXT;
-ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS bio TEXT;
-ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS business_name TEXT;
-ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS business_type TEXT;
-ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS address TEXT;
-ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS city TEXT;
-ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS state TEXT;
-ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS country TEXT;
-ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS postal_code TEXT;
-ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS verification_status TEXT CHECK (verification_status IN ('Not Submitted', 'Under Review', 'Verified', 'Rejected')) DEFAULT 'Not Submitted';
-
-
--- 2. Create creator_documents table
+-- 1. Create creator_documents table
 CREATE TABLE IF NOT EXISTS public.creator_documents (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  creator_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  creator_id UUID NOT NULL REFERENCES public.sellers(id) ON DELETE CASCADE,
   document_type TEXT NOT NULL CHECK (document_type IN ('Government ID Proof', 'Address Proof', 'Business Registration Document')),
   document_url TEXT NOT NULL,
   status TEXT NOT NULL CHECK (status IN ('Not Submitted', 'Under Review', 'Verified', 'Rejected')) DEFAULT 'Under Review',
@@ -962,10 +1110,10 @@ CREATE TABLE IF NOT EXISTS public.creator_documents (
 );
 
 
--- 3. Create wallet_transactions table
+-- 2. Create wallet_transactions table
 CREATE TABLE IF NOT EXISTS public.wallet_transactions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  creator_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  creator_id UUID NOT NULL REFERENCES public.sellers(id) ON DELETE CASCADE,
   type TEXT NOT NULL CHECK (type IN ('Sale Credit', 'Payout Request', 'Payout Completed', 'Refund Adjustment')),
   amount NUMERIC(10, 2) NOT NULL,
   status TEXT NOT NULL CHECK (status IN ('pending', 'completed', 'failed', 'rejected')) DEFAULT 'pending',
@@ -974,7 +1122,27 @@ CREATE TABLE IF NOT EXISTS public.wallet_transactions (
 );
 
 
--- 4. Enable RLS and setup policies
+-- 3. Indexes for performance optimization (Finding 2)
+CREATE INDEX IF NOT EXISTS idx_products_store_id ON public.products(store_id);
+CREATE INDEX IF NOT EXISTS idx_products_category_id ON public.products(category_id);
+CREATE INDEX IF NOT EXISTS idx_categories_store_id ON public.categories(store_id);
+CREATE INDEX IF NOT EXISTS idx_orders_store_id ON public.orders(store_id);
+CREATE INDEX IF NOT EXISTS idx_orders_customer_id ON public.orders(customer_id);
+CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON public.order_items(order_id);
+CREATE INDEX IF NOT EXISTS idx_order_items_product_id ON public.order_items(product_id);
+CREATE INDEX IF NOT EXISTS idx_coupons_store_id ON public.coupons(store_id);
+CREATE INDEX IF NOT EXISTS idx_store_status_audit_logs_store_id ON public.store_status_audit_logs(store_id);
+
+-- 4. Enforce referential integrity on audit logs (Finding 4)
+ALTER TABLE public.store_status_audit_logs 
+  DROP CONSTRAINT IF EXISTS fk_store_status_audit_logs_admin;
+ALTER TABLE public.store_status_audit_logs 
+  ADD CONSTRAINT fk_store_status_audit_logs_admin 
+  FOREIGN KEY (admin_id) REFERENCES public.admin_users(id) 
+  ON DELETE SET NULL;
+
+
+-- 5. Enable RLS and setup policies
 ALTER TABLE public.creator_documents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.wallet_transactions ENABLE ROW LEVEL SECURITY;
 

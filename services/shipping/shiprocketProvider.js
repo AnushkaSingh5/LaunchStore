@@ -368,8 +368,8 @@ export class ShiprocketProvider {
             if (dbItems && dbItems.length > 0) {
               itemsList = dbItems.map(item => ({
                 ...item,
-                productName: item.product?.name || 'Store Product',
-                productImage: item.product?.image_url || ''
+                productName: item.snap_product_name || item.product?.name || 'Store Product',
+                productImage: item.snap_product_image || item.product?.image_url || ''
               }));
               console.log(`✅ [ShiprocketProvider]: Successfully retrieved ${itemsList.length} items from database.`);
             }

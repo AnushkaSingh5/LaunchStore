@@ -220,7 +220,7 @@ export default function StoreClient({ slug, initialStoreDetails, initialProducts
         />
       )}
 
-      <div className="container main-content">
+      <div className={`container main-content ${isFilteringActive ? 'search-active-content' : ''}`}>
         
         {/* If filtering, hide homepage sections and show filter grid */}
         {isFilteringActive ? (
@@ -415,6 +415,10 @@ export default function StoreClient({ slug, initialStoreDetails, initialProducts
           flex-direction: column;
           gap: 80px;
           padding-bottom: 80px;
+        }
+
+        .search-active-content {
+          padding-top: 140px;
         }
 
         .empty-store-state {

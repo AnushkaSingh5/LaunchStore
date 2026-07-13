@@ -189,7 +189,9 @@ export const orderService = {
         order_id: order.id,
         product_id: item.id,
         quantity: parseInt(item.quantity) || 1,
-        price: parseFloat(item.price) || 0
+        price: parseFloat(item.price) || 0,
+        snap_product_name: item.name || 'Unknown Product',
+        snap_product_image: item.image || null
       }));
 
       const { error: itemsErr } = await supabaseClient
@@ -424,8 +426,8 @@ export const orderService = {
         ...order,
         items: (items || []).map(item => ({
           ...item,
-          productName: item.product?.name || 'Deleted Product',
-          productImage: item.product?.image_url || ''
+          productName: item.snap_product_name || item.product?.name || 'Deleted Product',
+          productImage: item.snap_product_image || item.product?.image_url || ''
         }))
       };
     } catch (e) {

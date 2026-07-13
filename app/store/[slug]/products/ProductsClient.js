@@ -215,16 +215,37 @@ export default function ProductsClient({ slug, initialStoreDetails, initialProdu
         <section className="catalog-header-section">
           <div className="breadcrumbs">
             <Link href={`/store/${slug}`} className="breadcrumb-link">Home</Link>
-            <span className="separator">&rarr;</span>
+            <span className="separator">&gt;</span>
             <span className="current">Products Catalog</span>
           </div>
-          <div className="header-banner-card">
-            <div className="header-banner-content">
-              <span className="banner-tag">Our Collection</span>
-              <h1 className="catalog-title">Explore Store Collection</h1>
-              <p className="catalog-subtitle">Browse through our premium selection of curated products.</p>
+          
+          <div className="catalog-header-main-row">
+            <div className="header-title-col">
+              <h1 className="catalog-title">Products Catalog</h1>
+              <p className="catalog-subtitle">Discover our premium selection of curated products.</p>
             </div>
-            <div className="header-banner-decorative-circle"></div>
+            
+            <div className="header-actions-col">
+              <div className="search-status-text">
+                Showing <strong>{sortedProducts.length}</strong> {sortedProducts.length === 1 ? 'product' : 'products'} total
+              </div>
+              <div className="sort-by-selector">
+                <span className="sort-label">Sort by:</span>
+                <div className="sort-select-wrapper">
+                  <select 
+                    id="sort-select" 
+                    value={sortBy} 
+                    onChange={(e) => setSortBy(e.target.value)}
+                  >
+                    <option value="default">Default | Recommended</option>
+                    <option value="price-asc">Price: Low to High</option>
+                    <option value="price-desc">Price: High to Low</option>
+                    <option value="name-asc">Alphabetical: A to Z</option>
+                  </select>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -235,8 +256,10 @@ export default function ProductsClient({ slug, initialStoreDetails, initialProdu
               className={`category-pill ${selectedCategory === 'All' ? 'active' : ''}`}
               onClick={() => setSelectedCategory('All')}
             >
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
               All Products ({products.length})
             </button>
+            
             {categoriesWithCount.filter(c => c.id !== 'all' && c.title !== 'All').map(cat => (
               <button 
                 key={cat.id}
@@ -246,33 +269,18 @@ export default function ProductsClient({ slug, initialStoreDetails, initialProdu
                 {cat.displayTitle} ({cat.productCount})
               </button>
             ))}
-          </div>
-        </section>
 
-        {/* Filters and Sorting Action Bar */}
-        <section className="actions-filter-bar">
-          <div className="search-status">
-            {searchQuery ? (
-              <span>Showing results for "<strong>{searchQuery}</strong>" in <strong>{selectedCategory === 'All' ? 'All Categories' : selectedCategory}</strong></span>
-            ) : (
-              <span>Showing <strong>{sortedProducts.length}</strong> {sortedProducts.length === 1 ? 'product' : 'products'} total</span>
-            )}
-          </div>
-          <div className="sorting-selector-box">
-            <label htmlFor="sort-select">Sort By</label>
-            <div className="select-wrapper">
-              <select 
-                id="sort-select" 
-                value={sortBy} 
-                onChange={(e) => setSortBy(e.target.value)}
-              >
-                <option value="default">Default / Recommended</option>
-                <option value="price-asc">Price: Low to High</option>
-                <option value="price-desc">Price: High to Low</option>
-                <option value="name-asc">Alphabetical: A to Z</option>
-              </select>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
-            </div>
+            <button 
+              className="category-pill clear-filters-pill"
+              onClick={() => {
+                setSelectedCategory('All');
+                setSearchQuery('');
+                setSortBy('default');
+              }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+              Clear Filters
+            </button>
           </div>
         </section>
 
@@ -311,6 +319,12 @@ export default function ProductsClient({ slug, initialStoreDetails, initialProdu
           display: flex;
           flex-direction: column;
           gap: 16px; /* Reduced from 24px */
+        }
+
+        .catalog-header-section,
+        .categories-pill-section,
+        .products-grid-section {
+          padding: 0 !important;
         }
 
         /* Banner styling */
@@ -364,55 +378,81 @@ export default function ProductsClient({ slug, initialStoreDetails, initialProdu
         }
 
         /* Header Banner Card */
+        /* Header section with title and actions in one row */
         .catalog-header-section {
           text-align: left;
+          margin-bottom: 4px;
         }
-        .header-banner-card {
-          background: linear-gradient(135deg, #2D322F 0%, #1A1D1B 100%); /* Dark charcoal/charcoal olive matching the New Arrivals banner color */
-          border-radius: 20px;
-          padding: 28px 36px; /* Reduced from 40px 48px */
-          color: #FAF8F5;
-          position: relative;
-          overflow: hidden;
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
-        }
-        .header-banner-content {
-          position: relative;
-          z-index: 2;
-        }
-        .banner-tag {
-          display: inline-block;
-          font-size: 11px;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 1.5px;
-          color: #A3A8A5;
-          margin-bottom: 12px;
+        .catalog-header-main-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-end;
+          gap: 24px;
+          margin-top: 16px;
         }
         .catalog-title {
-          font-size: 36px;
-          font-weight: 800;
-          color: #FAF8F5;
-          letter-spacing: -1px;
-          margin: 0 0 8px 0;
+          font-size: 32px;
+          font-weight: 700;
+          color: #121212;
+          margin: 0 0 6px 0;
+          font-family: 'Outfit', sans-serif;
         }
         .catalog-subtitle {
-          font-size: 15px;
-          color: #A3A8A5;
+          font-size: 14px;
+          color: #706f6c;
           margin: 0;
-          max-width: 480px;
           line-height: 1.5;
         }
-        .header-banner-decorative-circle {
+        .header-actions-col {
+          display: flex;
+          align-items: center;
+          gap: 24px;
+          background: #f0f2f5;
+          padding: 10px 20px;
+          border-radius: 12px;
+        }
+        .search-status-text {
+          font-size: 13px;
+          color: #555350;
+        }
+        .sort-by-selector {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .sort-label {
+          font-size: 13px;
+          font-weight: 700;
+          color: #706f6c;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+        .sort-select-wrapper {
+          position: relative;
+          display: flex;
+          align-items: center;
+        }
+        .sort-select-wrapper select {
+          appearance: none;
+          background: #ffffff;
+          border: 1px solid rgba(0, 0, 0, 0.08);
+          border-radius: 8px;
+          padding: 6px 28px 6px 12px;
+          font-size: 13px;
+          font-weight: 600;
+          color: #121212;
+          outline: none;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .sort-select-wrapper select:focus {
+          border-color: #121212;
+        }
+        .sort-select-wrapper svg {
           position: absolute;
-          right: -50px;
-          top: -50px;
-          width: 200px;
-          height: 200px;
-          border-radius: 50%;
-          background: rgba(250, 248, 245, 0.03);
-          border: 1px solid rgba(250, 248, 245, 0.05);
+          right: 10px;
           pointer-events: none;
+          color: #706f6c;
         }
 
         /* Category pills list */
@@ -420,6 +460,7 @@ export default function ProductsClient({ slug, initialStoreDetails, initialProdu
           overflow-x: auto;
           scrollbar-width: none;
           padding-bottom: 4px;
+          margin-bottom: 8px;
         }
         .categories-pill-section::-webkit-scrollbar {
           display: none;
@@ -434,88 +475,24 @@ export default function ProductsClient({ slug, initialStoreDetails, initialProdu
           backdrop-filter: blur(8px);
           border: 1px solid rgba(0, 0, 0, 0.05);
           border-radius: 40px;
-          padding: 10px 22px;
+          padding: 8px 18px;
           font-size: 13px;
           font-weight: 600;
           color: #555350;
           cursor: pointer;
-          transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+          transition: all 0.2s ease;
+          display: inline-flex;
+          align-items: center;
         }
         .category-pill:hover {
           background: #ffffff;
           color: #121212;
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
           border-color: rgba(0, 0, 0, 0.1);
         }
         .category-pill.active {
           background: #121212;
           color: #FAF8F5;
           border-color: #121212;
-          box-shadow: 0 8px 20px rgba(18, 18, 18, 0.15);
-          transform: translateY(-2px);
-        }
-
-        /* Filters and Sorting */
-        .actions-filter-bar {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 18px 28px;
-          background: #ffffff;
-          border: 1px solid rgba(0, 0, 0, 0.05);
-          border-radius: 16px;
-          box-shadow: 0 8px 30px rgba(0, 0, 0, 0.02);
-          flex-wrap: wrap;
-          gap: 16px;
-        }
-        .search-status {
-          font-size: 14px;
-          color: #555350;
-        }
-        .search-status strong {
-          color: #121212;
-        }
-        .sorting-selector-box {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-        .sorting-selector-box label {
-          font-size: 13px;
-          font-weight: 700;
-          color: #706f6c;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-        .select-wrapper {
-          position: relative;
-          display: flex;
-          align-items: center;
-        }
-        .select-wrapper select {
-          appearance: none;
-          background: #FAF8F5;
-          border: 1px solid rgba(0, 0, 0, 0.08);
-          border-radius: 12px;
-          padding: 10px 36px 10px 16px;
-          font-size: 13px;
-          font-weight: 600;
-          color: #121212;
-          outline: none;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        .select-wrapper select:focus {
-          border-color: #121212;
-          background: #ffffff;
-        }
-        .select-wrapper svg {
-          position: absolute;
-          right: 14px;
-          pointer-events: none;
-          color: #706f6c;
         }
 
         /* Products Grid */

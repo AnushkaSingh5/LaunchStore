@@ -663,7 +663,7 @@ export default function Navbar({ storeName, logoUrl }) {
 
         /* Mobile Layout */
         .mobile-search-btn {
-          display: none;
+          display: none !important;
         }
 
         .mobile-search-active-wrapper {
@@ -733,7 +733,7 @@ export default function Navbar({ storeName, logoUrl }) {
             display: none;
           }
           .mobile-search-btn {
-            display: flex;
+            display: flex !important;
           }
         }
 

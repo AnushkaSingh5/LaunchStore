@@ -172,7 +172,7 @@ export default function DemoStoreClientPage({ slug }) {
         />
       )}
 
-      <div className="container main-content">
+      <div className={`container main-content ${isFilteringActive ? 'search-active-content' : ''}`}>
         {isFilteringActive ? (
           <section className="catalog-search-section">
             <div className="section-header">
@@ -351,6 +351,10 @@ export default function DemoStoreClientPage({ slug }) {
           gap: 80px;
           padding-bottom: 80px;
           margin-top: 20px;
+        }
+
+        .search-active-content {
+          padding-top: 140px;
         }
 
         section {
