@@ -2,7 +2,7 @@
 
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useStore } from '@/context/StoreContext';
 import { useAuth } from '@/context/AuthContext';
 import { useCustomerAuth } from '@/context/CustomerAuthContext';
@@ -18,14 +18,18 @@ import { couponService } from '@/services/couponService';
 
 export default function StoreCheckoutPage({ params }) {
   const { slug } = use(params);
-  const { cart: globalCart, setCart, clearCart } = useStore();
+  const { cart: globalCart, setCart, clearCart, removeCartItems } = useStore();
   const { customer: user, customerProfile: profile, loading: authLoading } = useCustomerAuth();
   const { user: creatorUser } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const itemsParam = searchParams.get('items');
+  const selectedItemIds = itemsParam ? itemsParam.split(',') : [];
 
   const [storeDetails, setStoreDetails] = useState(null);
   const cart = (globalCart || []).filter(
-    item => item.store_id === storeDetails?.id || item.store_slug === slug
+    item => (item.store_id === storeDetails?.id || item.store_slug === slug) &&
+            (selectedItemIds.length === 0 || selectedItemIds.includes(item.id))
   );
   const [form, setForm] = useState({
     name: '',
@@ -472,7 +476,7 @@ export default function StoreCheckoutPage({ params }) {
         }
 
         if (paymentMethod === 'cod') {
-          await clearCart(storeDetails?.id || slug);
+          await removeCartItems(cart.map(item => item.id));
           router.push(`/store/${slug}/checkout/success?orderId=${response.orders[0].id}`);
           return;
         }
@@ -541,7 +545,7 @@ export default function StoreCheckoutPage({ params }) {
                   paymentOrderId: paymentRes.razorpay_order_id,
                   status: 'confirmed'
                 });
-                await clearCart(storeDetails?.id || slug);
+                await removeCartItems(cart.map(item => item.id));
                 router.push(`/store/${slug}/checkout/success?orderId=${response.orders[0].id}`);
               } else {
                 alert('Signature verification failed. Payment was not authenticated.');
@@ -602,7 +606,7 @@ export default function StoreCheckoutPage({ params }) {
           paymentOrderId: provider.name === 'Cashfree' ? mockDetails.payment_order_id : mockDetails.razorpay_order_id,
           status: 'confirmed'
         });
-        await clearCart(storeDetails?.id || slug);
+        await removeCartItems(cart.map(item => item.id));
         router.push(`/store/${slug}/checkout/success?orderId=${mockPaymentData.orderId}`);
       } else {
         router.push(`/store/${slug}/checkout/failed?orderId=${mockPaymentData.orderId}`);

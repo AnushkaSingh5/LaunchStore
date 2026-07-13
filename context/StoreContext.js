@@ -269,6 +269,29 @@ export function StoreProvider({ children }) {
     }
   };
 
+  const removeCartItems = async (productIds) => {
+    const updatedCart = cart.filter((item) => !productIds.includes(item.id));
+    setCart(updatedCart);
+    if (customerProfile) {
+      try {
+        let activeCartId = dbCartId;
+        if (!activeCartId) {
+          const dbCart = await cartService.getOrCreateCart(customerProfile.id);
+          activeCartId = dbCart.id;
+          setDbCartId(activeCartId);
+        }
+        for (const pid of productIds) {
+          await cartService.removeCartItem(activeCartId, pid);
+        }
+      } catch (err) {
+        console.warn('Failed to remove selected items in DB:', err);
+      }
+    } else {
+      sessionStorage.setItem('luxe_cart_guest', JSON.stringify(updatedCart));
+      localStorage.setItem('luxe_cart_guest', JSON.stringify(updatedCart));
+    }
+  };
+
   const toggleWishlist = (product) => {
     setWishlist((prev) => {
       const exists = prev.find(item => item.id === product.id);
@@ -300,6 +323,7 @@ export function StoreProvider({ children }) {
     removeFromCart,
     updateQuantity,
     clearCart,
+    removeCartItems,
     isCartOpen,
     setIsCartOpen,
   };
@@ -326,6 +350,7 @@ export function useStore() {
       removeFromCart: () => {},
       updateQuantity: () => {},
       clearCart: () => {},
+      removeCartItems: () => {},
       isCartOpen: false,
       setIsCartOpen: () => {},
     };

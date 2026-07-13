@@ -1,4 +1,5 @@
-- `[x]` Revert `word-break` from `break-all` to `normal` for `.pane-title` and `.pane-desc` in `app/store/[slug]/StoreClient.js`.
-- `[x]` Revert `word-break` from `break-all` to `normal` for `.hero-subtitle` in `components/Hero.js`.
-- `[x]` Keep `overflow-wrap: break-word` to ensure long continuous strings wrap but normal words (like "1store") stay together.
+- `[x]` Adjust the side-by-side grid layout on the storefront cart page `app/store/[slug]/cart/page.js` to use `1fr 340px` columns with a `30px` gap instead of `380px` width.
+- `[x]` Reduce column sizes and grid gaps in `.items-header` and `.cart-item` to fit within narrow viewports.
+- `[x]` Reduce left/right internal card paddings in `.items-header` and `.cart-item` to free up screen width.
+- `[x]` Set responsive wrapping media query breakpoint to `1024px`.
 - `[x]` Verify compilation with `npm run build`.

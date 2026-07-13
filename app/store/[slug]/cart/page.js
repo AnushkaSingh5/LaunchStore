@@ -15,6 +15,12 @@ export default function CartPage({ params }) {
   const { user } = useAuth();
   const [storeDetails, setStoreDetails] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [selectedItems, setSelectedItems] = useState([]);
+  const [hasInitializedSelection, setHasInitializedSelection] = useState(false);
+
+  const cart = (globalCart || []).filter(
+    item => item.store_id === storeDetails?.id || item.store_slug === slug
+  );
 
   useEffect(() => {
     const fetchStore = async () => {
@@ -30,6 +36,16 @@ export default function CartPage({ params }) {
     };
     fetchStore();
   }, [slug]);
+
+  useEffect(() => {
+    if (cart && cart.length > 0 && !hasInitializedSelection) {
+      const initialSelected = cart
+        .filter(item => !item.is_deleted && item.stock > 0)
+        .map(item => item.id);
+      setSelectedItems(initialSelected);
+      setHasInitializedSelection(true);
+    }
+  }, [cart, hasInitializedSelection]);
 
   if (loading) {
     return (
@@ -141,22 +157,22 @@ export default function CartPage({ params }) {
     );
   }
 
-  const cart = (globalCart || []).filter(
-    item => item.store_id === storeDetails?.id || item.store_slug === slug
-  );
-  const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+
+  const selectedCartItems = cart.filter(item => selectedItems.includes(item.id));
+  const cartTotal = selectedCartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const tax = cartTotal * 0.08;
-  const hasInventoryErrors = cart.some(item => item.stock === 0 || item.quantity > item.stock || item.is_deleted);
+  const hasInventoryErrors = selectedCartItems.some(item => item.stock === 0 || item.quantity > item.stock || item.is_deleted);
 
   const shippingType = storeDetails?.theme_settings?.shippingType ?? 'flat';
   const flatFee = parseFloat(storeDetails?.theme_settings?.flatFee) ?? 15;
   
   let shipping = 0;
-  if (cart.length > 0) {
+  if (selectedCartItems.length > 0) {
     if (shippingType === 'flat') {
       shipping = flatFee;
     } else if (shippingType === 'calculated') {
-      const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+      const totalItems = selectedCartItems.reduce((sum, item) => sum + item.quantity, 0);
       shipping = 40 + (totalItems * 10);
     } else {
       shipping = 0;
@@ -183,6 +199,23 @@ export default function CartPage({ params }) {
           <div className="cart-layout">
             <div className="cart-items dashboard-card fade-in">
               <div className="items-header">
+                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <input
+                    type="checkbox"
+                    checked={selectedItems.length > 0 && selectedItems.length === cart.filter(item => !item.is_deleted && item.stock > 0).length}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        const allAvailableIds = cart
+                          .filter(item => !item.is_deleted && item.stock > 0)
+                          .map(item => item.id);
+                        setSelectedItems(allAvailableIds);
+                      } else {
+                        setSelectedItems([]);
+                      }
+                    }}
+                    style={{ cursor: 'pointer', transform: 'scale(1.2)' }}
+                  />
+                </span>
                 <span>Product</span>
                 <span>Quantity</span>
                 <span>Total</span>
@@ -190,12 +223,33 @@ export default function CartPage({ params }) {
               </div>
 
               {cart.map((item) => (
-                <div key={item.id} className={`cart-item ${item.is_deleted ? 'unavailable' : ''}`} style={{ position: 'relative' }}>
+                <div key={item.id} className={`cart-item ${item.is_deleted ? 'unavailable' : ''} ${item.stock === 0 ? 'out-of-stock-item' : ''}`} style={{ position: 'relative' }}>
                   {item.is_deleted && (
                     <div className="product-unavailable-overlay">
                       <span>Product is not available</span>
                     </div>
                   )}
+                  {item.stock === 0 && (
+                    <div className="product-unavailable-overlay out-of-stock">
+                      <span>Out of Stock</span>
+                    </div>
+                  )}
+
+                  <div className="item-checkbox-wrapper" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 12 }}>
+                    <input
+                      type="checkbox"
+                      checked={selectedItems.includes(item.id)}
+                      disabled={item.is_deleted || item.stock === 0}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedItems([...selectedItems, item.id]);
+                        } else {
+                          setSelectedItems(selectedItems.filter(id => id !== item.id));
+                        }
+                      }}
+                      style={{ cursor: item.is_deleted || item.stock === 0 ? 'not-allowed' : 'pointer', transform: 'scale(1.2)' }}
+                    />
+                  </div>
 
                   <div className="item-info">
                     <div className="item-image">
@@ -210,19 +264,17 @@ export default function CartPage({ params }) {
                       <p className="price">₹{item.price.toLocaleString()}</p>
                       {item.is_deleted ? (
                         <p className="stock-warning out-of-stock">Unavailable</p>
-                      ) : item.stock === 0 ? (
-                        <p className="stock-warning out-of-stock">Out of Stock</p>
-                      ) : item.quantity > item.stock ? (
+                      ) : (item.quantity > item.stock && item.stock > 0) ? (
                         <p className="stock-warning low-stock">Only {item.stock} items available.</p>
                       ) : null}
                     </div>
                   </div>
 
                   <div className="item-quantity">
-                    <div className="quantity-selector">
-                      <button onClick={() => updateQuantity(item.id, -1)} disabled={item.is_deleted}>-</button>
+                    <div className={`quantity-selector ${item.stock === 0 ? 'disabled' : ''}`}>
+                      <button onClick={() => updateQuantity(item.id, -1)} disabled={item.is_deleted || item.stock === 0}>-</button>
                       <span>{item.quantity}</span>
-                      <button onClick={() => updateQuantity(item.id, 1)} disabled={item.is_deleted}>+</button>
+                      <button onClick={() => updateQuantity(item.id, 1)} disabled={item.is_deleted || item.stock === 0}>+</button>
                     </div>
                   </div>
 
@@ -236,7 +288,7 @@ export default function CartPage({ params }) {
                         Buy
                       </button>
                     ) : (
-                      <Link href={`/store/${slug}/checkout`} className="row-buy-btn">
+                      <Link href={`/store/${slug}/checkout?items=${item.id}`} className="row-buy-btn">
                         Buy
                       </Link>
                     )}
@@ -281,12 +333,12 @@ export default function CartPage({ params }) {
                 <span>₹{total.toLocaleString()}</span>
               </div>
 
-              {hasInventoryErrors ? (
+              {selectedItems.length === 0 || hasInventoryErrors ? (
                 <button className="checkout-btn disabled-btn" disabled style={{ width: '100%', border: 'none', cursor: 'not-allowed' }}>
                   Proceed to Checkout
                 </button>
               ) : (
-                <Link href={`/store/${slug}/checkout`} className="checkout-btn" style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}>
+                <Link href={`/store/${slug}/checkout?items=${selectedItems.join(',')}`} className="checkout-btn" style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}>
                   Proceed to Checkout
                 </Link>
               )}
@@ -322,6 +374,9 @@ export default function CartPage({ params }) {
           font-weight: 700;
           margin-bottom: 40px;
           letter-spacing: -1px;
+          max-width: 1040px;
+          margin-left: auto;
+          margin-right: auto;
         }
 
         .empty-cart {
@@ -368,9 +423,11 @@ export default function CartPage({ params }) {
 
         .cart-layout {
           display: grid;
-          grid-template-columns: 1fr 380px;
-          gap: 40px;
+          grid-template-columns: 1fr 340px;
+          gap: 30px;
           align-items: start;
+          max-width: 1040px;
+          margin: 0 auto;
         }
 
         .cart-items {
@@ -380,9 +437,9 @@ export default function CartPage({ params }) {
 
         .items-header {
           display: grid;
-          grid-template-columns: 1fr 140px 100px 120px;
-          gap: 40px;
-          padding: 24px 40px;
+          grid-template-columns: 32px 1fr 120px 90px 110px;
+          gap: 20px;
+          padding: 20px 24px;
           border-bottom: 1px solid var(--secondary);
           font-size: 13px;
           font-weight: 700;
@@ -393,23 +450,30 @@ export default function CartPage({ params }) {
 
         .cart-item {
           display: grid;
-          grid-template-columns: 1fr 140px 100px 120px;
-          gap: 40px;
+          grid-template-columns: 32px 1fr 120px 90px 110px;
+          gap: 20px;
           align-items: center;
-          padding: 30px 40px;
+          padding: 24px;
           border-bottom: 1px solid var(--secondary);
         }
 
         .cart-item.unavailable .item-info,
         .cart-item.unavailable .item-quantity,
         .cart-item.unavailable .item-total,
-        .cart-item.unavailable .row-buy-btn {
+        .cart-item.unavailable .row-buy-btn,
+        .cart-item.out-of-stock-item .item-info,
+        .cart-item.out-of-stock-item .item-quantity,
+        .cart-item.out-of-stock-item .item-total,
+        .cart-item.out-of-stock-item .row-buy-btn {
           filter: grayscale(1) opacity(0.55);
         }
 
         .cart-item.unavailable .item-quantity,
         .cart-item.unavailable .item-total,
-        .cart-item.unavailable .row-buy-btn {
+        .cart-item.unavailable .row-buy-btn,
+        .cart-item.out-of-stock-item .item-quantity,
+        .cart-item.out-of-stock-item .item-total,
+        .cart-item.out-of-stock-item .row-buy-btn {
           pointer-events: none;
         }
 
@@ -440,8 +504,19 @@ export default function CartPage({ params }) {
           box-shadow: 0 4px 12px rgba(220, 38, 38, 0.1);
         }
 
+        .product-unavailable-overlay.out-of-stock span {
+          color: #854d0e;
+          background: #fef08a;
+          border: 1px solid #fef08a;
+          box-shadow: 0 4px 12px rgba(161, 98, 7, 0.15);
+        }
+
         .cart-item:hover .product-unavailable-overlay {
           opacity: 1;
+        }
+
+        .cart-item:hover:has(.action-delete-btn:hover) .product-unavailable-overlay {
+          opacity: 0;
         }
 
         .item-info {
@@ -496,6 +571,12 @@ export default function CartPage({ params }) {
           width: 120px;
           justify-content: space-between;
           margin: 0 auto;
+          transition: opacity 0.25s ease;
+        }
+
+        .quantity-selector.disabled {
+          opacity: 0.4;
+          pointer-events: none;
         }
 
         .quantity-selector button {
@@ -505,6 +586,11 @@ export default function CartPage({ params }) {
           align-items: center;
           justify-content: center;
           font-weight: 700;
+        }
+
+        .quantity-selector button:disabled {
+          opacity: 0.3;
+          cursor: not-allowed;
         }
 
         .quantity-selector span {
@@ -537,6 +623,8 @@ export default function CartPage({ params }) {
           padding: 8px;
           border-radius: 8px;
           transition: all 0.2s ease;
+          position: relative;
+          z-index: 15;
         }
 
         .action-delete-btn:hover {
@@ -676,7 +764,7 @@ export default function CartPage({ params }) {
           margin-top: 8px;
         }
 
-        @media (max-width: 1200px) {
+        @media (max-width: 1024px) {
           .cart-layout {
             grid-template-columns: 1fr;
           }
@@ -699,6 +787,12 @@ export default function CartPage({ params }) {
             gap: 16px;
             padding: 24px 15px;
             position: relative;
+          }
+          .item-checkbox-wrapper {
+            position: absolute;
+            top: 20px;
+            left: 15px;
+            z-index: 12;
           }
           .item-info {
             flex-direction: column;
