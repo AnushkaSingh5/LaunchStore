@@ -15,6 +15,7 @@ export default function Navbar({ storeName, logoUrl }) {
   const profile = customerProfile;
   const signOut = logout;
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isMobileSearchActive, setIsMobileSearchActive] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -87,134 +88,154 @@ export default function Navbar({ storeName, logoUrl }) {
     <header className={`navbar-wrapper ${isScrolled ? 'scrolled' : ''}`}>
       <nav className="container nav-container">
         <div className="nav-main">
-          {/* Logo / Brand Name */}
-          <Link href={storeSlug ? `/${pathParts[1]}/${storeSlug}` : "/"} className="logo">
-            {storeLogo ? (
-              <img 
-                src={storeLogo} 
-                alt={`${storeName} Logo`} 
-                className="logo-img" 
-                onError={(e) => { e.target.style.display = 'none'; }} 
-              />
-            ) : (
-              <div className="logo-placeholder-dot"></div>
-            )}
-            <span>{storeName || 'AestheticStore'}</span>
-          </Link>
-
-          {/* Middle Nav Links */}
-          <div className="nav-links">
-            <button onClick={() => handleMenuClick('shop')} className="nav-link-btn">Shop</button>
-            <button onClick={() => handleMenuClick('categories-section')} className="nav-link-btn">Categories</button>
-            <button onClick={() => handleMenuClick('new-arrivals-section')} className="nav-link-btn">New Arrivals</button>
-            <button onClick={() => handleMenuClick('trending-section')} className="nav-link-btn">Best Sellers</button>
-            <button onClick={() => handleMenuClick('footer-section')} className="nav-link-btn">About Us</button>
-          </div>
-
-          {/* Right Action Area */}
-          <div className="nav-actions-area">
-            <form className="search-container desktop-search" onSubmit={(e) => e.preventDefault()}>
-              <input 
-                type="text" 
-                placeholder="Search products..." 
-                className="search-input"
-                value={searchQuery}
-                onChange={handleSearchChange}
-              />
-              <button className="search-submit-btn" type="button" aria-label="Search">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          {isMobileSearchActive ? (
+            <div className="mobile-search-active-wrapper" style={{ marginLeft: 0 }}>
+              <button className="search-close-btn" onClick={() => setIsMobileSearchActive(false)} aria-label="Close search">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
               </button>
-            </form>
-
-            <div className="nav-icons">
-              {!isDemo && (
-                <div className="user-dropdown-container">
-                  <button 
-                    className="action-btn user-btn"
-                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                    aria-label="User profile menu"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+              <form className="mobile-search-active-form" onSubmit={(e) => e.preventDefault()}>
+                <input 
+                  type="text" 
+                  placeholder="Search products..." 
+                  className="mobile-search-active-input"
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  autoFocus
+                />
+                {searchQuery && (
+                  <button className="search-clear-btn" type="button" onClick={() => setSearchQuery('')} aria-label="Clear search query">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                   </button>
-                  {isDropdownOpen && (
-                    <div className="dropdown-menu">
-                      {user ? (
-                        <>
-                          <div className="dropdown-header">
-                            <div className="dropdown-name">{profile?.full_name || 'Customer'}</div>
-                            <div className="dropdown-email">{user.email}</div>
-                          </div>
-                          <div className="dropdown-divider"></div>
-                          <Link href={storeSlug ? `/customer/profile?store=${storeSlug}` : "/customer/profile"} className="dropdown-item" onClick={() => setIsDropdownOpen(false)}>
-                            <span className="dropdown-icon">👤</span>My Profile
-                          </Link>
-                          <Link href={storeSlug ? `/customer/orders?store=${storeSlug}` : "/customer/orders"} className="dropdown-item" onClick={() => setIsDropdownOpen(false)}>
-                            <span className="dropdown-icon">📦</span>My Orders
-                          </Link>
-                          <Link href={storeSlug ? `/customer/addresses?store=${storeSlug}` : "/customer/addresses"} className="dropdown-item" onClick={() => setIsDropdownOpen(false)}>
-                            <span className="dropdown-icon">📍</span>My Addresses
-                          </Link>
-                          <div className="dropdown-divider"></div>
-                          <button 
-                            className="dropdown-item logout-btn" 
-                            onClick={() => {
-                              signOut();
-                              setIsDropdownOpen(false);
-                            }}
-                          >
-                            <span className="dropdown-icon">🚪</span>Logout
-                          </button>
-                        </>
-                      ) : (
-                        <div className="logged-out-menu">
-                          <div className="dropdown-header-welcome">
-                            <div className="dropdown-welcome-title">Welcome to {storeName || 'AestheticStore'}</div>
-                            <div className="dropdown-welcome-subtitle">Access your account, track orders, and shop securely.</div>
-                          </div>
-                          
-                          <div className="dropdown-actions">
-                            <Link 
-                              href={storeSlug ? `/customer/login?redirect=/store/${storeSlug}` : "/customer/login"} 
-                              className="dropdown-primary-btn" 
-                              onClick={() => setIsDropdownOpen(false)}
-                            >
-                              Sign In
-                            </Link>
-                            <Link 
-                              href={storeSlug ? `/customer/signup?redirect=/store/${storeSlug}` : "/customer/signup"} 
-                              className="dropdown-secondary-btn" 
-                              onClick={() => setIsDropdownOpen(false)}
-                            >
-                              Create Account
-                            </Link>
-                          </div>
+                )}
+              </form>
+            </div>
+          ) : (
+            <>
+              {/* Logo / Brand Name */}
+              <Link href={storeSlug ? `/${pathParts[1]}/${storeSlug}` : "/"} className="logo">
+                {storeLogo ? (
+                  <img 
+                    src={storeLogo} 
+                    alt={`${storeName} Logo`} 
+                    className="logo-img" 
+                    onError={(e) => { e.target.style.display = 'none'; }} 
+                  />
+                ) : (
+                  <div className="logo-placeholder-dot"></div>
+                )}
+                <span>{storeName || 'AestheticStore'}</span>
+              </Link>
+
+              {/* Middle Nav Links */}
+              <div className="nav-links">
+                <button onClick={() => handleMenuClick('shop')} className="nav-link-btn">Shop</button>
+                <button onClick={() => handleMenuClick('categories-section')} className="nav-link-btn">Categories</button>
+                <button onClick={() => handleMenuClick('new-arrivals-section')} className="nav-link-btn">New Arrivals</button>
+                <button onClick={() => handleMenuClick('trending-section')} className="nav-link-btn">Best Sellers</button>
+                <button onClick={() => handleMenuClick('footer-section')} className="nav-link-btn">About Us</button>
+              </div>
+
+              {/* Right Action Area */}
+              <div className="nav-actions-area">
+                <form className="search-container desktop-search" onSubmit={(e) => e.preventDefault()}>
+                  <input 
+                    type="text" 
+                    placeholder="Search products..." 
+                    className="search-input"
+                    value={searchQuery}
+                    onChange={handleSearchChange}
+                  />
+                  <button className="search-submit-btn" type="button" aria-label="Search">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                  </button>
+                </form>
+
+                <div className="nav-icons">
+                  {/* Mobile Search Button (only visible on mobile, placed BEFORE user profile dropdown) */}
+                  <button 
+                    className="action-btn mobile-search-btn"
+                    onClick={() => setIsMobileSearchActive(true)}
+                    aria-label="Search products"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                  </button>
+
+                  {!isDemo && (
+                    <div className="user-dropdown-container">
+                      <button 
+                        className="action-btn user-btn"
+                        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                        aria-label="User profile menu"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                      </button>
+                      {isDropdownOpen && (
+                        <div className="dropdown-menu">
+                          {user ? (
+                            <>
+                              <div className="dropdown-header">
+                                <div className="dropdown-name">{profile?.full_name || 'Customer'}</div>
+                                <div className="dropdown-email">{user.email}</div>
+                              </div>
+                              <div className="dropdown-divider"></div>
+                              <Link href={storeSlug ? `/customer/profile?store=${storeSlug}` : "/customer/profile"} className="dropdown-item" onClick={() => setIsDropdownOpen(false)}>
+                                <span className="dropdown-icon">👤</span>My Profile
+                              </Link>
+                              <Link href={storeSlug ? `/customer/orders?store=${storeSlug}` : "/customer/orders"} className="dropdown-item" onClick={() => setIsDropdownOpen(false)}>
+                                <span className="dropdown-icon">📦</span>My Orders
+                              </Link>
+                              <Link href={storeSlug ? `/customer/addresses?store=${storeSlug}` : "/customer/addresses"} className="dropdown-item" onClick={() => setIsDropdownOpen(false)}>
+                                <span className="dropdown-icon">📍</span>My Addresses
+                              </Link>
+                              <div className="dropdown-divider"></div>
+                              <button 
+                                className="dropdown-item logout-btn" 
+                                onClick={() => {
+                                  signOut();
+                                  setIsDropdownOpen(false);
+                                }}
+                              >
+                                <span className="dropdown-icon">🚪</span>Logout
+                              </button>
+                            </>
+                          ) : (
+                            <div className="logged-out-menu">
+                              <div className="dropdown-header-welcome">
+                                <div className="dropdown-welcome-title">Welcome to {storeName || 'AestheticStore'}</div>
+                                <div className="dropdown-welcome-subtitle">Access your account, track orders, and shop securely.</div>
+                              </div>
+                              
+                              <div className="dropdown-actions">
+                                <Link 
+                                  href={storeSlug ? `/customer/login?redirect=/store/${storeSlug}` : "/customer/login"} 
+                                  className="dropdown-primary-btn" 
+                                  onClick={() => setIsDropdownOpen(false)}
+                                >
+                                  Sign In
+                                </Link>
+                                <Link 
+                                  href={storeSlug ? `/customer/signup?redirect=/store/${storeSlug}` : "/customer/signup"} 
+                                  className="dropdown-secondary-btn" 
+                                  onClick={() => setIsDropdownOpen(false)}
+                                >
+                                  Create Account
+                                </Link>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
                   )}
+                  <Link href={storeSlug ? `/${pathParts[1]}/${storeSlug}/cart` : "/cart"} className="action-btn cart-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><path d="M3 6h18"></path><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+                    {storeCartCount > 0 && <span className="badge">{storeCartCount}</span>}
+                  </Link>
                 </div>
-              )}
-              <Link href={storeSlug ? `/${pathParts[1]}/${storeSlug}/cart` : "/cart"} className="action-btn cart-btn">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><path d="M3 6h18"></path><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
-                {storeCartCount > 0 && <span className="badge">{storeCartCount}</span>}
-              </Link>
-            </div>
-          </div>
+              </div>
+            </>
+          )}
         </div>
-
-        {/* Mobile Search - Only visible on small screens */}
-        <form className="mobile-search" onSubmit={(e) => e.preventDefault()}>
-          <input 
-            type="text" 
-            placeholder="Search products..." 
-            className="search-input"
-            value={searchQuery}
-            onChange={handleSearchChange}
-          />
-          <button className="search-submit-btn" type="button">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-          </button>
-        </form>
       </nav>
 
       <style jsx>{`
@@ -641,11 +662,67 @@ export default function Navbar({ storeName, logoUrl }) {
         }
 
         /* Mobile Layout */
-        .mobile-search {
+        .mobile-search-btn {
           display: none;
+        }
+
+        .mobile-search-active-wrapper {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-left: 20px;
+          animation: dropdownFadeIn 0.2s ease;
+        }
+
+        .mobile-search-active-form {
+          flex: 1;
           position: relative;
+        }
+
+        .mobile-search-active-input {
           width: 100%;
-          margin-top: 12px;
+          padding: 8px 36px 8px 16px;
+          border-radius: 40px;
+          border: 1px solid rgba(0, 0, 0, 0.04);
+          background: #EFECE6;
+          font-size: 13px;
+          color: #121212;
+          transition: all 0.25s ease;
+        }
+
+        .mobile-search-active-input:focus {
+          outline: none;
+          background: #FAF8F5;
+          border-color: #121212;
+          box-shadow: 0 0 0 3px rgba(18, 18, 18, 0.05);
+        }
+
+        .search-clear-btn {
+          position: absolute;
+          right: 12px;
+          top: 50%;
+          transform: translateY(-50%);
+          color: #706f6c;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+        }
+
+        .search-close-btn {
+          color: #121212;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 8px;
+          border-radius: 50%;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .search-close-btn:hover {
+          background: rgba(0, 0, 0, 0.03);
         }
 
         @media (max-width: 900px) {
@@ -655,15 +732,8 @@ export default function Navbar({ storeName, logoUrl }) {
           .search-container.desktop-search {
             display: none;
           }
-          .mobile-search {
-            display: block;
-          }
-          .search-input {
-            padding: 8px 36px 8px 16px;
-            font-size: 12px;
-          }
-          .search-submit-btn {
-            right: 12px;
+          .mobile-search-btn {
+            display: flex;
           }
         }
 

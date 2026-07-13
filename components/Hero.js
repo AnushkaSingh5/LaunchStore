@@ -175,6 +175,8 @@ export default function Hero({ bannerUrl, storeName, description }) {
           margin-bottom: 24px;
           letter-spacing: -0.5px;
           color: #FAF8F5;
+          word-break: break-word;
+          overflow-wrap: break-word;
         }
 
         .hero-subtitle {
@@ -183,7 +185,7 @@ export default function Hero({ bannerUrl, storeName, description }) {
           color: #C1BCB2;
           margin-bottom: 24px;
           font-weight: 400;
-          word-break: normal;
+          word-break: break-word;
           overflow-wrap: break-word;
           display: -webkit-box;
           -webkit-line-clamp: 3;
@@ -416,6 +418,15 @@ export default function Hero({ bannerUrl, storeName, description }) {
           .avatar-img {
             width: 28px;
             height: 28px;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .reviews-badge {
+            left: 16px;
+            right: 16px;
+            bottom: 16px;
+            justify-content: center;
           }
         }
       `}</style>

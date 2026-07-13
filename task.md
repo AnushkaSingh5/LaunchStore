@@ -1,5 +1,3 @@
-- `[x]` Adjust the side-by-side grid layout on the storefront cart page `app/store/[slug]/cart/page.js` to use `1fr 340px` columns with a `30px` gap instead of `380px` width.
-- `[x]` Reduce column sizes and grid gaps in `.items-header` and `.cart-item` to fit within narrow viewports.
-- `[x]` Reduce left/right internal card paddings in `.items-header` and `.cart-item` to free up screen width.
-- `[x]` Set responsive wrapping media query breakpoint to `1024px`.
+- `[x]` Apply word-wrap constraints on `.hero-title` and `.hero-subtitle` to prevent continuous characters/dummy string overflows on mobile viewports inside `components/Hero.js`.
+- `[x]` Add a custom `@media (max-width: 480px)` breakpoint rule for `.reviews-badge` to span full-width inside the card wrapper, centering its contents to prevent horizontal overflow on small mobile displays.
 - `[x]` Verify compilation with `npm run build`.
