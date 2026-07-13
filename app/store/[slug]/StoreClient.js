@@ -212,11 +212,13 @@ export default function StoreClient({ slug, initialStoreDetails, initialProducts
       
       <Navbar storeName={storeDetails?.name} logoUrl={storeDetails?.logo_url || storeDetails?.logo} />
       
-      <Hero 
-        bannerUrl={storeDetails?.banner_url || storeDetails?.banner}
-        storeName={storeDetails?.name}
-        description={storeDetails?.description}
-      />
+      {!isFilteringActive && (
+        <Hero 
+          bannerUrl={storeDetails?.banner_url || storeDetails?.banner}
+          storeName={storeDetails?.name}
+          description={storeDetails?.description}
+        />
+      )}
 
       <div className="container main-content">
         

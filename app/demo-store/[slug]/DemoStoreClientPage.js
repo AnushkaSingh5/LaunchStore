@@ -164,11 +164,13 @@ export default function DemoStoreClientPage({ slug }) {
       <DemoStoreBanner />
       <Navbar storeName={storeDetails.name} logoUrl={storeDetails.logo} />
       
-      <Hero 
-        bannerUrl={storeDetails.banner}
-        storeName={storeDetails.name}
-        description={storeDetails.description}
-      />
+      {!isFilteringActive && (
+        <Hero 
+          bannerUrl={storeDetails.banner}
+          storeName={storeDetails.name}
+          description={storeDetails.description}
+        />
+      )}
 
       <div className="container main-content">
         {isFilteringActive ? (

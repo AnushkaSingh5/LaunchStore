@@ -1,3 +1,3 @@
-- `[x]` Apply word-wrap constraints on `.hero-title` and `.hero-subtitle` to prevent continuous characters/dummy string overflows on mobile viewports inside `components/Hero.js`.
-- `[x]` Add a custom `@media (max-width: 480px)` breakpoint rule for `.reviews-badge` to span full-width inside the card wrapper, centering its contents to prevent horizontal overflow on small mobile displays.
+- `[x]` Conditionally hide the `<Hero>` section in `app/store/[slug]/StoreClient.js` when search query filtering is active.
+- `[x]` Conditionally hide the `<Hero>` section in `app/demo-store/[slug]/DemoStoreClientPage.js` when search query filtering is active.
 - `[x]` Verify compilation with `npm run build`.
