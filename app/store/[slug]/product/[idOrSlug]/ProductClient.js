@@ -49,9 +49,13 @@ export default function ProductClient({ slug, initialStoreDetails, initialProduc
     router.push(`/store/${slug}/cart`);
   };
 
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const currentUserId = user?.id;
   const isCreator = currentUserId && currentUserId === storeDetails?.creator_id;
+
+  if (authLoading) {
+    return <PageLoader />;
+  }
 
   if (storeDetails && storeDetails.status !== 'approved' && !isCreator) {
     return (

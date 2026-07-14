@@ -20,14 +20,14 @@ export function CustomerAuthProvider({ children }) {
     if (!supabaseClient) return null;
 
     try {
-      // Check user role from profiles to prevent creators/admins from being treated as customers
+      // Check user role from profiles to prevent admins from being treated as customers
       const { data: userProfile } = await supabaseClient
         .from('profiles')
         .select('role')
         .eq('id', authId)
         .maybeSingle();
 
-      if (userProfile && (userProfile.role === 'creator' || userProfile.role === 'admin')) {
+      if (userProfile && userProfile.role === 'admin') {
         console.log(`[LaunchCart - CustomerAuth] User role is: ${userProfile.role}. Skipping customer profile loading.`);
         setCustomerProfile(null);
         return null;
@@ -63,28 +63,6 @@ export function CustomerAuthProvider({ children }) {
           setCustomerProfile(profileData);
           console.log("Profile fetch complete");
           return profileData;
-        }
-
-        // Fallback: If no customer profile row exists, create one on the fly (already verified not creator/admin)
-        if (!profileData && userObj) {
-          console.log(`[LaunchCart - CustomerAuth] Profile not found. Creating customers row...`);
-          const { data: newProfile, error: insertErr } = await supabaseClient
-            .from('customers')
-            .insert([{
-              auth_id: authId,
-              full_name: userObj.user_metadata?.name || userObj.user_metadata?.full_name || userObj.phone || userObj.email?.split('@')[0] || 'Customer',
-              email: userObj.email || `${userObj.phone || authId}@phone.placeholder`,
-              phone: userObj.phone || userObj.user_metadata?.phone || null,
-            }])
-            .select()
-            .single();
-          if (insertErr) {
-            console.error('❌ [LaunchCart - CustomerAuth]: Fallback customer creation failed:', insertErr);
-          } else if (newProfile) {
-            setCustomerProfile(newProfile);
-            console.log("Profile fetch complete (auto-created)");
-            return newProfile;
-          }
         }
 
         console.log("Profile fetch complete");
@@ -246,27 +224,53 @@ export function CustomerAuthProvider({ children }) {
     startLoading();
     try {
       // 1. Create Supabase Auth User with metadata
-      const { data, error } = await supabaseClient.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            name: fullName,
-            role: 'customer',
-            phone: phone,
+      let signUpData;
+      let signUpError;
+      try {
+        const res = await supabaseClient.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              name: fullName,
+              role: 'customer',
+              phone: phone,
+            },
           },
-        },
-      });
-      if (error) throw error;
+        });
+        signUpData = res.data;
+        signUpError = res.error;
+      } catch (e) {
+        signUpError = e;
+      }
 
-      let user = data.user;
-      let session = data.session;
+      let user;
+      let session;
 
-      if (!session) {
-        const loginRes = await supabaseClient.auth.signInWithPassword({ email, password });
-        if (loginRes.error) throw loginRes.error;
-        user = loginRes.data.user;
-        session = loginRes.data.session;
+      if (signUpError) {
+        // If signup failed (e.g. account already exists), attempt to authenticate with the password provided.
+        // This validates their credentials before linking a new customer profile.
+        try {
+          const loginRes = await supabaseClient.auth.signInWithPassword({ email, password });
+          if (loginRes.error) {
+            // Throw original signup error if password validation fails
+            throw signUpError;
+          }
+          user = loginRes.data.user;
+          session = loginRes.data.session;
+        } catch (signInErr) {
+          throw signUpError;
+        }
+      } else {
+        user = signUpData.user;
+        session = signUpData.session;
+
+        if (!session) {
+          const loginRes = await supabaseClient.auth.signInWithPassword({ email, password });
+          if (loginRes.error) throw loginRes.error;
+          user = loginRes.data.user;
+          session = loginRes.data.session;
+        }
       }
 
       // 2. Fetch customer profile or wait for handle_new_user trigger

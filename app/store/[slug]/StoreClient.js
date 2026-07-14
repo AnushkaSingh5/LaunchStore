@@ -29,7 +29,7 @@ export default function StoreClient({ slug, initialStoreDetails, initialProducts
     if (savedSort === 'price_desc') return 'price-desc';
     return 'default';
   });
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   
   const categoriesRef = useRef(null);
 
@@ -81,6 +81,10 @@ export default function StoreClient({ slug, initialStoreDetails, initialProducts
       loadPreviewData();
     }
   }, [storeDetails, isCreator, products.length]);
+
+  if (authLoading) {
+    return <PageLoader />;
+  }
 
   if (!storeDetails) {
     return (

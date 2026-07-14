@@ -20,7 +20,7 @@ export default function StoreCheckoutPage({ params }) {
   const { slug } = use(params);
   const { cart: globalCart, setCart, clearCart, removeCartItems } = useStore();
   const { customer: user, customerProfile: profile, loading: authLoading } = useCustomerAuth();
-  const { user: creatorUser } = useAuth();
+  const { user: creatorUser, loading: creatorAuthLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const itemsParam = searchParams.get('items');
@@ -212,7 +212,7 @@ export default function StoreCheckoutPage({ params }) {
 
   console.log(`🛒 [Checkout] Render state: slug=${slug} loadingDetails=${loadingDetails} authLoading=${authLoading} user=${user ? user.email : 'null'} profile=${profile ? profile.full_name : 'null'}`);
 
-  if (loadingDetails || authLoading) {
+  if (loadingDetails || authLoading || creatorAuthLoading) {
     return (
       <div className="store-loading-screen">
         <div className="spinner"></div>

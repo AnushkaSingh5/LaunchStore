@@ -8,6 +8,8 @@ import { storeService } from '@/services/storeService';
 import { supabaseClient } from '@/lib/supabase';
 import { useLoading } from '@/components/TopLoader';
 import StoreUnderReview from '@/components/StoreUnderReview';
+import PageLoader from '@/components/PageLoader';
+import { useAuth } from '@/context/AuthContext';
 
 export default function StoreLoginPage({ params }) {
   const { slug } = use(params);
@@ -21,6 +23,7 @@ export default function StoreLoginPage({ params }) {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [storeDetails, setStoreDetails] = useState(null);
+  const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
     const fetchStore = async () => {
@@ -80,7 +83,14 @@ export default function StoreLoginPage({ params }) {
     }
   };
 
-  const isStoreUnderReview = storeDetails && storeDetails.status !== 'approved';
+  const currentUserId = user?.id;
+  const isCreator = currentUserId && currentUserId === storeDetails?.creator_id;
+
+  if (storeDetails && storeDetails.status !== 'approved' && authLoading) {
+    return <PageLoader />;
+  }
+
+  const isStoreUnderReview = storeDetails && storeDetails.status !== 'approved' && !isCreator;
   const displayError = isStoreUnderReview 
     ? "This store is currently under admin review. Customer access will be available once the store has been approved."
     : errorMsg;

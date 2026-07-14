@@ -9,6 +9,8 @@ import { storeService } from '@/services/storeService';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import StoreUnderReview from '@/components/StoreUnderReview';
+import PageLoader from '@/components/PageLoader';
+import { useAuth } from '@/context/AuthContext';
 
 export default function WishlistPage({ params }) {
   const { slug } = use(params);
@@ -22,6 +24,7 @@ export default function WishlistPage({ params }) {
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState('recent');
   const [shareSuccess, setShareSuccess] = useState(false);
+  const { user, loading: authLoading } = useAuth();
 
   // Filter wishlist items for this store
   const storeWishlist = (wishlist || []).filter(
@@ -72,7 +75,10 @@ export default function WishlistPage({ params }) {
     return 0;
   });
 
-  if (loading) {
+  const currentUserId = user?.id;
+  const isCreator = currentUserId && currentUserId === storeDetails?.creator_id;
+
+  if (loading || authLoading) {
     return (
       <div className="store-loading-screen">
         <div className="spinner"></div>
@@ -163,7 +169,7 @@ export default function WishlistPage({ params }) {
     );
   }
 
-  if (storeDetails.status !== 'approved') {
+  if (storeDetails.status !== 'approved' && !isCreator) {
     return (
       <StoreUnderReview 
         storeName={storeDetails.name} 

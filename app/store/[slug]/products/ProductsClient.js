@@ -24,7 +24,7 @@ export default function ProductsClient({ slug, initialStoreDetails, initialProdu
     if (savedSort === 'price_desc') return 'price-desc';
     return 'default';
   });
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   const searchParams = useSearchParams();
   const categoryParam = searchParams ? searchParams.get('category') : null;
@@ -73,6 +73,10 @@ export default function ProductsClient({ slug, initialStoreDetails, initialProdu
       loadPreviewData();
     }
   }, [storeDetails, isCreator, products.length]);
+
+  if (authLoading) {
+    return <PageLoader />;
+  }
 
   if (!storeDetails) {
     return (

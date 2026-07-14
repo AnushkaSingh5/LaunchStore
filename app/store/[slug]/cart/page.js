@@ -12,7 +12,7 @@ import StoreUnderReview from '@/components/StoreUnderReview';
 export default function CartPage({ params }) {
   const { slug } = use(params);
   const { cart: globalCart, updateQuantity, removeFromCart, clearCart } = useStore();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [storeDetails, setStoreDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedItems, setSelectedItems] = useState([]);
@@ -47,7 +47,7 @@ export default function CartPage({ params }) {
     }
   }, [cart, hasInitializedSelection]);
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <div className="store-loading-screen">
         <div className="spinner"></div>
