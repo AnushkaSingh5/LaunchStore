@@ -1,4 +1,11 @@
 - `[x]` Redesign `app/store/[slug]/products/ProductsClient.js` to match the mockup layout: replace the dark banner section with a clean title header, display star rating filter pills instead of categories, and integrate the total product count and sorting controls next to the title.
 - `[x]` Redesign `components/ProductCard.js`: position the rating row (`★ 4.3 (reviewsCount)`) below the name, place the price below the rating, and style the "+" and "->" arrow action buttons.
 - `[x]` Redesign `components/Footer.js`: add the envelope icon circle to the newsletter banner, add a description and circular social icons under the logo, restructure into a 4-column layout including supported payment badges, and style the legal links.
+- `[x]` Revert rating pills back to category filters with dynamic product count badges.
+- `[x]` Create Wishlist page (`app/store/[slug]/wishlist/page.js` and `app/demo-store/[slug]/wishlist/page.js`) containing:
+  - Breadcrumbs and Wishlist header actions (`Share Wishlist` and `Move All to Cart`).
+  - Vertical wishlist cards with item details (name, rating review counts, category tags).
+  - Availability status markers (`In Stock` / `Out of Stock`).
+  - Action buttons (`Add to Cart` or outline `Notify Me`, and `Remove` button).
+- `[x]` Integrate Wishlist heart icon with count badge into `components/Navbar.js` next to the shopping bag.
 - `[x]` Verify compilation with `npm run build`.

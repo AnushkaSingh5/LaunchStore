@@ -9,7 +9,7 @@ import { demoStores } from '@/lib/demoData';
 
 export default function Navbar({ storeName, logoUrl }) {
   const [isScrolled, setIsScrolled] = useState(false);
-  const { cart, searchQuery, setSearchQuery } = useStore();
+  const { cart, wishlist, searchQuery, setSearchQuery } = useStore();
   const { customer, customerProfile, logout, loginWithProvider } = useCustomerAuth();
   const user = customer;
   const profile = customerProfile;
@@ -29,6 +29,11 @@ export default function Navbar({ storeName, logoUrl }) {
     ? (cart || []).filter(item => item.store_slug === storeSlug)
     : (cart || []);
   const storeCartCount = currentStoreCart.reduce((count, item) => count + item.quantity, 0);
+
+  const currentStoreWishlist = storeSlug
+    ? (wishlist || []).filter(item => item.store_slug === storeSlug)
+    : (wishlist || []);
+  const storeWishlistCount = currentStoreWishlist.length;
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
@@ -127,6 +132,7 @@ export default function Navbar({ storeName, logoUrl }) {
               </Link>
 
               {/* Middle Nav Links */}
+              {/*
               <div className="nav-links">
                 <button onClick={() => handleMenuClick('shop')} className="nav-link-btn">Shop</button>
                 <button onClick={() => handleMenuClick('categories-section')} className="nav-link-btn">Categories</button>
@@ -134,22 +140,24 @@ export default function Navbar({ storeName, logoUrl }) {
                 <button onClick={() => handleMenuClick('trending-section')} className="nav-link-btn">Best Sellers</button>
                 <button onClick={() => handleMenuClick('footer-section')} className="nav-link-btn">About Us</button>
               </div>
+              */}
+
+              {/* Centered Desktop Search Bar */}
+              <form className="search-container desktop-search" onSubmit={(e) => e.preventDefault()}>
+                <input 
+                  type="text" 
+                  placeholder="Search products..." 
+                  className="search-input"
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                />
+                <button className="search-submit-btn" type="button" aria-label="Search">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </button>
+              </form>
 
               {/* Right Action Area */}
               <div className="nav-actions-area">
-                <form className="search-container desktop-search" onSubmit={(e) => e.preventDefault()}>
-                  <input 
-                    type="text" 
-                    placeholder="Search products..." 
-                    className="search-input"
-                    value={searchQuery}
-                    onChange={handleSearchChange}
-                  />
-                  <button className="search-submit-btn" type="button" aria-label="Search">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                  </button>
-                </form>
-
                 <div className="nav-icons">
                   {/* Mobile Search Button (only visible on mobile, placed BEFORE user profile dropdown) */}
                   <button 
@@ -227,6 +235,10 @@ export default function Navbar({ storeName, logoUrl }) {
                       )}
                     </div>
                   )}
+                  <Link href={storeSlug ? `/${pathParts[1]}/${storeSlug}/wishlist` : "/wishlist"} className="action-btn wishlist-btn" aria-label="My Wishlist">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                    {storeWishlistCount > 0 && <span className="badge">{storeWishlistCount}</span>}
+                  </Link>
                   <Link href={storeSlug ? `/${pathParts[1]}/${storeSlug}/cart` : "/cart"} className="action-btn cart-btn">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><path d="M3 6h18"></path><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
                     {storeCartCount > 0 && <span className="badge">{storeCartCount}</span>}
@@ -357,12 +369,12 @@ export default function Navbar({ storeName, logoUrl }) {
 
         .search-container {
           position: relative;
-          width: 240px;
-          transition: width 0.3s ease;
+          width: 550px;
+          transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .search-container:focus-within {
-          width: 280px;
+          width: 760px;
         }
 
         .search-input {

@@ -10,6 +10,7 @@ export default function Hero({ bannerUrl, storeName, description }) {
   const [headline, setHeadline] = useState('Design Your Space, Define Your Style');
   const [subheading, setSubheading] = useState('Handpicked pieces that bring beauty, comfort and character to your home.');
   const [banner, setBanner] = useState('https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&q=80&w=1200');
+  const [showMobileReviews, setShowMobileReviews] = useState(false);
 
   const truncateDescription = (text) => {
     if (!text) return '';
@@ -69,6 +70,7 @@ export default function Hero({ bannerUrl, storeName, description }) {
       <div className="container hero-container">
         <div className="hero-grid">
           {/* Left Dark Pane */}
+          {/*
           <div className="hero-left-pane">
             <div className="pane-content">
               <span className="welcome-tag">Premium Collection</span>
@@ -86,20 +88,20 @@ export default function Hero({ bannerUrl, storeName, description }) {
               </div>
             </div>
 
-            {/* Bottom Slider Index */}
             <div className="slide-indicator">
               <span className="active-slide">01</span>
               <span className="slide-line"></span>
               <span className="total-slides">03</span>
             </div>
           </div>
+          */}
 
           {/* Right Banner Image Pane */}
           <div className="hero-right-pane">
             <img src={banner} alt={storeName || 'Store Banner'} className="banner-img" />
             
             {/* Overlay customer reviews badge */}
-            <div className="reviews-badge">
+            <div className={`reviews-badge ${showMobileReviews ? 'active' : ''}`}>
               <div className="avatar-stack">
                 <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=60" alt="Customer" className="avatar-img" />
                 <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=60" alt="Customer" className="avatar-img" />
@@ -114,6 +116,15 @@ export default function Hero({ bannerUrl, storeName, description }) {
                 <span className="score">4.8</span>
               </div>
             </div>
+
+            {/* Mobile Reviews Toggle Trigger */}
+            <button 
+              className="mobile-reviews-trigger" 
+              onClick={() => setShowMobileReviews(!showMobileReviews)}
+              aria-label="Toggle reviews info"
+            >
+              <span className="star-icon">★</span>
+            </button>
           </div>
         </div>
       </div>
@@ -135,11 +146,11 @@ export default function Hero({ bannerUrl, storeName, description }) {
 
         .hero-grid {
           display: grid;
-          grid-template-columns: 4.5fr 7.5fr;
+          grid-template-columns: 1fr;
           border-radius: 24px;
           overflow: hidden;
           box-shadow: 0 20px 40px rgba(0, 0, 0, 0.02);
-          height: 560px; /* Fixed height on desktop to prevent large images from expanding card */
+          height: 380px; 
         }
 
         /* Left Pane Styling */
@@ -279,6 +290,10 @@ export default function Hero({ bannerUrl, storeName, description }) {
           display: block;
         }
 
+        .mobile-reviews-trigger {
+          display: none;
+        }
+
         /* Floating Reviews Badge */
         .reviews-badge {
           position: absolute;
@@ -360,7 +375,7 @@ export default function Hero({ bannerUrl, storeName, description }) {
           .hero-grid {
             grid-template-columns: 1fr;
             min-height: auto;
-            height: auto; /* Reset to auto height on mobile/tablet */
+            height: auto; 
           }
 
           .hero-left-pane {
@@ -369,7 +384,7 @@ export default function Hero({ bannerUrl, storeName, description }) {
           }
 
           .hero-right-pane {
-            height: 360px;
+            height: 240px;
           }
         }
 
@@ -383,6 +398,10 @@ export default function Hero({ bannerUrl, storeName, description }) {
           .hero-section {
             padding-top: 90px; /* Adjust for mobile navbar space */
             padding-bottom: 20px;
+          }
+
+          .hero-right-pane {
+            height: 280px;
           }
 
           .hero-section.demo-mode-hero {
@@ -419,15 +438,86 @@ export default function Hero({ bannerUrl, storeName, description }) {
             width: 28px;
             height: 28px;
           }
+
+          .mobile-reviews-trigger {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            cursor: pointer;
+            z-index: 10;
+            color: #e2a537;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            padding: 0;
+          }
+
+          .mobile-reviews-trigger:active {
+            transform: scale(0.9);
+          }
+
+          .reviews-badge {
+            position: absolute;
+            bottom: 52px;
+            right: 12px;
+            left: auto !important;
+            background: #ffffff;
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+            padding: 6px 10px;
+            gap: 6px;
+            border-radius: 12px;
+            width: auto;
+            max-width: 220px;
+            display: flex;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(8px);
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 9;
+            animation: none !important;
+          }
+
+          .reviews-badge.active {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+          }
+
+          .avatar-img {
+            width: 20px !important;
+            height: 20px !important;
+            border-width: 1px !important;
+            margin-right: -6px !important;
+          }
+
+          .reviews-text .bold-text {
+            font-size: 10px !important;
+            line-height: 1.2;
+          }
+
+          .reviews-text .sub-text {
+            font-size: 8px !important;
+            line-height: 1.2;
+          }
+
+          .rating-score {
+            font-size: 10px !important;
+            gap: 2px !important;
+          }
         }
 
         @media (max-width: 480px) {
-          .reviews-badge {
-            left: 16px;
-            right: 16px;
-            bottom: 16px;
-            justify-content: center;
-          }
+          /* Prevent badge centering so it stays relative to the trigger button */
         }
       `}</style>
     </section>

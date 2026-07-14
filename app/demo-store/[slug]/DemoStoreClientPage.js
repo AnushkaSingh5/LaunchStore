@@ -13,9 +13,10 @@ import { demoStores } from '@/lib/demoData';
 import { getDefaultStoreData } from '@/lib/defaultStoreData';
 
 export default function DemoStoreClientPage({ slug }) {
-  const { selectedCategory, setSelectedCategory, searchQuery } = useStore();
+  const { selectedCategory, setSelectedCategory, searchQuery, setSearchQuery } = useStore();
   const [storeDetails, setStoreDetails] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [sortBy, setSortBy] = useState('default');
 
   const categoriesRef = useRef(null);
 
@@ -126,36 +127,38 @@ export default function DemoStoreClientPage({ slug }) {
   const arrivalsTitle = fallback.arrivalsTitle || 'Fresh Finds for Beautiful Spaces';
   const arrivalsSubtitle = fallback.arrivalsSubtitle || 'Explore our latest additions, thoughtfully curated to inspire your home.';
 
+  // Dynamic count calculation
+  const categoriesWithCount = categories.map(cat => {
+    if (cat.id === 'all' || cat.title === 'All') {
+      return { ...cat, productCount: products.length, displayTitle: 'All Products' };
+    }
+    const count = products.filter(p => p.category === cat.title || p.category_id === cat.id).length;
+    return { ...cat, productCount: count, displayTitle: cat.title || cat.name };
+  });
+
   // Filter
   const filteredProducts = products.filter((product) => {
     const q = (searchQuery || '').toLowerCase().trim();
     const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
     const matchesSearch = !q ||
       product.name.toLowerCase().includes(q) ||
-      product.category.toLowerCase().includes(q);
+      (product.category && product.category.toLowerCase().includes(q));
     return matchesCategory && matchesSearch;
   });
 
-  // Dynamic count calculation
-  const categoriesWithCount = categories.map(cat => {
-    if (cat.id === 'all') {
-      return { ...cat, productCount: products.length };
+  // Sort filtered products
+  const sortedProducts = [...filteredProducts].sort((a, b) => {
+    if (sortBy === 'price-asc') {
+      return parseFloat(a.price) - parseFloat(b.price);
     }
-    const count = products.filter(p => p.category === cat.title || p.category_id === cat.id).length;
-    return { ...cat, productCount: count || cat.count || 0 };
+    if (sortBy === 'price-desc') {
+      return parseFloat(b.price) - parseFloat(a.price);
+    }
+    if (sortBy === 'name-asc') {
+      return a.name.localeCompare(b.name);
+    }
+    return 0;
   });
-
-  // Fresh Finds: featured items, or first 3
-  const freshFindsProducts = products.filter(p => p.featured).slice(0, 3);
-  if (freshFindsProducts.length === 0) {
-    freshFindsProducts.push(...products.slice(0, 3));
-  }
-
-  // Trending Now: items marked as trending or non-featured
-  const trendingProducts = products.filter(p => p.trending).slice(0, 4);
-  if (trendingProducts.length === 0) {
-    trendingProducts.push(...products.slice(0, 4));
-  }
 
   const isFilteringActive = searchQuery !== '';
 
@@ -173,6 +176,95 @@ export default function DemoStoreClientPage({ slug }) {
       )}
 
       <div className={`container main-content ${isFilteringActive ? 'search-active-content' : ''}`}>
+        <div className="catalog-container-layout">
+        {/* Replicated Products Catalog Page Layout */}
+        <section className="catalog-header-section">
+          <div className="catalog-header-main-row">
+            <div className="header-title-col">
+              <h1 className="catalog-title">Products Catalog</h1>
+              <p className="catalog-subtitle">Discover our premium selection of curated products.</p>
+            </div>
+            
+            <div className="header-actions-col">
+              <div className="search-status-text">
+                Showing <strong>{sortedProducts.length}</strong> {sortedProducts.length === 1 ? 'product' : 'products'} total
+              </div>
+              <div className="sort-by-selector">
+                <span className="sort-label">Sort by:</span>
+                <div className="sort-select-wrapper">
+                  <select 
+                    id="sort-select" 
+                    value={sortBy} 
+                    onChange={(e) => setSortBy(e.target.value)}
+                  >
+                    <option value="default">Default | Recommended</option>
+                    <option value="price-asc">Price: Low to High</option>
+                    <option value="price-desc">Price: High to Low</option>
+                    <option value="name-asc">Alphabetical: A to Z</option>
+                  </select>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Category Filter Pills */}
+        <section className="categories-pill-section">
+          <div className="categories-pill-list">
+            <button 
+              className={`category-pill ${selectedCategory === 'All' ? 'active' : ''}`}
+              onClick={() => setSelectedCategory('All')}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+              All Products ({products.length})
+            </button>
+            
+            {categoriesWithCount.filter(c => c.id !== 'all' && c.title !== 'All').map(cat => (
+              <button 
+                key={cat.id}
+                className={`category-pill ${selectedCategory === (cat.title || cat.name) ? 'active' : ''}`}
+                onClick={() => setSelectedCategory(cat.title || cat.name)}
+              >
+                {cat.displayTitle} ({cat.productCount})
+              </button>
+            ))}
+
+            <button 
+              className="category-pill clear-filters-pill"
+              onClick={() => {
+                setSelectedCategory('All');
+                setSearchQuery('');
+                setSortBy('default');
+              }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+              Clear Filters
+            </button>
+          </div>
+        </section>
+
+        {/* Products Grid */}
+        <section className="products-grid-section">
+          {sortedProducts.length > 0 ? (
+            <div className="products-grid">
+              {sortedProducts.map(product => (
+                <ProductCard key={product.id} product={{ ...product, store_slug: slug }} />
+              ))}
+            </div>
+          ) : (
+            <div className="catalog-empty-state">
+              <div className="empty-icon">🔍</div>
+              <h3>No matching products found</h3>
+              <p>We couldn't find any products in this collection matching your criteria. Try resetting filters.</p>
+              <button className="reset-filters-btn" onClick={() => { setSelectedCategory('All'); setSearchQuery(''); setSortBy('default'); }}>Reset All Filters</button>
+            </div>
+          )}
+        </section>
+      </div>
+
+        {/* Commented out original sections below */}
+        {/*
         {isFilteringActive ? (
           <section className="catalog-search-section">
             <div className="section-header">
@@ -241,7 +333,6 @@ export default function DemoStoreClientPage({ slug }) {
               </div>
             </section>
 
-            {/* 2. New Arrivals (Fresh Finds) Split Banner */}
             <section className="new-arrivals-banner-section" id="new-arrivals-section">
               <div className="new-arrivals-grid">
                 <div className="arrivals-info-pane">
@@ -264,7 +355,6 @@ export default function DemoStoreClientPage({ slug }) {
               </div>
             </section>
 
-            {/* 3. Value Proposition Bar */}
             <div className="value-props-bar">
               <div className="value-item">
                 <div className="value-icon">
@@ -313,7 +403,6 @@ export default function DemoStoreClientPage({ slug }) {
               </div>
             </div>
 
-            {/* 4. Trending Now grid */}
             <section className="trending-section" id="trending-section">
               <div className="section-header">
                 <div className="header-meta">
@@ -334,6 +423,8 @@ export default function DemoStoreClientPage({ slug }) {
             </section>
           </>
         )}
+        */
+        }
       </div>
 
       <Footer storeName={storeDetails.name} description={storeDetails.description} />
@@ -348,13 +439,185 @@ export default function DemoStoreClientPage({ slug }) {
         .main-content {
           display: flex;
           flex-direction: column;
-          gap: 80px;
+          gap: 24px;
           padding-bottom: 80px;
-          margin-top: 20px;
+          margin-top: -24px; /* Pull closer to hero banner */
         }
 
         .search-active-content {
           padding-top: 140px;
+        }
+
+        .catalog-container-layout {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+
+        /* Products Catalog CSS Integration */
+        .catalog-header-section {
+          text-align: left;
+          margin-bottom: 0px;
+        }
+        .catalog-header-main-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-end;
+          gap: 24px;
+          margin-top: 16px;
+        }
+        .catalog-title {
+          font-size: 32px;
+          font-weight: 700;
+          color: #121212;
+          margin: 0 0 6px 0;
+          font-family: 'Outfit', sans-serif;
+        }
+        .catalog-subtitle {
+          font-size: 14px;
+          color: #706f6c;
+          margin: 0;
+          line-height: 1.5;
+        }
+        .header-actions-col {
+          display: flex;
+          align-items: center;
+          gap: 24px;
+          background: #f0f2f5;
+          padding: 10px 20px;
+          border-radius: 12px;
+        }
+        .search-status-text {
+          font-size: 13px;
+          color: #555350;
+        }
+        .sort-by-selector {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .sort-label {
+          font-size: 13px;
+          font-weight: 700;
+          color: #706f6c;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+        .sort-select-wrapper {
+          position: relative;
+          display: flex;
+          align-items: center;
+        }
+        .sort-select-wrapper select {
+          appearance: none;
+          background: #ffffff;
+          border: 1px solid rgba(0, 0, 0, 0.08);
+          border-radius: 8px;
+          padding: 6px 28px 6px 12px;
+          font-size: 13px;
+          font-weight: 600;
+          color: #121212;
+          outline: none;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .sort-select-wrapper select:focus {
+          border-color: #121212;
+        }
+        .sort-select-wrapper svg {
+          position: absolute;
+          right: 10px;
+          pointer-events: none;
+          color: #706f6c;
+        }
+
+        /* Category pills list */
+        .categories-pill-section {
+          overflow-x: auto;
+          scrollbar-width: none;
+          padding-bottom: 4px;
+          margin-bottom: 0px;
+        }
+        .categories-pill-section::-webkit-scrollbar {
+          display: none;
+        }
+        .categories-pill-list {
+          display: flex;
+          gap: 12px;
+          white-space: nowrap;
+        }
+        .category-pill {
+          background: rgba(255, 255, 255, 0.7);
+          backdrop-filter: blur(8px);
+          border: 1px solid rgba(0, 0, 0, 0.05);
+          border-radius: 40px;
+          padding: 8px 18px;
+          font-size: 13px;
+          font-weight: 600;
+          color: #555350;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          display: inline-flex;
+          align-items: center;
+        }
+        .category-pill:hover {
+          background: #ffffff;
+          color: #121212;
+          border-color: rgba(0, 0, 0, 0.1);
+        }
+        .category-pill.active {
+          background: #121212;
+          color: #FAF8F5;
+          border-color: #121212;
+        }
+
+        /* Products Grid */
+        .products-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+          gap: 32px 24px;
+        }
+
+        /* Empty State */
+        .catalog-empty-state {
+          text-align: center;
+          padding: 80px 24px;
+          background: #ffffff;
+          border-radius: 24px;
+          border: 1px solid rgba(0, 0, 0, 0.04);
+          max-width: 500px;
+          margin: 40px auto;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+        }
+        .catalog-empty-state h3 {
+          font-size: 20px;
+          font-weight: 700;
+          color: #121212;
+          margin: 0 0 8px 0;
+        }
+        .catalog-empty-state p {
+          font-size: 14px;
+          color: #706f6c;
+          line-height: 1.6;
+          margin: 0 0 24px 0;
+        }
+        .reset-filters-btn {
+          display: inline-block;
+          padding: 12px 24px;
+          background: #121212;
+          color: #FAF8F5;
+          border-radius: 12px;
+          font-size: 13px;
+          font-weight: 700;
+          text-decoration: none;
+          transition: all 0.2s;
+          cursor: pointer;
+        }
+        .reset-filters-btn:hover {
+          background: #232724;
+          transform: translateY(-1px);
         }
 
         section {
@@ -727,6 +990,23 @@ export default function DemoStoreClientPage({ slug }) {
             align-items: flex-start;
             gap: 20px;
             padding: 24px 32px;
+          }
+          .catalog-header-main-row {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 16px;
+            margin-top: 12px;
+          }
+          .header-actions-col {
+            width: 100%;
+            justify-content: space-between;
+            padding: 8px 16px;
+          }
+          .catalog-title {
+            font-size: 24px;
+          }
+          .catalog-container-layout {
+            gap: 12px;
           }
         }
       `}</style>
