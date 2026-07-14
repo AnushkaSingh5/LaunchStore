@@ -97,41 +97,61 @@ export default function CustomerPortalLayout({ children }) {
     <div className="profile-dashboard">
       <div className="profile-container container">
         <aside className="profile-sidebar dashboard-card">
-          <div className="sidebar-header">
-            <div className="avatar-placeholder">
-              {customerProfile.full_name ? customerProfile.full_name[0].toUpperCase() : 'C'}
+          <div className="sidebar-profile-header">
+            <div className="profile-avatar-circle">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6b21a8" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
             </div>
-            <div className="user-details">
-              <h3>{customerProfile.full_name || 'Customer'}</h3>
-              <p>{customer.email}</p>
+            <div className="profile-meta">
+              <div className="profile-meta-name">{customerProfile.full_name || 'Customer'}</div>
+              <div className="profile-meta-email">{customer.email}</div>
             </div>
           </div>
           
           <nav className="sidebar-nav">
-            {navItems.map((item) => {
-              const isActive = pathname === item.path;
-              return (
-                <Link 
-                  key={item.path} 
-                  href={backToStoreSlug ? `${item.path}?store=${backToStoreSlug}` : item.path}
-                  className={`nav-item ${isActive ? 'active' : ''}`}
-                >
-                  <span className="nav-icon">{item.icon}</span>
-                  {item.name}
-                </Link>
-              );
-            })}
+            <Link 
+              href={backToStoreSlug ? `/customer/profile?store=${backToStoreSlug}` : '/customer/profile'}
+              className={`profile-list-item ${pathname === '/customer/profile' ? 'active' : ''}`}
+            >
+              <div className="item-icon-box settings-box">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+              </div>
+              <span className="item-title">Personal Details</span>
+            </Link>
+
+            <Link 
+              href={backToStoreSlug ? `/customer/orders?store=${backToStoreSlug}` : '/customer/orders'}
+              className={`profile-list-item ${pathname === '/customer/orders' ? 'active' : ''}`}
+            >
+              <div className="item-icon-box orders-box">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b45309" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+              </div>
+              <span className="item-title">My Orders</span>
+            </Link>
+
+            <Link 
+              href={backToStoreSlug ? `/customer/addresses?store=${backToStoreSlug}` : '/customer/addresses'}
+              className={`profile-list-item ${pathname === '/customer/addresses' ? 'active' : ''}`}
+            >
+              <div className="item-icon-box addresses-box">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#15803d" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+              </div>
+              <span className="item-title">Address Book</span>
+            </Link>
             
             <div className="nav-divider"></div>
             
-            <Link href={backToStoreSlug ? `/store/${backToStoreSlug}` : "/"} className="nav-item home-link">
-              <span className="nav-icon">🛍️</span>
-              Back to Shopping
+            <Link href={backToStoreSlug ? `/store/${backToStoreSlug}` : "/"} className="profile-list-item home-link">
+              <div className="item-icon-box shopping-box">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0891b2" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+              </div>
+              <span className="item-title">Back to Shopping</span>
             </Link>
             
-            <button onClick={logout} className="nav-item logout-btn">
-              <span className="nav-icon">🚪</span>
-              Sign Out
+            <button onClick={logout} className="profile-logout-item">
+              <div className="item-icon-box logout-box">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+              </div>
+              <span className="item-title logout-title">Sign Out</span>
             </button>
           </nav>
         </aside>
@@ -166,100 +186,149 @@ export default function CustomerPortalLayout({ children }) {
           top: 100px;
         }
 
-        .sidebar-header {
+        :global(.sidebar-profile-header) {
           display: flex;
           align-items: center;
-          gap: 16px;
-          margin-bottom: 30px;
+          gap: 12px;
           padding-bottom: 20px;
           border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+          margin-bottom: 20px;
         }
 
-        .avatar-placeholder {
-          width: 52px;
-          height: 52px;
-          background: rgba(37, 99, 235, 0.1);
-          color: var(--accent, #2563eb);
-          font-size: 20px;
-          font-weight: 700;
-          border-radius: 16px;
+        :global(.profile-avatar-circle) {
+          width: 44px;
+          height: 44px;
+          border-radius: 50%;
+          background: #f3e8ff;
           display: flex;
           align-items: center;
           justify-content: center;
+          flex-shrink: 0;
         }
 
-        .user-details h3 {
-          font-size: 16px;
+        :global(.profile-meta) {
+          display: flex;
+          flex-direction: column;
+          gap: 1px;
+          min-width: 0;
+        }
+
+        :global(.profile-meta-name) {
+          font-size: 14px;
           font-weight: 700;
-          color: var(--text-main, #1d1d1f);
-          margin-bottom: 2px;
+          color: #1d1d1f;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
           max-width: 170px;
         }
 
-        .user-details p {
-          font-size: 12px;
-          color: var(--text-sub, #64748b);
+        :global(.profile-meta-email) {
+          font-size: 11px;
+          color: #64748b;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
           max-width: 170px;
         }
 
-        .sidebar-nav {
+        :global(.sidebar-nav) {
           display: flex;
           flex-direction: column;
           gap: 6px;
         }
 
-        .nav-item {
+        :global(.profile-list-item) {
+          display: flex !important;
+          flex-direction: row !important;
+          align-items: center !important;
+          gap: 12px !important;
+          padding: 8px 12px !important;
+          border-radius: 12px !important;
+          text-decoration: none !important;
+          transition: background 0.2s !important;
+          color: #64748b !important;
+          width: 100% !important;
+        }
+
+        :global(.profile-list-item:hover) {
+          background: #f8fafc !important;
+          color: #1d1d1f !important;
+        }
+
+        :global(.profile-list-item.active) {
+          background: rgba(99, 102, 241, 0.08) !important;
+          color: #6366f1 !important;
+        }
+
+        :global(.item-icon-box) {
+          width: 32px;
+          height: 32px;
+          border-radius: 8px;
           display: flex;
           align-items: center;
-          gap: 12px;
-          padding: 12px 16px;
-          font-size: 14px;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+
+        :global(.settings-box) {
+          background: #e0e7ff;
+        }
+
+        :global(.orders-box) {
+          background: #fef3c7;
+        }
+
+        :global(.addresses-box) {
+          background: #dcfce7;
+        }
+
+        :global(.shopping-box) {
+          background: #ecfeff;
+        }
+
+        :global(.logout-box) {
+          background: #fee2e2;
+        }
+
+        :global(.item-title) {
+          font-size: 13px;
           font-weight: 600;
-          color: var(--text-sub, #64748b);
-          border-radius: 12px;
-          transition: var(--transition-fast, all 0.2s);
-          text-decoration: none;
-          background: transparent;
-          border: none;
-          text-align: left;
-          width: 100%;
-          cursor: pointer;
+          flex: 1;
         }
 
-        .nav-item:hover {
-          background: rgba(0, 0, 0, 0.03);
-          color: var(--text-main, #1d1d1f);
+        :global(.profile-list-item.active .item-title) {
+          color: #6366f1 !important;
         }
 
-        .nav-item.active {
-          background: rgba(37, 99, 235, 0.08);
-          color: var(--accent, #2563eb);
-        }
-
-        .nav-icon {
-          font-size: 16px;
-        }
-
-        .nav-divider {
+        :global(.nav-divider) {
           height: 1px;
           background: rgba(0, 0, 0, 0.05);
-          margin: 12px 0;
+          margin: 10px 0;
         }
 
-        .home-link:hover {
-          color: var(--accent, #2563eb);
-          background: rgba(37, 99, 235, 0.04);
+        :global(.profile-logout-item) {
+          display: flex !important;
+          flex-direction: row !important;
+          align-items: center !important;
+          gap: 12px !important;
+          padding: 8px 12px !important;
+          border-radius: 12px !important;
+          width: 100% !important;
+          border: none !important;
+          background: transparent !important;
+          text-align: left !important;
+          cursor: pointer !important;
+          transition: background 0.2s !important;
+          color: #dc2626 !important;
         }
 
-        .logout-btn:hover {
-          color: #dc2626;
-          background: rgba(220, 38, 38, 0.05);
+        :global(.profile-logout-item:hover) {
+          background: #fee2e2 !important;
+        }
+
+        :global(.logout-title) {
+          color: #dc2626 !important;
         }
 
         .profile-content {

@@ -39,7 +39,7 @@ export default function AdminSidebar({ isOpen, onClose, isCollapsed, onToggle })
   const menuItems = [
     { label: 'Overview', path: '/admin', icon: icons.Overview, color: '#8b5cf6' },
     { label: 'Stores', path: '/admin/stores', icon: icons.Stores, color: '#10b981' },
-    { label: 'Creators', path: '/admin/creators', icon: icons.Creators, color: '#f59e0b' },
+    { label: 'Sellers', path: '/admin/creators', icon: icons.Creators, color: '#f59e0b' },
     { label: 'Products', path: '/admin/products', icon: icons.Products, color: '#f97316' },
     { label: 'Orders', path: '/admin/orders', icon: icons.Orders, color: '#a855f7' },
     { label: 'Customers', path: '/admin/customers', icon: icons.Customers, color: '#3b82f6' },

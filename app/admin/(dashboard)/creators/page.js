@@ -60,20 +60,20 @@ export default function AdminCreators() {
 
   const handleVerifyCreator = async () => {
     if (!selectedCreator) return;
-    if (!confirm('Are you sure you want to verify this creator? All uploaded documents will be marked as verified.')) return;
+    if (!confirm('Are you sure you want to verify this seller? All uploaded documents will be marked as verified.')) return;
     
     setActionLoading(true);
     try {
       const res = await profileService.adminUpdateVerificationStatus(selectedCreator.creatorId, 'Verified');
       if (res.success) {
-        alert('Creator marked as Verified successfully!');
+        alert('Seller marked as Verified successfully!');
         // Refresh details
         const profRes = await profileService.getProfile(selectedCreator.creatorId);
         const docsRes = await profileService.getCreatorDocuments(selectedCreator.creatorId);
         if (profRes.success) setExtendedProfile(profRes.profile);
         if (docsRes.success) setDocuments(docsRes.documents);
       } else {
-        alert('Failed to verify creator: ' + res.error);
+        alert('Failed to verify seller: ' + res.error);
       }
     } catch (err) {
       console.error(err);
@@ -84,13 +84,13 @@ export default function AdminCreators() {
 
   const handleRejectCreator = async () => {
     if (!selectedCreator) return;
-    if (!confirm('Are you sure you want to reject this creator\'s verification request?')) return;
+    if (!confirm('Are you sure you want to reject this seller\'s verification request?')) return;
 
     setActionLoading(true);
     try {
       const res = await profileService.adminUpdateVerificationStatus(selectedCreator.creatorId, 'Rejected');
       if (res.success) {
-        alert('Creator verification status updated to Rejected.');
+        alert('Seller verification status updated to Rejected.');
         // Refresh details
         const profRes = await profileService.getProfile(selectedCreator.creatorId);
         const docsRes = await profileService.getCreatorDocuments(selectedCreator.creatorId);
@@ -107,7 +107,7 @@ export default function AdminCreators() {
   };
 
   const columns = [
-    { field: 'name', label: 'Creator Name', render: (row) => <span style={{ fontWeight: 700 }}>{row.name}</span> },
+    { field: 'name', label: 'Seller Name', render: (row) => <span style={{ fontWeight: 700 }}>{row.name}</span> },
     { field: 'email', label: 'Email' },
     { field: 'storeName', label: 'Primary Store' },
     { field: 'revenue', label: 'Total Revenue', render: (row) => `₹${(row.revenue || 0).toLocaleString()}` },
@@ -135,12 +135,12 @@ export default function AdminCreators() {
     <div className="admin-creators">
       <div className="page-header">
         <div className="header-text">
-          <h2>Creator Management</h2>
+          <h2>Seller Management</h2>
           <p>Monitor profiles, verify credentials, and review verification documents.</p>
         </div>
         <div className="header-actions">
           <Input 
-            placeholder="Search creators or stores..." 
+            placeholder="Search sellers or stores..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -154,13 +154,13 @@ export default function AdminCreators() {
       <Modal 
         isOpen={!!selectedCreator} 
         onClose={() => setSelectedCreator(null)}
-        title="Creator Verification & Profile details"
+        title="Seller Verification & Profile details"
         size="large"
         footer={
           <div className="modal-footer-actions">
             {extendedProfile && (extendedProfile.verification_status === 'Under Review' || extendedProfile.verification_status === 'Not Submitted') && (
               <>
-                <button className="btn-moderate verify" onClick={handleVerifyCreator} disabled={actionLoading}>Verify Creator</button>
+                <button className="btn-moderate verify" onClick={handleVerifyCreator} disabled={actionLoading}>Verify Seller</button>
                 <button className="btn-moderate reject" onClick={handleRejectCreator} disabled={actionLoading}>Reject Verification</button>
               </>
             )}

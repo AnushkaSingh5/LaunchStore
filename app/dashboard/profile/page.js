@@ -196,7 +196,7 @@ export default function CreatorProfile() {
     <div className="profile-container">
       <div className="profile-header">
         <div className="header-info">
-          <h2>Creator Profile Settings</h2>
+          <h2>Seller Profile Settings</h2>
           <p>Update your personal bio, business info, and verification documents.</p>
         </div>
         <div 
@@ -289,7 +289,7 @@ export default function CreatorProfile() {
               </div>
 
               <div className="form-group full-width">
-                <label htmlFor="bio">Bio / About Creator</label>
+                <label htmlFor="bio">Bio / About Seller</label>
                 <textarea
                   id="bio"
                   rows={4}

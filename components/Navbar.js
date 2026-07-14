@@ -181,30 +181,55 @@ export default function Navbar({ storeName, logoUrl }) {
                         <div className="dropdown-menu">
                           {user ? (
                             <>
-                              <div className="dropdown-header">
-                                <div className="dropdown-name">{profile?.full_name || 'Customer'}</div>
-                                <div className="dropdown-email">{user.email}</div>
+                              <div className="dropdown-profile-header">
+                                <div className="profile-header-left">
+                                  <div className="profile-avatar-circle">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6b21a8" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                                  </div>
+                                  <div className="profile-meta">
+                                    <div className="profile-meta-name">{profile?.full_name || 'Customer'}</div>
+                                    <div className="profile-meta-email">{user.email}</div>
+                                  </div>
+                                </div>
                               </div>
-                              <div className="dropdown-divider"></div>
-                              <Link href={storeSlug ? `/customer/profile?store=${storeSlug}` : "/customer/profile"} className="dropdown-item" onClick={() => setIsDropdownOpen(false)}>
-                                <span className="dropdown-icon">👤</span>My Profile
-                              </Link>
-                              <Link href={storeSlug ? `/customer/orders?store=${storeSlug}` : "/customer/orders"} className="dropdown-item" onClick={() => setIsDropdownOpen(false)}>
-                                <span className="dropdown-icon">📦</span>My Orders
-                              </Link>
-                              <Link href={storeSlug ? `/customer/addresses?store=${storeSlug}` : "/customer/addresses"} className="dropdown-item" onClick={() => setIsDropdownOpen(false)}>
-                                <span className="dropdown-icon">📍</span>My Addresses
-                              </Link>
-                              <div className="dropdown-divider"></div>
-                              <button 
-                                className="dropdown-item logout-btn" 
-                                onClick={() => {
-                                  signOut();
-                                  setIsDropdownOpen(false);
-                                }}
-                              >
-                                <span className="dropdown-icon">🚪</span>Logout
-                              </button>
+
+                              <div className="dropdown-items-list">
+                                <Link href={storeSlug ? `/customer/profile?store=${storeSlug}` : "/customer/profile"} className="profile-list-item" onClick={() => setIsDropdownOpen(false)}>
+                                  <div className="item-icon-box settings-box">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                                  </div>
+                                  <span className="item-title">Account Settings</span>
+                                </Link>
+
+                                <Link href={storeSlug ? `/customer/orders?store=${storeSlug}` : "/customer/orders"} className="profile-list-item" onClick={() => setIsDropdownOpen(false)}>
+                                  <div className="item-icon-box orders-box">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b45309" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+                                  </div>
+                                  <span className="item-title">My Orders</span>
+                                </Link>
+
+                                <Link href={storeSlug ? `/customer/addresses?store=${storeSlug}` : "/customer/addresses"} className="profile-list-item" onClick={() => setIsDropdownOpen(false)}>
+                                  <div className="item-icon-box addresses-box">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#15803d" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                                  </div>
+                                  <span className="item-title">Saved Addresses</span>
+                                </Link>
+                              </div>
+
+                              <div className="profile-logout-footer">
+                                <button 
+                                  className="profile-logout-item" 
+                                  onClick={() => {
+                                    signOut();
+                                    setIsDropdownOpen(false);
+                                  }}
+                                >
+                                  <div className="item-icon-box logout-box">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                                  </div>
+                                  <span className="item-title logout-title">Sign Out</span>
+                                </button>
+                              </div>
                             </>
                           ) : (
                             <div className="logged-out-menu">
@@ -462,10 +487,10 @@ export default function Navbar({ storeName, logoUrl }) {
           right: 0;
           width: 280px;
           border-radius: 20px;
-          background: #FAF8F5;
-          border: 1px solid rgba(0, 0, 0, 0.08);
-          box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
-          padding: 20px;
+          background: #ffffff;
+          border: 1px solid rgba(0, 0, 0, 0.05);
+          box-shadow: 0 15px 40px rgba(0, 0, 0, 0.06);
+          padding: 16px;
           display: flex;
           flex-direction: column;
           z-index: 1100;
@@ -624,53 +649,133 @@ export default function Navbar({ storeName, logoUrl }) {
           }
         }
 
-        .dropdown-header {
-          padding: 8px 12px 10px;
+        :global(.dropdown-profile-header) {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 12px;
+          padding-bottom: 12px;
+          border-bottom: 1px solid #f1f5f9;
         }
 
-        .dropdown-name {
-          font-size: 14px;
-          font-weight: 600;
-          color: #121212;
-          margin-bottom: 2px;
+        :global(.profile-header-left) {
+          display: flex;
+          align-items: center;
+          gap: 8px;
         }
 
-        .dropdown-email {
-          font-size: 11px;
-          color: #706f6c;
+        :global(.profile-avatar-circle) {
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          background: #f3e8ff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
         }
 
-        .dropdown-divider {
-          height: 1px;
-          background: rgba(0, 0, 0, 0.05);
-          margin: 6px 0;
+        :global(.profile-meta) {
+          display: flex;
+          flex-direction: column;
+          gap: 1px;
         }
 
-        .dropdown-item {
-          display: block;
-          width: 100%;
-          text-align: left;
-          padding: 8px 12px;
+        :global(.profile-meta-name) {
           font-size: 13px;
-          font-weight: 500;
-          color: #555350;
+          font-weight: 700;
+          color: #1e293b;
+        }
+
+        :global(.profile-meta-email) {
+          font-size: 10px;
+          color: #64748b;
+        }
+
+        :global(.dropdown-items-list) {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          padding: 8px 0;
+        }
+
+        :global(.profile-list-item) {
+          display: flex !important;
+          flex-direction: row !important;
+          align-items: center !important;
+          gap: 12px !important;
+          padding: 8px !important;
+          border-radius: 10px !important;
+          text-decoration: none !important;
+          transition: background 0.2s !important;
+          width: 100% !important;
+        }
+
+        :global(.profile-list-item:hover) {
+          background: #f8fafc !important;
+        }
+
+        :global(.item-icon-box) {
+          width: 32px;
+          height: 32px;
           border-radius: 8px;
-          transition: all 0.2s ease;
-          background: transparent;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
         }
 
-        .dropdown-item:hover {
-          background: rgba(0, 0, 0, 0.03);
-          color: #121212;
+        :global(.settings-box) {
+          background: #e0e7ff;
         }
 
-        .logout-btn {
-          color: #dc2626;
+        :global(.orders-box) {
+          background: #fef3c7;
         }
 
-        .logout-btn:hover {
-          background: rgba(220, 38, 38, 0.05);
-          color: #dc2626;
+        :global(.addresses-box) {
+          background: #dcfce7;
+        }
+
+        :global(.logout-box) {
+          background: #fee2e2;
+        }
+
+        :global(.item-title) {
+          font-size: 13px !important;
+          font-weight: 600 !important;
+          color: #1e293b !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          display: inline-block !important;
+        }
+
+        :global(.profile-logout-footer) {
+          border-top: 1px solid #f1f5f9;
+          padding-top: 10px;
+        }
+
+        :global(.profile-logout-item) {
+          display: flex !important;
+          flex-direction: row !important;
+          align-items: center !important;
+          gap: 12px !important;
+          padding: 8px !important;
+          border-radius: 10px !important;
+          width: 100% !important;
+          border: none !important;
+          background: transparent !important;
+          text-align: left !important;
+          cursor: pointer !important;
+          transition: background 0.2s !important;
+        }
+
+        :global(.profile-logout-item:hover) {
+          background: #fee2e2 !important;
+        }
+
+        :global(.logout-title) {
+          color: #dc2626 !important;
         }
 
         /* Mobile Layout */

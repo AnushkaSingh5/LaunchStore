@@ -163,7 +163,7 @@ export default function CreatorWallet() {
     <div className="wallet-page">
       <div className="page-header">
         <div className="header-text">
-          <h1>Creator Wallet</h1>
+          <h1>Seller Wallet</h1>
           <p>Review ledger transactions, track withdrawals, and inspect sales credits.</p>
         </div>
         <button 

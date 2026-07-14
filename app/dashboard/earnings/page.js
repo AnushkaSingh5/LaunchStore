@@ -103,7 +103,7 @@ export default function EarningsPage() {
     { field: 'orderId', label: 'ORDER ID', render: (row) => <span style={{ fontWeight: 700, fontFamily: 'monospace' }}>#{row.orderId}</span> },
     { field: 'date', label: 'DATE', render: (row) => <span className="text-secondary">{row.date}</span> },
     { field: 'orderAmount', label: 'ORDER AMOUNT', render: (row) => <span>₹{parseFloat(row.orderAmount).toLocaleString()}</span> },
-    { field: 'creatorAmount', label: 'CREATOR AMOUNT', render: (row) => <span className="text-green font-bold">₹{parseFloat(row.creatorAmount).toLocaleString()}</span> },
+    { field: 'creatorAmount', label: 'SELLER AMOUNT', render: (row) => <span className="text-green font-bold">₹{parseFloat(row.creatorAmount).toLocaleString()}</span> },
     { 
       field: 'status', 
       label: 'STATUS', 
@@ -141,7 +141,7 @@ export default function EarningsPage() {
     <div className="creator-earnings-page">
       <div className="page-header">
         <div className="header-text">
-          <h1>Creator Earnings & Payouts</h1>
+          <h1>Seller Earnings & Payouts</h1>
           <p>Track your sales revenues, available balance, and withdrawal requests.</p>
         </div>
         <button 

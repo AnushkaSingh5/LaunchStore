@@ -95,7 +95,7 @@ export default function DashboardOverview() {
   const router = useRouter();
   const { products, categories, orders, customers, loading } = useDashboard();
   const { profile, store, refreshProfile, refreshStore } = useAuth();
-  const creatorName = profile?.name || 'Creator';
+  const creatorName = profile?.name || 'Seller';
   
   const [timeframe, setTimeframe] = useState('Last 7 Days');
   const [isTimeframeOpen, setIsTimeframeOpen] = useState(false);

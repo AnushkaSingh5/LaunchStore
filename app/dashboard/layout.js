@@ -38,7 +38,7 @@ function CreatorDashboardGuard({ children }) {
         <div className="glow-bg"></div>
         <div className="error-card fade-in">
           <div className="error-icon">⚠️</div>
-          <h2>Creator Authorization Timeout</h2>
+          <h2>Seller Authorization Timeout</h2>
           <p>We are experiencing unexpected delays communicating with the storefront platform database. This can be caused by local ad-blockers, network firewalls, or intermittent connectivity.</p>
           <div className="btn-group">
             <button className="retry-btn" onClick={retryAuth}>Retry Connection</button>
@@ -210,7 +210,7 @@ function CreatorDashboardGuard({ children }) {
         <div className="error-card fade-in">
           <div className="error-icon">🔒</div>
           <h2>Access Denied</h2>
-          <p>This panel is designated for store creators. You are currently logged in as a <strong>{role}</strong> ({user.email}).</p>
+          <p>This panel is designated for store sellers. You are currently logged in as a <strong>{role}</strong> ({user.email}).</p>
           <div className="btn-group">
             <button className="retry-btn" onClick={handleSignOut}>Sign Out & Switch Account</button>
             <button className="secondary-btn" onClick={() => router.push('/')}>Return to Storefront</button>
