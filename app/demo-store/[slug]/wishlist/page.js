@@ -186,12 +186,10 @@ export default function WishlistPage({ params }) {
           <span className="current">Wishlist</span>
         </div>
 
-        {/* Header Block */}
-        <div className="wishlist-header-row">
+        {/* Header Block *        <div className="wishlist-header-row">
           <div className="header-text-col">
             <h1 className="wishlist-title">
-              My Wishlist 
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="title-heart-icon"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+              My Wishlist ♡
             </h1>
             <p className="wishlist-subtitle">Items you love, all in one place.</p>
           </div>
@@ -243,7 +241,17 @@ export default function WishlistPage({ params }) {
                 return 10 + (product.id % 20);
               };
 
+              // Category count badge (4 ct, 3 ct, 5 ct, etc.)
+              const getCategoryCount = (name, price) => {
+                const cleanName = (name || '').toLowerCase();
+                if (cleanName.includes('kettle') || price === 50) return '5 ct';
+                if (cleanName.includes('organizer') || price === 40) return '3 ct';
+                if (cleanName.includes('espresso') || price === 122) return '4 ct';
+                return '1 ct';
+              };
+
               const reviewsCount = getReviewsCount(product.name, displayPrice);
+              const categoryCount = getCategoryCount(product.name, displayPrice);
               const isOutOfStock = product.stock === 0;
 
               // Link to product details
@@ -253,7 +261,7 @@ export default function WishlistPage({ params }) {
 
               return (
                 <div key={product.id} className="wishlist-item-card">
-                  {/* Left Column: Image with red heart badge */}
+                  {/* Image with category badge and red heart icon overlay */}
                   <div className="item-image-wrapper">
                     <Link href={productLink}>
                       <img 
@@ -265,38 +273,43 @@ export default function WishlistPage({ params }) {
                         }}
                       />
                     </Link>
+                    <span className="item-count-badge">{categoryCount}</span>
                     <button 
                       className="heart-remove-badge"
                       onClick={() => toggleWishlist(product)}
                       title="Remove from Wishlist"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="#ef4444" stroke="#ef4444" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="#ef4444" stroke="#ef4444" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
                     </button>
                   </div>
 
-                  {/* Middle Column: Title, rating, category */}
-                  <div className="item-details-col">
-                    <Link href={productLink} className="item-title-link">
-                      <h3 className="item-title">{product.name}</h3>
-                    </Link>
-                    <div className="item-rating-row">
-                      <span className="star-symbol">★</span>
-                      <span className="rating-score">{product.rating || '4.3'}</span>
-                      <span className="reviews-count">({reviewsCount})</span>
+                  {/* Title & Info Block */}
+                  <div className="card-info-block">
+                    <div className="title-price-row">
+                      <Link href={productLink} className="item-title-link">
+                        <h3 className="item-title">{product.name}</h3>
+                      </Link>
+                      <span className="item-price">₹{displayPrice.toLocaleString()}</span>
                     </div>
-                    <span className="item-category-tag">{product.category || 'Kitchen & Dining'}</span>
+
+                    <div className="rating-stock-row">
+                      <div className="item-rating-row">
+                        <span className="star-symbol">★</span>
+                        <span className="rating-score">{product.rating || '4.3'}</span>
+                        <span className="reviews-count">({reviewsCount})</span>
+                      </div>
+                      <span className={`item-stock-status ${isOutOfStock ? 'oos' : 'in-stock'}`}>
+                        {isOutOfStock ? 'Out of Stock' : 'In Stock'}
+                      </span>
+                    </div>
+
+                    <div className="category-tag-row">
+                      <span className="item-category-tag">{product.category || 'Kitchen & Dining'}</span>
+                    </div>
                   </div>
 
-                  {/* Price / Stock Column */}
-                  <div className="item-price-stock-col">
-                    <span className="item-price">₹{displayPrice.toLocaleString()}</span>
-                    <span className={`item-stock-status ${isOutOfStock ? 'oos' : 'in-stock'}`}>
-                      {isOutOfStock ? 'Out of Stock' : 'In Stock'}
-                    </span>
-                  </div>
-
-                  {/* Right Column: Actions */}
-                  <div className="item-actions-col">
+                  {/* Actions Block */}
+                  <div className="card-actions-block">
                     {isOutOfStock ? (
                       <button className="notify-me-btn" onClick={() => alert(`We will notify you when ${product.name} is back in stock!`)}>
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
@@ -308,9 +321,8 @@ export default function WishlistPage({ params }) {
                         Add to Cart
                       </button>
                     )}
-                    <button className="remove-item-text-btn" onClick={() => toggleWishlist(product)}>
-                      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                      Remove
+                    <button className="remove-item-trash-btn" onClick={() => toggleWishlist(product)} title="Remove">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                     </button>
                   </div>
                 </div>
@@ -322,7 +334,25 @@ export default function WishlistPage({ params }) {
             <div className="empty-icon-heart">❤️</div>
             <h2>Your wishlist is empty</h2>
             <p>Explore our collection and add items you love to your wishlist.</p>
-            <Link href={`/demo-store/${slug}`} className="explore-catalog-btn">Go to Home</Link>
+            <Link 
+              href={isDemo ? `/demo-store/${slug}` : `/store/${slug}`} 
+              className="explore-catalog-btn"
+              style={{
+                display: 'inline-block',
+                background: '#121212',
+                color: '#ffffff',
+                padding: '12px 28px',
+                borderRadius: '12px',
+                fontSize: '14px',
+                fontWeight: '700',
+                textDecoration: 'none',
+                transition: 'all 0.2s ease',
+                boxShadow: '0 4px 12px rgba(18, 18, 18, 0.08)',
+                cursor: 'pointer'
+              }}
+            >
+              Go to Home
+            </Link>
           </div>
         )}
 
@@ -339,7 +369,7 @@ export default function WishlistPage({ params }) {
         }
 
         .wishlist-container {
-          max-width: 1040px;
+          max-width: 1240px;
           margin: 0 auto;
           width: 100%;
           padding: 0 24px 80px;
@@ -515,87 +545,124 @@ export default function WishlistPage({ params }) {
 
         /* Wishlist Items list */
         .wishlist-items-list {
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 32px 24px;
         }
 
         .wishlist-item-card {
           background: #ffffff;
-          border: 1px solid rgba(0, 0, 0, 0.02);
-          border-radius: 16px;
-          padding: 16px;
-          display: flex;
-          align-items: center;
-          gap: 24px;
-          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.01);
-          transition: transform 0.2s ease;
-        }
-
-        .wishlist-item-card:hover {
-          transform: translateY(-2px);
-        }
-
-        /* Left Column: Image wrapper */
-        .item-image-wrapper {
-          width: 100px;
-          height: 100px;
-          border-radius: 12px;
-          position: relative;
+          border-radius: 20px;
+          border: 1px solid rgba(0, 0, 0, 0.04);
           overflow: hidden;
-          background: #FAF8F5;
-          flex-shrink: 0;
+          display: flex;
+          flex-direction: column;
+          transition: transform 0.2s, box-shadow 0.2s;
         }
-
+        
+        .wishlist-item-card:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 12px 30px rgba(0, 0, 0, 0.04);
+        }
+        
+        .item-image-wrapper {
+          position: relative;
+          width: 100%;
+          height: 260px;
+          overflow: hidden;
+        }
+        
         .item-img {
           width: 100%;
           height: 100%;
           object-fit: cover;
+          transition: transform 0.3s;
+        }
+        
+        .wishlist-item-card:hover .item-img {
+          transform: scale(1.03);
+        }
+        
+        /* item count badge (4 ct) bottom left */
+        .item-count-badge {
+          position: absolute;
+          bottom: 12px;
+          left: 12px;
+          background: rgba(18, 18, 18, 0.6);
+          backdrop-filter: blur(4px);
+          color: #ffffff;
+          font-size: 11px;
+          font-weight: 700;
+          padding: 4px 8px;
+          border-radius: 6px;
+          z-index: 1;
         }
 
+        /* heart remove badge top right */
         .heart-remove-badge {
           position: absolute;
-          top: 8px;
-          right: 8px;
-          width: 28px;
-          height: 28px;
+          top: 12px;
+          right: 12px;
+          width: 32px;
+          height: 32px;
           border-radius: 50%;
           background: #ffffff;
           border: none;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
           display: flex;
           align-items: center;
           justify-content: center;
           cursor: pointer;
-          color: #ef4444;
-          transition: transform 0.2s ease;
+          transition: transform 0.2s;
+          z-index: 2;
         }
-
+        
         .heart-remove-badge:hover {
           transform: scale(1.1);
         }
-
-        /* Middle Column: Details */
-        .item-details-col {
-          flex: 1;
+        
+        /* Card Info Block */
+        .card-info-block {
+          padding: 20px;
           display: flex;
           flex-direction: column;
-          gap: 4px;
-          min-width: 180px;
+          gap: 10px;
+          flex: 1;
         }
-
+        
+        .title-price-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 16px;
+        }
+        
         .item-title-link {
           text-decoration: none;
+          flex: 1;
         }
-
+        
         .item-title {
-          font-size: 16px;
-          font-weight: 600;
+          font-size: 15px;
+          font-weight: 700;
           color: #121212;
           margin: 0;
           line-height: 1.4;
+          font-family: 'Outfit', sans-serif;
         }
-
+        
+        .item-price {
+          font-size: 15px;
+          font-weight: 700;
+          color: #121212;
+        }
+        
+        .rating-stock-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        
         .item-rating-row {
           display: flex;
           align-items: center;
@@ -603,127 +670,108 @@ export default function WishlistPage({ params }) {
           font-size: 12px;
           color: #706f6c;
         }
-
+        
         .star-symbol {
-          color: #f59e0b;
+          color: #e2a537; /* Rating gold */
         }
-
+        
         .rating-score {
-          font-weight: 600;
-          color: #121212;
-        }
-
-        .reviews-count {
-          color: #a3a19e;
-        }
-
-        .item-category-tag {
-          font-size: 11px;
-          color: #706f6c;
-          background: #f0f2f5;
-          padding: 4px 10px;
-          border-radius: 40px;
-          width: fit-content;
-          font-weight: 600;
-          margin-top: 4px;
-        }
-
-        /* Price / Stock Column */
-        .item-price-stock-col {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-start;
-          gap: 6px;
-          width: 120px;
-          flex-shrink: 0;
-        }
-
-        .item-price {
-          font-size: 18px;
           font-weight: 700;
           color: #121212;
         }
-
+        
+        .reviews-count {
+          color: #888883;
+        }
+        
         .item-stock-status {
-          font-size: 12px;
-          font-weight: 750;
+          font-size: 11px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
         }
-
+        
         .item-stock-status.in-stock {
-          color: #16a34a;
+          color: #10b981;
         }
-
+        
         .item-stock-status.oos {
-          color: #dc2626;
+          color: #ef4444;
         }
-
-        /* Right Column: Actions */
-        .item-actions-col {
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-          width: 140px;
-          flex-shrink: 0;
-          align-items: center;
+        
+        .category-tag-row {
+          margin-top: 2px;
         }
-
-        .add-to-cart-btn {
-          width: 100%;
-          background: #121212;
-          color: #ffffff;
-          border: none;
-          padding: 10px 14px;
-          border-radius: 8px;
-          font-size: 13px;
+        
+        .item-category-tag {
+          font-size: 11px;
           font-weight: 600;
-          cursor: pointer;
-          display: inline-flex;
+          color: #706f6c;
+          background: #f0f2f5;
+          padding: 4px 10px;
+          border-radius: 30px;
+          display: inline-block;
+        }
+        
+        /* Card Actions Block */
+        .card-actions-block {
+          padding: 0 20px 20px;
+          display: flex;
+          gap: 10px;
+        }
+        
+        .add-to-cart-btn, .notify-me-btn {
+          flex: 1;
+          display: flex;
           align-items: center;
           justify-content: center;
           gap: 8px;
-          transition: all 0.2s ease;
+          height: 42px;
+          border-radius: 10px;
+          font-size: 13px;
+          font-weight: 700;
+          border: none;
+          cursor: pointer;
+          transition: all 0.2s;
         }
-
+        
+        .add-to-cart-btn {
+          background: #121212;
+          color: #ffffff;
+        }
+        
         .add-to-cart-btn:hover {
           background: #232724;
         }
-
+        
         .notify-me-btn {
-          width: 100%;
           background: #ffffff;
-          color: #121212;
           border: 1px solid rgba(0, 0, 0, 0.08);
-          padding: 10px 14px;
-          border-radius: 8px;
-          font-size: 13px;
-          font-weight: 600;
-          cursor: pointer;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          transition: all 0.2s ease;
+          color: #121212;
         }
-
+        
         .notify-me-btn:hover {
           background: #f0f2f5;
         }
-
-        .remove-item-text-btn {
-          background: transparent;
-          border: none;
+        
+        .remove-item-trash-btn {
+          width: 42px;
+          height: 42px;
+          border-radius: 10px;
+          background: #ffffff;
+          border: 1px solid rgba(0, 0, 0, 0.08);
           color: #706f6c;
-          font-size: 12px;
-          font-weight: 600;
-          cursor: pointer;
-          display: inline-flex;
+          display: flex;
           align-items: center;
-          gap: 4px;
-          transition: color 0.2s ease;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.2s;
         }
-
-        .remove-item-text-btn:hover {
+        
+        .remove-item-trash-btn:hover {
+          background: #fee2e2;
           color: #ef4444;
+          border-color: #fca5a5;
         }
 
         /* Empty State */
@@ -785,30 +833,119 @@ export default function WishlistPage({ params }) {
           box-shadow: 0 6px 18px rgba(18, 18, 18, 0.12) !important;
         }
 
+        /* Newsletter Banner Styling */
+        .newsletter-banner-section {
+          background: #F5EFE6; /* Cozy Warm Sand/Beige color */
+          border-radius: 24px;
+          padding: 24px 32px;
+          margin-top: 56px;
+          margin-bottom: 24px;
+        }
+        
+        .newsletter-banner-content {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 32px;
+        }
+        
+        .newsletter-left {
+          display: flex;
+          align-items: center;
+          gap: 20px;
+        }
+        
+        .mail-icon-circle {
+          width: 48px;
+          height: 48px;
+          border-radius: 50%;
+          background: #ffffff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #121212;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+          flex-shrink: 0;
+        }
+        
+        .newsletter-text h3 {
+          font-size: 18px;
+          font-weight: 700;
+          color: #121212;
+          margin: 0 0 4px 0;
+          font-family: 'Outfit', sans-serif;
+        }
+        
+        .newsletter-text p {
+          font-size: 13px;
+          color: #706f6c;
+          margin: 0;
+        }
+        
+        .newsletter-right {
+          display: flex;
+          align-items: center;
+          gap: 20px;
+          position: relative;
+        }
+        
+        .newsletter-form {
+          display: flex;
+          background: #ffffff;
+          border-radius: 50px;
+          padding: 4px 4px 4px 20px;
+          border: 1px solid rgba(0, 0, 0, 0.05);
+          width: 380px;
+        }
+        
+        .newsletter-input {
+          border: none;
+          outline: none;
+          background: transparent;
+          font-size: 13px;
+          color: #121212;
+          flex: 1;
+        }
+        
+        .newsletter-submit-btn {
+          background: #121212;
+          color: #ffffff;
+          border: none;
+          padding: 10px 24px;
+          border-radius: 40px;
+          font-size: 13px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        
+        .newsletter-submit-btn:hover {
+          background: #232724;
+        }
+        
+        .decorative-airplane {
+          color: #A39E93;
+          opacity: 0.8;
+          display: flex;
+          align-items: center;
+        }
+
         /* Responsive styling */
-        @media (max-width: 768px) {
-          .wishlist-item-card {
+        @media (max-width: 1024px) {
+          .wishlist-items-list {
+            grid-template-columns: repeat(2, 1fr);
+          }
+          .newsletter-banner-content {
             flex-direction: column;
             align-items: stretch;
-            gap: 16px;
+            gap: 24px;
           }
-          .item-price-stock-col {
+          .newsletter-form {
             width: 100%;
-            flex-direction: row;
-            justify-content: space-between;
-            align-items: center;
           }
-          .item-actions-col {
-            width: 100%;
-            flex-direction: row;
-            gap: 12px;
-          }
-          .add-to-cart-btn, .notify-me-btn {
-            flex: 1;
-          }
-          .remove-item-text-btn {
-            width: auto;
-          }
+        }
+        
+        @media (max-width: 768px) {
           .wishlist-header-row {
             flex-direction: column;
             align-items: flex-start;
@@ -820,6 +957,23 @@ export default function WishlistPage({ params }) {
           .share-wishlist-btn, .move-all-btn {
             flex: 1;
             justify-content: center;
+          }
+        }
+
+        @media (max-width: 600px) {
+          .wishlist-items-list {
+            grid-template-columns: 1fr;
+          }
+          .newsletter-banner-section {
+            padding: 20px;
+          }
+          .newsletter-left {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+          }
+          .decorative-airplane {
+            display: none;
           }
         }
       `}</style>

@@ -1146,7 +1146,7 @@ export default function StoreClient({ slug, initialStoreDetails, initialProducts
             gap: 20px;
             padding: 24px 32px;
           }
-          .catalog-header-main-row {
+           .catalog-header-main-row {
             flex-direction: column;
             align-items: stretch;
             gap: 16px;
@@ -1154,8 +1154,21 @@ export default function StoreClient({ slug, initialStoreDetails, initialProducts
           }
           .header-actions-col {
             width: 100%;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 12px;
+            padding: 12px 16px;
+          }
+          .sort-by-selector {
             justify-content: space-between;
-            padding: 8px 16px;
+            width: 100%;
+          }
+          .sort-select-wrapper {
+            flex: 1;
+            display: flex;
+          }
+          .sort-select-wrapper select {
+            width: 100%;
           }
           .catalog-title {
             font-size: 24px;

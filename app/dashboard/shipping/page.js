@@ -516,8 +516,8 @@ export default function CreatorShippingPage() {
                   onChange={(e) => handleRulesChange('shippingHandler', e.target.value)}
                   style={{ width: '100%', appearance: 'none', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', fontSize: '14px', color: '#1e293b', outline: 'none' }}
                 >
-                  <option value="platform">Platform Default Partner (Recommended)</option>
-                  <option value="manual">Creator Manual Fulfillment</option>
+                   <option value="platform">Platform Default Partner (Recommended)</option>
+                   <option value="manual">Manual fulfillment</option>
                 </select>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" style={{ position: 'absolute', right: '16px', pointerEvents: 'none' }}><polyline points="6 9 12 15 18 9"></polyline></svg>
               </div>
