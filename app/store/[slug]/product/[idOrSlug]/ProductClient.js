@@ -311,19 +311,47 @@ export default function ProductClient({ slug, initialStoreDetails, initialProduc
           </div>
         </div>
 
-        {relatedProducts.length > 0 && (
-          <section className="related-section">
-            <div className="section-header">
-              <h2 className="section-title">Related Products</h2>
-              <p className="section-subtitle">You might also like these pieces from the {product.category || 'collection'}.</p>
-            </div>
-            <div className="products-grid">
-              {relatedProducts.map(p => (
-                <ProductCard key={p.id} product={p} />
-              ))}
-            </div>
-          </section>
-        )}
+        {(() => {
+          const otherProducts = relatedProducts.filter(p => p.id !== product?.id);
+          const sameCategoryProducts = otherProducts.filter(p => p.category_id === product?.category_id);
+          const otherCategoryProducts = otherProducts.filter(p => p.category_id !== product?.category_id);
+
+          return (
+            <>
+              {sameCategoryProducts.length > 0 && (
+                <section className="related-section">
+                  <div className="section-header-left">
+                    <h2 className="section-title">Related Products</h2>
+                    <p className="section-subtitle">Similar products in the same category.</p>
+                  </div>
+                  <div className="vertical-scroll-wrapper">
+                    <div className="vertical-scroll-grid">
+                      {sameCategoryProducts.map(p => (
+                        <ProductCard key={p.id} product={p} />
+                      ))}
+                    </div>
+                  </div>
+                </section>
+              )}
+
+              {otherCategoryProducts.length > 0 && (
+                <section className="related-section" style={{ marginTop: '60px' }}>
+                  <div className="section-header-left">
+                    <h2 className="section-title">You May Also Like</h2>
+                    <p className="section-subtitle">Discover popular products from other categories.</p>
+                  </div>
+                  <div className="vertical-scroll-wrapper">
+                    <div className="vertical-scroll-grid">
+                      {otherCategoryProducts.map(p => (
+                        <ProductCard key={p.id} product={p} />
+                      ))}
+                    </div>
+                  </div>
+                </section>
+              )}
+            </>
+          );
+        })()}
       </main>
 
       <Footer storeName={storeDetails?.name} />
@@ -575,10 +603,50 @@ export default function ProductClient({ slug, initialStoreDetails, initialProduc
           color: var(--text-sub);
         }
 
-        .products-grid {
+        .section-header-left {
+          margin-bottom: 24px;
+          text-align: left;
+        }
+
+        .related-section {
+          margin-top: 40px;
+        }
+
+        .vertical-scroll-wrapper {
+          max-height: 480px;
+          overflow-y: auto;
+          scrollbar-width: none; /* Hide scrollbar for Firefox */
+          -ms-overflow-style: none;  /* Hide scrollbar for IE/Edge */
+          padding: 8px 4px;
+        }
+
+        .vertical-scroll-wrapper::-webkit-scrollbar {
+          display: none; /* Hide scrollbar for Chrome/Safari/Opera */
+        }
+
+        .vertical-scroll-grid {
           display: grid;
           grid-template-columns: repeat(4, 1fr);
           gap: 24px;
+        }
+
+        @media (max-width: 1024px) {
+          .vertical-scroll-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+          .vertical-scroll-wrapper {
+            max-height: 960px;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .vertical-scroll-grid {
+            grid-template-columns: 1fr;
+            gap: 16px;
+          }
+          .vertical-scroll-wrapper {
+            max-height: 500px;
+          }
         }
 
         .loading-screen, .error-screen {
@@ -596,9 +664,7 @@ export default function ProductClient({ slug, initialStoreDetails, initialProduc
             gap: 32px;
             padding: 30px;
           }
-          .products-grid {
-            grid-template-columns: repeat(2, 1fr);
-          }
+          /* products-grid styling removed */
         }
 
         @media (max-width: 768px) {

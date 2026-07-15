@@ -79,7 +79,7 @@ export default async function ProductDetailsPage({ params }) {
       }
 
       if (product) {
-        relatedProducts = await productService.getRelatedProducts(storeDetails.id, product.category, product.id);
+        relatedProducts = await productService.getProductsByStore(storeDetails.id, false);
       }
     }
   } catch (error) {
