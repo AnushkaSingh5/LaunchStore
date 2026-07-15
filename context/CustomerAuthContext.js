@@ -27,7 +27,7 @@ export function CustomerAuthProvider({ children }) {
         .eq('id', authId)
         .maybeSingle();
 
-      if (userProfile && userProfile.role === 'admin') {
+      if (userProfile && userProfile.role !== 'customer') {
         console.log(`[LaunchCart - CustomerAuth] User role is: ${userProfile.role}. Skipping customer profile loading.`);
         setCustomerProfile(null);
         return { success: true, profile: null };

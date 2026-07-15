@@ -20,6 +20,7 @@ const icons = {
   Profile: <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>,
   Wallet: <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"></path><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"></path><path d="M18 12a2 2 0 0 0 0 4h4v-4z"></path></svg>,
   Shipping: <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>,
+  Reviews: <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>,
 };
 
 export default function Sidebar({ isOpen, onClose, isCollapsed, onToggle }) {
@@ -75,6 +76,7 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggle }) {
     { label: 'Overview', path: '/dashboard', icon: icons.Overview, color: '#8b5cf6' },
     { label: 'Store Settings', path: '/dashboard/settings', icon: icons.Settings, color: '#a78bfa' },
     { label: 'Products', path: '/dashboard/products', icon: icons.Products, color: '#f97316' },
+    { label: 'Reviews', path: '/dashboard/reviews', icon: icons.Reviews, color: '#f43f5e' },
     { label: 'Categories', path: '/dashboard/categories', icon: icons.Categories, color: '#eab308' },
     { label: 'Coupons', path: '/dashboard/coupons', icon: icons.Coupons, color: '#ec4899' },
     { label: 'Orders', path: '/dashboard/orders', icon: icons.Orders, color: '#a855f7' },

@@ -1,5 +1,20 @@
 - `[x]` Redesign `app/store/[slug]/products/ProductsClient.js` to match the mockup layout: replace the dark banner section with a clean title header, display star rating filter pills instead of categories, and integrate the total product count and sorting controls next to the title.
-- `[x]` Redesign `components/ProductCard.js`: position the rating row (`★ 4.3 (reviewsCount)`) below the name, place the price below the rating, and style the "+" and "->" arrow action buttons.
+- `[x]` Database Migration & Schema Alterations
+  - `[x]` Create `scratch/reviews_migration.sql` with tables, triggers, and RLS
+  - `[x]` Create `scratch/apply-reviews-migration.js` script to run SQL via RPC
+  - `[x]` Execute migration script and verify database tables are active
+- `[x]` Storefront Integration
+  - `[x]` Modify `components/ProductCard.js` to render dynamic stars and review count
+  - `[x]` Modify `app/store/[slug]/product/[idOrSlug]/ProductClient.js`
+    - `[x]` Render dynamic stars/rating score under product name
+    - `[x]` Build tabbed layout for Description, Specifications, Shipping, Return Policy
+    - `[x]` Build review summary section (ratings distribution, animated progress bars)
+    - `[x]` Build verification and eligibility checks (order validation)
+    - `[x]` Build review submission form (rating stars, title, text, image previews & uploads)
+    - `[x]` Build reviews list (sorting, filtering, avatars, helpful counts, reports, vendor response, edit/delete)
+- `[x]` Seller Dashboard Integration
+  - `[x]` Add "Reviews" link to `components/Dashboard/Sidebar.js`
+  - `[x]` Create `app/dashboard/reviews/page.js` for seller stats and replies
 - `[x]` Redesign `components/Footer.js`: add the envelope icon circle to the newsletter banner, add a description and circular social icons under the logo, restructure into a 4-column layout including supported payment badges, and style the legal links.
 - `[x]` Revert rating pills back to category filters with dynamic product count badges.
 - `[x]` Create Wishlist page (`app/store/[slug]/wishlist/page.js` and `app/demo-store/[slug]/wishlist/page.js`) containing:

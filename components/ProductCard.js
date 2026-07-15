@@ -45,6 +45,8 @@ export default function ProductCard({ product }) {
   };
 
   const reviewsCount = getReviewsCount(product.name, displayPrice);
+  const displayRating = product.average_rating !== undefined && product.average_rating !== null ? parseFloat(product.average_rating) : (parseFloat(product.rating) || 0);
+  const displayReviewCount = product.review_count !== undefined && product.review_count !== null ? parseInt(product.review_count) : reviewsCount;
 
   return (
     <div className={`premium-product-card ${product.stock === 0 ? 'out-of-stock-card' : ''}`}>
@@ -89,9 +91,11 @@ export default function ProductCard({ product }) {
         </Link>
         
         <div className="rating-row">
-          <span className="star-symbol">★</span>
-          <span className="rating-score-num">{product.rating || '4.3'}</span>
-          <span className="reviews-count">({reviewsCount})</span>
+          <span className="star-symbol" style={{ letterSpacing: '1px' }}>
+            {'★'.repeat(Math.round(displayRating)) + '☆'.repeat(5 - Math.round(displayRating))}
+          </span>
+          <span className="rating-score-num" style={{ marginLeft: '4px' }}>{displayRating > 0 ? displayRating.toFixed(1) : '0.0'}</span>
+          <span className="reviews-count">({displayReviewCount})</span>
         </div>
 
         <div className="product-footer-row">

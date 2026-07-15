@@ -43,6 +43,7 @@ export default function AdminSidebar({ isOpen, onClose, isCollapsed, onToggle })
     { label: 'Products', path: '/admin/products', icon: icons.Products, color: '#f97316' },
     { label: 'Orders', path: '/admin/orders', icon: icons.Orders, color: '#a855f7' },
     { label: 'Customers', path: '/admin/customers', icon: icons.Customers, color: '#3b82f6' },
+    { label: 'Reviews', path: '/admin/reviews', icon: icons.Support, color: '#ec4899' },
     { label: 'Coupons', path: '/admin/coupons', icon: icons.Coupons, color: '#ec4899' },
     { label: 'Payouts', path: '/admin/payouts', icon: icons.Payouts, color: '#06b6d4' },
     { label: 'Shipping', path: '/admin/shipping', icon: icons.Shipping, color: '#14b8a6' },
