@@ -72,8 +72,21 @@ export default function ProductClient({ slug, initialStoreDetails, initialProduc
   const [activeLightboxImg, setActiveLightboxImg] = useState(null);
 
   // Specifications builder
-  const getProductSpecs = (productName) => {
-    const name = (productName || '').toLowerCase();
+  const getProductSpecs = (p) => {
+    if (!p) return [];
+    
+    // If the database has custom specifications defined, use those!
+    if (p.spec_dimensions || p.spec_material || p.spec_finish || p.spec_warranty || p.spec_origin) {
+      return [
+        { label: 'Dimensions', value: p.spec_dimensions || 'Standard size' },
+        { label: 'Material', value: p.spec_material || 'Premium sustainably sourced materials' },
+        { label: 'Finish', value: p.spec_finish || 'Satin matte protective coating' },
+        { label: 'Warranty', value: p.spec_warranty || '2 Year Manufacturer Warranty' },
+        { label: 'Origin', value: p.spec_origin || 'Designed & Crafted locally' }
+      ].filter(spec => spec.value);
+    }
+
+    const name = (p.name || '').toLowerCase();
     if (name.includes('chair') || name.includes('stool')) {
       return [
         { label: 'Dimensions', value: '55cm x 55cm x 85cm' },
@@ -720,7 +733,7 @@ export default function ProductClient({ slug, initialStoreDetails, initialProduc
               <div className="tab-pane specifications-pane fade-in">
                 <table className="specs-table">
                   <tbody>
-                    {getProductSpecs(product.name).map((spec, idx) => (
+                    {getProductSpecs(product).map((spec, idx) => (
                       <tr key={idx}>
                         <td className="spec-label">{spec.label}</td>
                         <td className="spec-value">{spec.value}</td>
@@ -732,24 +745,40 @@ export default function ProductClient({ slug, initialStoreDetails, initialProduc
             )}
             {activeTab === 'shipping' && (
               <div className="tab-pane fade-in">
-                <h3 className="pane-sub-title">Secure & Swift Logistics</h3>
-                <p style={{ color: 'var(--text-sub)', marginBottom: '16px' }}>All orders are processed and handed over to standard premium courier networks within 24 hours of confirmation.</p>
-                <ul className="policy-list">
-                  <li><strong>Standard Shipping:</strong> Delivered in 3-5 business days. Free for this product.</li>
-                  <li><strong>Express Shipping:</strong> Delivered in 1-2 business days (if selected at checkout).</li>
-                  <li><strong>Transit Safety:</strong> Fully insured shipments with custom packaging to prevent breakages.</li>
-                </ul>
+                {product.shipping_details ? (
+                  <p style={{ color: 'var(--text-sub)', whiteSpace: 'pre-wrap', lineHeight: '1.8', fontSize: '15px' }}>
+                    {product.shipping_details}
+                  </p>
+                ) : (
+                  <>
+                    <h3 className="pane-sub-title">Secure & Swift Logistics</h3>
+                    <p style={{ color: 'var(--text-sub)', marginBottom: '16px' }}>All orders are processed and handed over to standard premium courier networks within 24 hours of confirmation.</p>
+                    <ul className="policy-list">
+                      <li><strong>Standard Shipping:</strong> Delivered in 3-5 business days. Free for this product.</li>
+                      <li><strong>Express Shipping:</strong> Delivered in 1-2 business days (if selected at checkout).</li>
+                      <li><strong>Transit Safety:</strong> Fully insured shipments with custom packaging to prevent breakages.</li>
+                    </ul>
+                  </>
+                )}
               </div>
             )}
             {activeTab === 'returns' && (
               <div className="tab-pane fade-in">
-                <h3 className="pane-sub-title">7-Day Return & Replacement Policy</h3>
-                <p style={{ color: 'var(--text-sub)', marginBottom: '16px' }}>We stand behind the craftsmanship of our products. If you are not completely satisfied, we offer a hassle-free return window.</p>
-                <ul className="policy-list">
-                  <li>Items must be returned in their original packaging and unused condition.</li>
-                  <li>Refunds are processed to the original payment source within 3-5 days after warehouse validation.</li>
-                  <li>In case of manufacturing defects, contact our support with unboxing images for instant replacements.</li>
-                </ul>
+                {product.return_policy ? (
+                  <p style={{ color: 'var(--text-sub)', whiteSpace: 'pre-wrap', lineHeight: '1.8', fontSize: '15px' }}>
+                    {product.return_policy}
+                  </p>
+                ) : (
+                  <>
+                    <h3 className="pane-sub-title">7-Day Return & Replacement Policy</h3>
+                    <p style={{ color: 'var(--text-sub)', marginBottom: '16px' }}>We stand behind the craftsmanship of our products. If you are not completely satisfied, we offer a hassle-free return window.</p>
+                    <ul className="policy-list">
+                      <li>Items must be returned in their original packaging and unused condition.</li>
+                      <li>Refunds are processed to the original payment source within 3-5 days after warehouse validation.</li>
+                      <li>In case of manufacturing defects, contact our support with unboxing images for instant replacements.</li>
+                    </ul>
+                  </>
+                )}
               </div>
             )}
           </div>

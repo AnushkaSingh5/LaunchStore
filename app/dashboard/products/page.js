@@ -33,7 +33,6 @@ export default function ProductsPage() {
   });
 
   // Product Form State
-  const [editingProduct, setEditingProduct] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -45,10 +44,19 @@ export default function ProductsPage() {
     seo_description: '',
     og_title: '',
     og_description: '',
-    canonical_url: ''
+    canonical_url: '',
+    spec_dimensions: 'Standard size',
+    spec_material: 'Premium sustainably sourced materials',
+    spec_finish: 'Satin matte protective coating',
+    spec_warranty: '2 Year Manufacturer Warranty',
+    spec_origin: 'Designed & Crafted locally',
+    shipping_details: 'Secure & Swift Logistics\n\nAll orders are processed and handed over to standard premium courier networks within 24 hours of confirmation.\n\n- Standard Shipping: Delivered in 3-5 business days. Free for this product.\n- Express Shipping: Delivered in 1-2 business days (if selected at checkout).\n- Transit Safety: Fully insured shipments with custom packaging to prevent breakages.',
+    return_policy: '7-Day Return & Replacement Policy\n\nWe stand behind the craftsmanship of our products. If you are not completely satisfied, we offer a hassle-free return window.\n\n- Items must be returned in their original packaging and unused condition.\n- Refunds are processed to the original payment source within 3-5 days after warehouse validation.\n- In case of manufacturing defects, contact our support with unboxing images for instant replacements.'
   });
 
   const imageInputRef = useRef(null);
+
+  const [editingProduct, setEditingProduct] = useState(null);
 
   const handleEditClick = (product) => {
     setEditingProduct(product);
@@ -63,7 +71,14 @@ export default function ProductsPage() {
       seo_description: product.seo_description || '',
       og_title: product.og_title || '',
       og_description: product.og_description || '',
-      canonical_url: product.canonical_url || ''
+      canonical_url: product.canonical_url || '',
+      spec_dimensions: product.spec_dimensions || '',
+      spec_material: product.spec_material || '',
+      spec_finish: product.spec_finish || '',
+      spec_warranty: product.spec_warranty || '',
+      spec_origin: product.spec_origin || '',
+      shipping_details: product.shipping_details || '',
+      return_policy: product.return_policy || ''
     });
     setProductImages(product.images || [product.image]);
     setIsModalOpen(true);
@@ -95,7 +110,14 @@ export default function ProductsPage() {
       seo_description: formData.seo_description || null,
       og_title: formData.og_title || null,
       og_description: formData.og_description || null,
-      canonical_url: formData.canonical_url || null
+      canonical_url: formData.canonical_url || null,
+      spec_dimensions: formData.spec_dimensions || null,
+      spec_material: formData.spec_material || null,
+      spec_finish: formData.spec_finish || null,
+      spec_warranty: formData.spec_warranty || null,
+      spec_origin: formData.spec_origin || null,
+      shipping_details: formData.shipping_details || null,
+      return_policy: formData.return_policy || null
     };
 
     if (editingProduct) {
@@ -140,7 +162,14 @@ export default function ProductsPage() {
       seo_description: '',
       og_title: '',
       og_description: '',
-      canonical_url: ''
+      canonical_url: '',
+      spec_dimensions: 'Standard size',
+      spec_material: 'Premium sustainably sourced materials',
+      spec_finish: 'Satin matte protective coating',
+      spec_warranty: '2 Year Manufacturer Warranty',
+      spec_origin: 'Designed & Crafted locally',
+      shipping_details: 'Secure & Swift Logistics\n\nAll orders are processed and handed over to standard premium courier networks within 24 hours of confirmation.\n\n- Standard Shipping: Delivered in 3-5 business days. Free for this product.\n- Express Shipping: Delivered in 1-2 business days (if selected at checkout).\n- Transit Safety: Fully insured shipments with custom packaging to prevent breakages.',
+      return_policy: '7-Day Return & Replacement Policy\n\nWe stand behind the craftsmanship of our products. If you are not completely satisfied, we offer a hassle-free return window.\n\n- Items must be returned in their original packaging and unused condition.\n- Refunds are processed to the original payment source within 3-5 days after warehouse validation.\n- In case of manufacturing defects, contact our support with unboxing images for instant replacements.'
     });
     setProductImages([]);
   };
@@ -620,6 +649,82 @@ export default function ProductsPage() {
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Product Tabs Customization Section */}
+          <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '16px', marginTop: '16px' }}>
+            <h3 style={{ fontSize: '14px', fontWeight: '800', color: '#1e293b', marginBottom: '12px' }}>Product Tabs (Specifications, Shipping & Returns)</h3>
+            
+            <div className="form-row">
+              <div className="form-group">
+                <label>Dimensions</label>
+                <input 
+                  type="text" 
+                  placeholder="e.g. Standard size, 55cm x 55cm x 85cm" 
+                  value={formData.spec_dimensions}
+                  onChange={(e) => setFormData({...formData, spec_dimensions: e.target.value})}
+                />
+              </div>
+              <div className="form-group">
+                <label>Material</label>
+                <input 
+                  type="text" 
+                  placeholder="e.g. Solid Oak Wood & Premium Fabric" 
+                  value={formData.spec_material}
+                  onChange={(e) => setFormData({...formData, spec_material: e.target.value})}
+                />
+              </div>
+            </div>
+
+            <div className="form-row" style={{ marginTop: '8px' }}>
+              <div className="form-group">
+                <label>Finish</label>
+                <input 
+                  type="text" 
+                  placeholder="e.g. Satin matte protective coating" 
+                  value={formData.spec_finish}
+                  onChange={(e) => setFormData({...formData, spec_finish: e.target.value})}
+                />
+              </div>
+              <div className="form-group">
+                <label>Warranty</label>
+                <input 
+                  type="text" 
+                  placeholder="e.g. 2 Year Manufacturer Warranty" 
+                  value={formData.spec_warranty}
+                  onChange={(e) => setFormData({...formData, spec_warranty: e.target.value})}
+                />
+              </div>
+              <div className="form-group">
+                <label>Origin</label>
+                <input 
+                  type="text" 
+                  placeholder="e.g. Handcrafted in India" 
+                  value={formData.spec_origin}
+                  onChange={(e) => setFormData({...formData, spec_origin: e.target.value})}
+                />
+              </div>
+            </div>
+
+            <div className="form-group" style={{ marginTop: '8px' }}>
+              <label>Shipping Details (Custom text or list)</label>
+              <textarea 
+                placeholder="Enter standard shipping policies, delivery timelines, carrier specifications..." 
+                rows="3"
+                value={formData.shipping_details}
+                onChange={(e) => setFormData({...formData, shipping_details: e.target.value})}
+              ></textarea>
+            </div>
+
+            <div className="form-group" style={{ marginTop: '8px' }}>
+              <label>Return Policy (Custom text or list)</label>
+              <textarea 
+                placeholder="Enter refund windows, item condition requirements, defect policies..." 
+                rows="3"
+                value={formData.return_policy}
+                onChange={(e) => setFormData({...formData, return_policy: e.target.value})}
+              ></textarea>
+            </div>
           </div>
 
           {/* SEO Optimization Section */}

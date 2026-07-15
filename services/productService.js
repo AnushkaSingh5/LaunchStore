@@ -264,6 +264,13 @@ export const productService = {
       og_title: productInput.og_title || null,
       og_description: productInput.og_description || null,
       canonical_url: productInput.canonical_url || null,
+      spec_dimensions: productInput.spec_dimensions !== undefined ? productInput.spec_dimensions : undefined,
+      spec_material: productInput.spec_material !== undefined ? productInput.spec_material : undefined,
+      spec_finish: productInput.spec_finish !== undefined ? productInput.spec_finish : undefined,
+      spec_warranty: productInput.spec_warranty !== undefined ? productInput.spec_warranty : undefined,
+      spec_origin: productInput.spec_origin !== undefined ? productInput.spec_origin : undefined,
+      shipping_details: productInput.shipping_details !== undefined ? productInput.shipping_details : undefined,
+      return_policy: productInput.return_policy !== undefined ? productInput.return_policy : undefined,
     };
 
     console.log('[LaunchCart - ProductService] dbInput mapped:', dbInput);
@@ -342,6 +349,13 @@ export const productService = {
       og_title: updateInput.og_title,
       og_description: updateInput.og_description,
       canonical_url: updateInput.canonical_url,
+      spec_dimensions: updateInput.spec_dimensions,
+      spec_material: updateInput.spec_material,
+      spec_finish: updateInput.spec_finish,
+      spec_warranty: updateInput.spec_warranty,
+      spec_origin: updateInput.spec_origin,
+      shipping_details: updateInput.shipping_details,
+      return_policy: updateInput.return_policy,
     };
 
     // Filter undefined keys
