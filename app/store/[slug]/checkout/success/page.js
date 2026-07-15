@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { storeService } from '@/services/storeService';
 import { orderService } from '@/services/orderService';
+import { useStore } from '@/context/StoreContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 
@@ -13,6 +14,7 @@ export default function CheckoutSuccessPage({ params }) {
   const searchParams = useSearchParams();
   const orderId = searchParams.get('orderId');
   const router = useRouter();
+  const { removeCartItems } = useStore();
 
   const [storeDetails, setStoreDetails] = useState(null);
   const [orderDetails, setOrderDetails] = useState(null);
@@ -34,6 +36,14 @@ export default function CheckoutSuccessPage({ params }) {
         ]);
         setStoreDetails(store);
         setOrderDetails(order);
+
+        // Remove successfully purchased items from the cart
+        if (order && order.items && order.items.length > 0) {
+          const productIds = order.items.map(item => item.product_id);
+          removeCartItems(productIds).catch(err => {
+            console.warn('[SuccessPage] Failed to remove items from cart:', err);
+          });
+        }
 
         // Auto-sync tracking status if tracking number is present
         const awb = order?.awb_number || order?.tracking_number;

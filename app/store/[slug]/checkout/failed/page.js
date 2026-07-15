@@ -280,7 +280,7 @@ export default function CheckoutFailedPage({ params }) {
             >
               {retrying ? 'Loading Gateway...' : 'Retry Payment Now'}
             </button>
-            <Link href={`/store/${slug}`} className="secondary-btn">Cancel & Return</Link>
+            <Link href={`/store/${slug}/cart`} className="secondary-btn">Cancel</Link>
           </div>
         </div>
       </main>

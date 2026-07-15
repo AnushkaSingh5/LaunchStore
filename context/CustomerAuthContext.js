@@ -30,10 +30,13 @@ export function CustomerAuthProvider({ children }) {
       if (userProfile && userProfile.role === 'admin') {
         console.log(`[LaunchCart - CustomerAuth] User role is: ${userProfile.role}. Skipping customer profile loading.`);
         setCustomerProfile(null);
-        return null;
+        return { success: true, profile: null };
       }
     } catch (e) {
       console.warn('[LaunchCart - CustomerAuth] Failed to pre-check user profile role:', e);
+      if (e.message?.includes('fetch') || e.message?.includes('Network') || e.status === 0 || e.message === 'TypeError: fetch failed') {
+        throw e;
+      }
     }
 
     let userObj = userObject;
@@ -59,14 +62,10 @@ export function CustomerAuthProvider({ children }) {
           customerService.getCustomerProfileByAuthId(authId),
           timeoutPromise
         ]);
-        if (profileData) {
-          setCustomerProfile(profileData);
-          console.log("Profile fetch complete");
-          return profileData;
-        }
-
+        
+        setCustomerProfile(profileData || null);
         console.log("Profile fetch complete");
-        return null;
+        return { success: true, profile: profileData };
       } catch (err) {
         console.warn(`❌ [LaunchCart - CustomerAuth]: Error fetching customer profile (Attempt ${attempt}/${maxAttempts}):`, err.message || err);
         
@@ -77,10 +76,9 @@ export function CustomerAuthProvider({ children }) {
 
         const isTimeout = err.message === 'TimeoutError';
 
-        // Do not retry on pure timeout to keep startup responsive
         if (isTimeout) {
           console.log("Profile fetch complete");
-          return null;
+          throw err;
         }
 
         if (isJwtFuture && attempt < maxAttempts) {
@@ -89,11 +87,10 @@ export function CustomerAuthProvider({ children }) {
           continue;
         }
         console.log("Profile fetch complete");
-        return null;
+        throw err;
       }
     }
-    console.log("Profile fetch complete");
-    return null;
+    return { success: false, error: 'Max attempts reached' };
   };
 
   useEffect(() => {
@@ -121,12 +118,20 @@ export function CustomerAuthProvider({ children }) {
         console.log("Session restore complete");
 
         if (session && session.user && isSubscribed) {
-          const profileData = await fetchCustomerProfile(session.user.id, session.user);
-          if (profileData) {
+          try {
+            const result = await fetchCustomerProfile(session.user.id, session.user);
+            if (result && result.success) {
+              if (result.profile) {
+                setCustomer(session.user);
+              } else {
+                setCustomer(null);
+                setCustomerProfile(null);
+              }
+            }
+          } catch (err) {
+            console.warn('⚠️ [LaunchCart - CustomerAuth] Failed to load session profile due to network/timeout error:', err);
+            // Retain active auth session instead of logging out
             setCustomer(session.user);
-          } else {
-            setCustomer(null);
-            setCustomerProfile(null);
           }
         } else {
           setCustomer(null);
@@ -163,12 +168,14 @@ export function CustomerAuthProvider({ children }) {
 
         try {
           if (session && session.user) {
-            const profileData = await fetchCustomerProfile(session.user.id, session.user);
-            if (profileData) {
-              setCustomer(session.user);
-            } else {
-              setCustomer(null);
-              setCustomerProfile(null);
+            const result = await fetchCustomerProfile(session.user.id, session.user);
+            if (result && result.success) {
+              if (result.profile) {
+                setCustomer(session.user);
+              } else {
+                setCustomer(null);
+                setCustomerProfile(null);
+              }
             }
           } else {
             setCustomer(null);
@@ -176,6 +183,9 @@ export function CustomerAuthProvider({ children }) {
           }
         } catch (err) {
           console.warn('❌ [LaunchCart - CustomerAuth]: Auth state change error:', err);
+          if (session && session.user) {
+            setCustomer(session.user);
+          }
         }
       }, 0);
     });
@@ -198,13 +208,15 @@ export function CustomerAuthProvider({ children }) {
       if (error) throw error;
 
       // Verify the user is a registered customer
-      const profileData = await fetchCustomerProfile(data.user.id, data.user);
-      if (!profileData) {
+      const result = await fetchCustomerProfile(data.user.id, data.user);
+      if (result && result.success && !result.profile) {
         // If not a customer, log out immediately and throw error
         await supabaseClient.auth.signOut();
         setCustomer(null);
         setCustomerProfile(null);
         throw new Error('This account is not registered as a Customer. Please sign up or use a customer account.');
+      } else if (result && !result.success) {
+        throw new Error(result.error || 'Failed to authenticate customer. Please try again.');
       }
 
       setCustomer(data.user);
