@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useStore } from '@/context/StoreContext';
@@ -9,6 +9,7 @@ import StoreUnderReview from '@/components/StoreUnderReview';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
+import PageLoader from '@/components/PageLoader';
 
 export default function ProductClient({ slug, initialStoreDetails, initialProduct, initialRelatedProducts }) {
   const { addToCart } = useStore();
@@ -18,6 +19,23 @@ export default function ProductClient({ slug, initialStoreDetails, initialProduc
   const [storeDetails, setStoreDetails] = useState(initialStoreDetails);
   const [activeImage, setActiveImage] = useState(initialProduct?.image || initialProduct?.image_url);
   const router = useRouter();
+
+  const sameCatRef = useRef(null);
+  const otherCatRef = useRef(null);
+
+  const scrollContainer = (ref, direction) => {
+    if (ref.current) {
+      const scrollAmount = 300;
+      ref.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  const otherProducts = relatedProducts.filter(p => p.id !== product?.id);
+  const sameCategoryProducts = otherProducts.filter(p => p.category_id === product?.category_id);
+  const otherCategoryProducts = otherProducts.filter(p => p.category_id !== product?.category_id);
 
   useEffect(() => {
     setProduct(initialProduct);
@@ -219,7 +237,7 @@ export default function ProductClient({ slug, initialStoreDetails, initialProduc
             </div>
             {product.images && product.images.length > 1 && (
               <div className="thumbnails-grid">
-                {product.images.map((img, idx) => (
+                {product.images.slice(0, 3).map((img, idx) => (
                   <div 
                     key={idx} 
                     className={`thumbnail-item ${activeImage === img ? 'active' : ''}`}
@@ -228,6 +246,15 @@ export default function ProductClient({ slug, initialStoreDetails, initialProduc
                     <img src={img} alt={`Thumbnail ${idx + 1}`} />
                   </div>
                 ))}
+                {product.images.length > 3 && (
+                  <div 
+                    className={`thumbnail-item more-badge-item ${product.images.slice(3).includes(activeImage) ? 'active' : ''}`}
+                    onClick={() => setActiveImage(product.images[3])}
+                  >
+                    <img src={product.images[3]} alt="More images" />
+                    <div className="more-overlay">+{product.images.length - 3}</div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -244,9 +271,9 @@ export default function ProductClient({ slug, initialStoreDetails, initialProduc
               {product.stock === 0 ? (
                 <span className="stock-badge-detail out-of-stock">Out of Stock</span>
               ) : product.stock < 10 ? (
-                <span className="stock-badge-detail low-stock">Low Stock (Only {product.stock} items left)</span>
+                <span className="stock-badge-detail low-stock">Low Stock (Very few left)</span>
               ) : (
-                <span className="stock-badge-detail in-stock">In Stock ({product.stock} items available)</span>
+                <span className="stock-badge-detail in-stock">In Stock</span>
               )}
             </div>
 
@@ -271,7 +298,7 @@ export default function ProductClient({ slug, initialStoreDetails, initialProduc
                 <button 
                   onClick={() => {
                     if (product.stock !== undefined && quantity >= product.stock) {
-                      alert(`Only ${product.stock} items available.`);
+                      alert("You cannot add more of this item as it exceeds available stock.");
                       return;
                     }
                     setQuantity(quantity + 1);
@@ -301,7 +328,18 @@ export default function ProductClient({ slug, initialStoreDetails, initialProduc
             <div className="features">
               <div className="feature">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
-                <span>Free Shipping</span>
+                <span>
+                  {(() => {
+                    const shippingType = storeDetails?.theme_settings?.shippingType ?? 'flat';
+                    const flatFee = parseFloat(storeDetails?.theme_settings?.flatFee ?? 0);
+                    if (shippingType === 'flat') {
+                      return flatFee > 0 ? `₹${flatFee} Shipping` : 'Free Shipping';
+                    } else if (shippingType === 'calculated') {
+                      return 'Calculated Shipping';
+                    }
+                    return 'Free Shipping';
+                  })()}
+                </span>
               </div>
               <div className="feature">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
@@ -311,47 +349,77 @@ export default function ProductClient({ slug, initialStoreDetails, initialProduc
           </div>
         </div>
 
-        {(() => {
-          const otherProducts = relatedProducts.filter(p => p.id !== product?.id);
-          const sameCategoryProducts = otherProducts.filter(p => p.category_id === product?.category_id);
-          const otherCategoryProducts = otherProducts.filter(p => p.category_id !== product?.category_id);
+        {sameCategoryProducts.length > 0 && (
+          <section className="related-section related-products-carousel">
+            <div className="section-header-row">
+              <div className="section-header-left">
+                <h2 className="section-title">Related Products</h2>
+                <p className="section-subtitle">Similar products in the same category.</p>
+              </div>
+              <div className="carousel-arrows">
+                <button 
+                  type="button" 
+                  className="carousel-arrow-btn"
+                  onClick={() => scrollContainer(sameCatRef, 'left')}
+                  aria-label="Previous products"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
+                <button 
+                  type="button" 
+                  className="carousel-arrow-btn"
+                  onClick={() => scrollContainer(sameCatRef, 'right')}
+                  aria-label="Next products"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
+              </div>
+            </div>
+            <div className="carousel-scroll-container" ref={sameCatRef}>
+              {sameCategoryProducts.map(p => (
+                <div key={p.id} className="carousel-product-card-wrap">
+                  <ProductCard product={p} />
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
-          return (
-            <>
-              {sameCategoryProducts.length > 0 && (
-                <section className="related-section">
-                  <div className="section-header-left">
-                    <h2 className="section-title">Related Products</h2>
-                    <p className="section-subtitle">Similar products in the same category.</p>
-                  </div>
-                  <div className="vertical-scroll-wrapper">
-                    <div className="vertical-scroll-grid">
-                      {sameCategoryProducts.map(p => (
-                        <ProductCard key={p.id} product={p} />
-                      ))}
-                    </div>
-                  </div>
-                </section>
-              )}
-
-              {otherCategoryProducts.length > 0 && (
-                <section className="related-section" style={{ marginTop: '60px' }}>
-                  <div className="section-header-left">
-                    <h2 className="section-title">You May Also Like</h2>
-                    <p className="section-subtitle">Discover popular products from other categories.</p>
-                  </div>
-                  <div className="vertical-scroll-wrapper">
-                    <div className="vertical-scroll-grid">
-                      {otherCategoryProducts.map(p => (
-                        <ProductCard key={p.id} product={p} />
-                      ))}
-                    </div>
-                  </div>
-                </section>
-              )}
-            </>
-          );
-        })()}
+        {otherCategoryProducts.length > 0 && (
+          <section className="related-section other-products-carousel" style={{ marginTop: '10px' }}>
+            <div className="section-header-row">
+              <div className="section-header-left">
+                <h2 className="section-title">You May Also Like</h2>
+                <p className="section-subtitle">Discover popular products from other categories.</p>
+              </div>
+              <div className="carousel-arrows">
+                <button 
+                  type="button" 
+                  className="carousel-arrow-btn"
+                  onClick={() => scrollContainer(otherCatRef, 'left')}
+                  aria-label="Previous products"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
+                <button 
+                  type="button" 
+                  className="carousel-arrow-btn"
+                  onClick={() => scrollContainer(otherCatRef, 'right')}
+                  aria-label="Next products"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
+              </div>
+            </div>
+            <div className="carousel-scroll-container" ref={otherCatRef}>
+              {otherCategoryProducts.map(p => (
+                <div key={p.id} className="carousel-product-card-wrap">
+                  <ProductCard product={p} />
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
       </main>
 
       <Footer storeName={storeDetails?.name} />
@@ -363,17 +431,20 @@ export default function ProductClient({ slug, initialStoreDetails, initialProduc
         }
 
         .main-content {
-          padding-top: 140px;
-          padding-bottom: 80px;
+          padding-top: 100px;
+          padding-bottom: 40px;
         }
 
         .product-layout {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: 60px;
-          padding: 60px;
+          gap: 40px;
+          padding: 40px;
           background: var(--white);
-          margin-bottom: 80px;
+          margin-bottom: 10px;
+          max-width: 1000px;
+          margin-left: auto;
+          margin-right: auto;
         }
 
         .product-gallery .main-image {
@@ -442,36 +513,7 @@ export default function ProductClient({ slug, initialStoreDetails, initialProduc
           opacity: 1;
         }
 
-        .thumbnails-grid {
-          display: flex;
-          gap: 12px;
-          margin-top: 16px;
-          overflow-x: auto;
-          padding-bottom: 4px;
-        }
-
-        .thumbnail-item {
-          width: 70px;
-          height: 70px;
-          border-radius: var(--radius-sm);
-          overflow: hidden;
-          cursor: pointer;
-          border: 2px solid transparent;
-          transition: var(--transition-fast);
-          flex-shrink: 0;
-          background: var(--bg-main);
-        }
-
-        .thumbnail-item.active {
-          border-color: var(--accent);
-          transform: scale(0.95);
-        }
-
-        .thumbnail-item img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
+        /* Legacy thumbnail-grid styles removed */
 
         .breadcrumb {
           font-size: 13px;
@@ -586,11 +628,11 @@ export default function ProductClient({ slug, initialStoreDetails, initialProduc
         }
 
         .related-section {
-          margin-top: 40px;
+          margin-top: 10px;
         }
 
         .section-header {
-          margin-bottom: 40px;
+          margin-bottom: 30px;
           text-align: center;
         }
 
@@ -603,49 +645,193 @@ export default function ProductClient({ slug, initialStoreDetails, initialProduc
           color: var(--text-sub);
         }
 
-        .section-header-left {
+        .product-gallery {
+          position: relative;
+          width: 100%;
+        }
+
+        .product-gallery .main-image {
+          position: relative;
+          aspect-ratio: 1/1;
+          border-radius: var(--radius-md);
+          overflow: hidden;
+          background: var(--bg-main);
+          width: 100%;
+        }
+
+        .thumbnails-grid {
+          position: absolute;
+          top: 16px;
+          left: 16px;
+          z-index: 10;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          opacity: 0;
+          transform: translateX(-10px);
+          transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+          pointer-events: none;
+        }
+
+        .product-gallery:hover .thumbnails-grid {
+          opacity: 1;
+          transform: translateX(0);
+          pointer-events: auto;
+        }
+
+        .thumbnail-item {
+          position: relative;
+          width: 52px;
+          height: 52px;
+          border-radius: var(--radius-sm);
+          overflow: hidden;
+          cursor: pointer;
+          border: 2px solid rgba(255, 255, 255, 0.8);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+          transition: var(--transition-fast);
+          background: #ffffff;
+        }
+
+        .thumbnail-item.active {
+          border-color: var(--accent, #121212);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .more-overlay {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0, 0, 0, 0.4);
+          color: #ffffff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 700;
+          font-size: 13px;
+          border-radius: var(--radius-sm);
+        }
+
+        .section-header-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
           margin-bottom: 24px;
+        }
+
+        .section-header-left {
           text-align: left;
         }
 
-        .related-section {
-          margin-top: 40px;
+        .section-title {
+          font-size: 24px;
+          font-weight: 700;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          color: var(--text-main);
+          margin-bottom: 4px;
         }
 
-        .vertical-scroll-wrapper {
-          max-height: 480px;
-          overflow-y: auto;
-          scrollbar-width: none; /* Hide scrollbar for Firefox */
-          -ms-overflow-style: none;  /* Hide scrollbar for IE/Edge */
-          padding: 8px 4px;
+        .section-title::before {
+          content: '';
+          display: inline-block;
+          width: 5px;
+          height: 20px;
+          background-color: var(--accent, #121212);
+          border-radius: 10px;
         }
 
-        .vertical-scroll-wrapper::-webkit-scrollbar {
-          display: none; /* Hide scrollbar for Chrome/Safari/Opera */
+        .section-subtitle {
+          color: var(--text-sub);
+          font-size: 14px;
         }
 
-        .vertical-scroll-grid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
+        .carousel-arrows {
+          display: flex;
+          gap: 8px;
+        }
+
+        .carousel-arrow-btn {
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          border: 1px solid #e2e8f0;
+          background: #ffffff;
+          color: #121212;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .carousel-arrow-btn:hover {
+          background: #f8fafc;
+          border-color: #cbd5e1;
+        }
+
+        .carousel-scroll-container {
+          display: flex;
           gap: 24px;
+          overflow-x: auto;
+          scroll-behavior: smooth;
+          padding: 8px 4px 16px;
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+        }
+
+        .carousel-scroll-container::-webkit-scrollbar {
+          display: none;
+        }
+
+        .related-products-carousel .carousel-product-card-wrap {
+          flex: 0 0 calc(33.333% - 16px);
+          min-width: 280px;
+        }
+
+        .other-products-carousel .carousel-product-card-wrap {
+          flex: 0 0 calc(25% - 18px);
+          min-width: 280px;
         }
 
         @media (max-width: 1024px) {
-          .vertical-scroll-grid {
-            grid-template-columns: repeat(2, 1fr);
+          .product-gallery {
+            position: relative;
+            display: block;
+            width: 100%;
           }
-          .vertical-scroll-wrapper {
-            max-height: 960px;
+          .thumbnails-grid {
+            position: relative;
+            top: auto;
+            left: auto;
+            z-index: auto;
+            flex-direction: row;
+            width: 100%;
+            overflow-x: auto;
+            opacity: 1;
+            transform: none;
+            pointer-events: auto;
+            gap: 12px;
+            margin-top: 12px;
+          }
+          .thumbnail-item {
+            width: 60px;
+            height: 60px;
+            border: 2px solid #e2e8f0;
+            box-shadow: none;
+          }
+          .related-products-carousel .carousel-product-card-wrap,
+          .other-products-carousel .carousel-product-card-wrap {
+            flex: 0 0 calc(50% - 12px);
           }
         }
 
-        @media (max-width: 768px) {
-          .vertical-scroll-grid {
-            grid-template-columns: 1fr;
-            gap: 16px;
-          }
-          .vertical-scroll-wrapper {
-            max-height: 500px;
+        @media (max-width: 640px) {
+          .related-products-carousel .carousel-product-card-wrap,
+          .other-products-carousel .carousel-product-card-wrap {
+            flex: 0 0 100%;
           }
         }
 

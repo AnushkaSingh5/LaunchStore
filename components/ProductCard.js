@@ -34,7 +34,14 @@ export default function ProductCard({ product }) {
     if (cleanName.includes('kettle') || price === 50 || cleanName === '5p') return 15;
     if (cleanName.includes('organizer') || price === 40 || cleanName === '4p') return 11;
     if (cleanName.includes('pen') || price === 20 || cleanName === '2p') return 30;
-    return 10 + (product.id % 20);
+    
+    // Safe hash fallback for string IDs (UUIDs)
+    let hash = 0;
+    const strId = String(product.id || '');
+    for (let i = 0; i < strId.length; i++) {
+      hash += strId.charCodeAt(i);
+    }
+    return 10 + (hash % 40);
   };
 
   const reviewsCount = getReviewsCount(product.name, displayPrice);
@@ -54,7 +61,7 @@ export default function ProductCard({ product }) {
           {product.stock === 0 ? (
             <span className="stock-badge oos">Out of Stock</span>
           ) : product.stock > 0 && product.stock < 10 ? (
-            <span className="stock-badge low">Only {product.stock} left</span>
+            <span className="stock-badge low">Very few left</span>
           ) : (
             <>
               {product.trending && <span className="stock-badge bestseller">Bestseller</span>}
