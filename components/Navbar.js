@@ -289,7 +289,7 @@ export default function Navbar({ storeName, logoUrl }) {
 
         .navbar-wrapper.scrolled {
           padding: 16px 0;
-          background: rgba(250, 248, 245, 0.95);
+          background: rgba(248, 250, 252, 0.95);
           backdrop-filter: blur(12px);
           box-shadow: 0 4px 30px rgba(0, 0, 0, 0.02);
           border-bottom: 1px solid rgba(0, 0, 0, 0.03);
@@ -415,7 +415,7 @@ export default function Navbar({ storeName, logoUrl }) {
 
         .search-input:focus {
           outline: none;
-          background: #FAF8F5;
+          background: #f8fafc;
           border-color: #121212;
           box-shadow: 0 0 0 3px rgba(18, 18, 18, 0.05);
         }
@@ -810,7 +810,7 @@ export default function Navbar({ storeName, logoUrl }) {
 
         .mobile-search-active-input:focus {
           outline: none;
-          background: #FAF8F5;
+          background: #f8fafc;
           border-color: #121212;
           box-shadow: 0 0 0 3px rgba(18, 18, 18, 0.05);
         }

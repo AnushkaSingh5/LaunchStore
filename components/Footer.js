@@ -103,7 +103,7 @@ export default function Footer({ storeName, description }) {
 
       <style jsx>{`
         .footer-section-wrapper {
-          background: #FAF8F5;
+          background: #f8fafc;
           padding: 80px 0 40px;
           border-top: 1px solid rgba(0, 0, 0, 0.03);
           font-family: 'Outfit', sans-serif;
@@ -141,7 +141,7 @@ export default function Footer({ storeName, description }) {
           width: 56px;
           height: 56px;
           border-radius: 50%;
-          background: #FAF8F5;
+          background: #f8fafc;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -170,7 +170,7 @@ export default function Footer({ storeName, description }) {
 
         .newsletter-form-box {
           display: flex;
-          background: #FAF8F5;
+          background: #f8fafc;
           padding: 6px;
           border-radius: 40px;
           border: 1px solid rgba(0, 0, 0, 0.04);
@@ -424,7 +424,7 @@ export default function Footer({ storeName, description }) {
             box-shadow: none;
           }
           .newsletter-input {
-            background: #FAF8F5;
+            background: #f8fafc;
             border-radius: 30px;
             border: 1px solid rgba(0, 0, 0, 0.04);
             width: 100%;

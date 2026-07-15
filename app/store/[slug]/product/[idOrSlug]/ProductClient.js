@@ -1281,7 +1281,7 @@ export default function ProductClient({ slug, initialStoreDetails, initialProduc
 
       <style jsx>{`
         .product-details-page {
-          background: var(--bg-main);
+          background: #f8fafc;
           min-height: 100vh;
         }
 

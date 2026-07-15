@@ -512,7 +512,7 @@ export default function StoreClient({ slug, initialStoreDetails, initialProducts
 
       <style jsx>{`
         .dashboard-store {
-          background: #FAF8F5; /* Warm aesthetic cream background */
+          background: #f8fafc; /* Clean dashboard off-white background */
           min-height: 100vh;
           font-family: 'Outfit', sans-serif;
         }
