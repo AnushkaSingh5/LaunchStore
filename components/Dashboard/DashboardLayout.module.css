@@ -78,7 +78,8 @@
 .nav {
   flex: 1;
   padding: clamp(8px, 1.6vh, 20px) 12px;
-  overflow: hidden;
+  overflow-y: auto;
+  scrollbar-width: thin;
 }
 
 .nav ul {

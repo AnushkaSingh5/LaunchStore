@@ -1,24 +1,21 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { dashboardService } from '@/services/dashboardService';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useDashboard } from '@/context/DashboardContext';
 import Table from '@/components/UI/Table';
 import Button from '@/components/UI/Button';
-import Modal from '@/components/UI/Modal';
-import Input from '@/components/UI/Input';
 import Select from '@/components/UI/Select';
-import { useDashboard } from '@/context/DashboardContext';
 
 export default function ProductsPage() {
-  const { products, categories, loading, addProduct, updateProduct, deleteProduct } = useDashboard();
+  const router = useRouter();
+  const { products, categories, loading, deleteProduct } = useDashboard();
   
   console.log('[LaunchCart - ProductsPage] render values:', { 
     productsCount: products?.length, 
     categoriesCount: categories?.length, 
     loading 
   });
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [productImages, setProductImages] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   
@@ -32,146 +29,10 @@ export default function ProductsPage() {
     dateRange: 'all'
   });
 
-  // Product Form State
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    price: '',
-    stock: '',
-    category: '',
-    status: 'Published',
-    seo_title: '',
-    seo_description: '',
-    og_title: '',
-    og_description: '',
-    canonical_url: '',
-    spec_dimensions: 'Standard size',
-    spec_material: 'Premium sustainably sourced materials',
-    spec_finish: 'Satin matte protective coating',
-    spec_warranty: '2 Year Manufacturer Warranty',
-    spec_origin: 'Designed & Crafted locally',
-    shipping_details: 'Secure & Swift Logistics\n\nAll orders are processed and handed over to standard premium courier networks within 24 hours of confirmation.\n\n- Standard Shipping: Delivered in 3-5 business days. Free for this product.\n- Express Shipping: Delivered in 1-2 business days (if selected at checkout).\n- Transit Safety: Fully insured shipments with custom packaging to prevent breakages.',
-    return_policy: '7-Day Return & Replacement Policy\n\nWe stand behind the craftsmanship of our products. If you are not completely satisfied, we offer a hassle-free return window.\n\n- Items must be returned in their original packaging and unused condition.\n- Refunds are processed to the original payment source within 3-5 days after warehouse validation.\n- In case of manufacturing defects, contact our support with unboxing images for instant replacements.'
-  });
-
-  const imageInputRef = useRef(null);
-
-  const [editingProduct, setEditingProduct] = useState(null);
-
-  const handleEditClick = (product) => {
-    setEditingProduct(product);
-    setFormData({
-      name: product.name,
-      description: product.description || '',
-      price: product.price,
-      stock: product.stock,
-      category: product.category,
-      status: product.status,
-      seo_title: product.seo_title || '',
-      seo_description: product.seo_description || '',
-      og_title: product.og_title || '',
-      og_description: product.og_description || '',
-      canonical_url: product.canonical_url || '',
-      spec_dimensions: product.spec_dimensions || '',
-      spec_material: product.spec_material || '',
-      spec_finish: product.spec_finish || '',
-      spec_warranty: product.spec_warranty || '',
-      spec_origin: product.spec_origin || '',
-      shipping_details: product.shipping_details || '',
-      return_policy: product.return_policy || ''
-    });
-    setProductImages(product.images || [product.image]);
-    setIsModalOpen(true);
-  };
-
-  const handleSaveProduct = () => {
-    if (!formData.name || !formData.price) {
-      alert('Please fill in all required fields (Name and Price)');
-      return;
-    }
-
-    if (productImages.length === 0) {
-      alert('Please upload at least 1 product image.');
-      return;
-    }
-
-    if (productImages.length > 6) {
-      alert('You can upload a maximum of 6 images.');
-      return;
-    }
-
-    const productData = {
-      ...formData,
-      price: parseFloat(formData.price),
-      stock: parseInt(formData.stock) || 0,
-      image: productImages[0] || 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=800',
-      images: productImages,
-      seo_title: formData.seo_title || null,
-      seo_description: formData.seo_description || null,
-      og_title: formData.og_title || null,
-      og_description: formData.og_description || null,
-      canonical_url: formData.canonical_url || null,
-      spec_dimensions: formData.spec_dimensions || null,
-      spec_material: formData.spec_material || null,
-      spec_finish: formData.spec_finish || null,
-      spec_warranty: formData.spec_warranty || null,
-      spec_origin: formData.spec_origin || null,
-      shipping_details: formData.shipping_details || null,
-      return_policy: formData.return_policy || null
-    };
-
-    if (editingProduct) {
-      updateProduct(editingProduct.id, productData);
-    } else {
-      // Find the highest numerical ID among existing products
-      const numericalIds = products
-        .map(p => parseInt(p.id))
-        .filter(id => !isNaN(id));
-      
-      const nextId = numericalIds.length > 0 
-        ? Math.max(...numericalIds) + 1 
-        : products.length + 1;
-
-      addProduct({
-        ...productData,
-        id: nextId.toString(),
-        date: new Date().toISOString().split('T')[0]
-      });
-    }
-
-    setIsModalOpen(false);
-    resetForm();
-  };
-
   const handleDeleteProduct = (id) => {
     if (confirm('Are you sure you want to delete this product?')) {
       deleteProduct(id);
     }
-  };
-
-  const resetForm = () => {
-    setEditingProduct(null);
-    setFormData({
-      name: '',
-      description: '',
-      price: '',
-      stock: '',
-      category: '',
-      status: 'Published',
-      seo_title: '',
-      seo_description: '',
-      og_title: '',
-      og_description: '',
-      canonical_url: '',
-      spec_dimensions: 'Standard size',
-      spec_material: 'Premium sustainably sourced materials',
-      spec_finish: 'Satin matte protective coating',
-      spec_warranty: '2 Year Manufacturer Warranty',
-      spec_origin: 'Designed & Crafted locally',
-      shipping_details: 'Secure & Swift Logistics\n\nAll orders are processed and handed over to standard premium courier networks within 24 hours of confirmation.\n\n- Standard Shipping: Delivered in 3-5 business days. Free for this product.\n- Express Shipping: Delivered in 1-2 business days (if selected at checkout).\n- Transit Safety: Fully insured shipments with custom packaging to prevent breakages.',
-      return_policy: '7-Day Return & Replacement Policy\n\nWe stand behind the craftsmanship of our products. If you are not completely satisfied, we offer a hassle-free return window.\n\n- Items must be returned in their original packaging and unused condition.\n- Refunds are processed to the original payment source within 3-5 days after warehouse validation.\n- In case of manufacturing defects, contact our support with unboxing images for instant replacements.'
-    });
-    setProductImages([]);
   };
 
   const filteredProducts = (products || []).filter(product => {
@@ -245,45 +106,7 @@ export default function ProductsPage() {
                            (filters.stock !== 'All' ? 1 : 0) + 
                            (filters.minPrice || filters.maxPrice ? 1 : 0);
 
-  const handleProductImageUpload = (e) => {
-    const files = Array.from(e.target.files);
-    
-    if (productImages.length >= 6) {
-      alert('You can upload a maximum of 6 images.');
-      return;
-    }
-    
-    const remainingSlots = 6 - productImages.length;
-    const filesToUpload = files.slice(0, remainingSlots);
-    
-    if (files.length > remainingSlots) {
-      alert(`You can only add up to ${remainingSlots} more image(s). Only the first ${remainingSlots} will be uploaded.`);
-    }
 
-    filesToUpload.forEach(file => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProductImages(prev => {
-          if (prev.length >= 6) return prev;
-          return [...prev, reader.result];
-        });
-      };
-      reader.readAsDataURL(file);
-    });
-  };
-
-  const removeProductImage = (index) => {
-    setProductImages(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const setAsMain = (index) => {
-    setProductImages(prev => {
-      const newImages = [...prev];
-      const [target] = newImages.splice(index, 1);
-      newImages.unshift(target);
-      return newImages;
-    });
-  };
 
   const totalProducts = (products || []).length;
   const publishedCount = (products || []).filter(p => String(p?.status || '').toLowerCase() === 'published').length;
@@ -299,7 +122,7 @@ export default function ProductsPage() {
           <h1>Products</h1>
           <p>Manage your inventory, pricing, and product details.</p>
         </div>
-        <button className="add-product-btn" onClick={() => setIsModalOpen(true)}>
+        <button className="add-product-btn" onClick={() => router.push('/dashboard/products/addproduct')}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
           Add Product
         </button>
@@ -464,7 +287,7 @@ export default function ProductsPage() {
                   </td>
                 <td>
                   <div className="action-buttons">
-                    <button className="edit-btn" onClick={() => handleEditClick(product)}>
+                    <button className="edit-btn" onClick={() => router.push(`/dashboard/products/addproduct?id=${product.id}`)}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                       Edit
                     </button>
@@ -499,310 +322,7 @@ export default function ProductsPage() {
         </div>
       </div>
 
-      <Modal 
-        isOpen={isModalOpen} 
-        onClose={() => { setIsModalOpen(false); resetForm(); }} 
-        footer={
-          <div className="modal-footer-btns">
-            <button className="cancel-btn" onClick={() => { setIsModalOpen(false); resetForm(); }}>Cancel</button>
-            <button className="save-submit-btn" onClick={handleSaveProduct}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
-              Save Product
-            </button>
-          </div>
-        }
-      >
-        <div className="modal-custom-header">
-          <div className="modal-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
-          </div>
-          <div className="modal-title-box">
-            <h2>{editingProduct ? 'Edit Product' : 'Add New Product'}</h2>
-            <p>{editingProduct ? 'Modify the product details below.' : 'Fill in the details below to add a new product to your store.'}</p>
-          </div>
-        </div>
 
-        <div className="modal-form">
-          <div className="form-group">
-            <label>Product Name <span className="required">*</span></label>
-            <div className="input-with-icon-right">
-              <input 
-                type="text" 
-                placeholder="e.g. Modern Coffee Table" 
-                value={formData.name}
-                onChange={(e) => setFormData({...formData, name: e.target.value})}
-              />
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label>Description</label>
-            <textarea 
-              placeholder="Describe the product..." 
-              rows="2"
-              value={formData.description}
-              onChange={(e) => setFormData({...formData, description: e.target.value})}
-            ></textarea>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label>Price (Rupees) <span className="required">*</span></label>
-              <div className="input-with-icon">
-                <div className="input-prefix">₹</div>
-                <input 
-                  type="number" 
-                  placeholder="0.00" 
-                  value={formData.price}
-                  onChange={(e) => setFormData({...formData, price: e.target.value})}
-                  onKeyDown={(e) => {
-                    if (['e', 'E', '+', '-'].includes(e.key)) e.preventDefault();
-                  }}
-                />
-              </div>
-            </div>
-            <div className="form-group">
-              <label>Stock Quantity <span className="required">*</span></label>
-              <div className="input-with-icon">
-                <div className="input-prefix">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
-                </div>
-                <input 
-                  type="number" 
-                  placeholder="0" 
-                  value={formData.stock}
-                  onChange={(e) => setFormData({...formData, stock: e.target.value})}
-                  onKeyDown={(e) => {
-                    if (['e', 'E', '+', '-', '.'].includes(e.key)) e.preventDefault();
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label>Category <span className="optional">(optional)</span></label>
-            <div className="input-with-icon">
-              <div className="input-prefix">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path></svg>
-              </div>
-              <select 
-                value={formData.category}
-                onChange={(e) => setFormData({...formData, category: e.target.value})}
-              >
-                <option value="">Select category (optional)</option>
-                {categories.map(cat => (
-                  <option key={cat.id} value={cat.name}>{cat.name}</option>
-                ))}
-              </select>
-              <div className="select-suffix">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
-              </div>
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label>Product Images <span style={{ color: '#ef4444' }}>*</span></label>
-            <p className="help-text">Upload between 1 and 6 images of your product. (Current: {productImages.length}/6)</p>
-            
-            <input 
-              type="file" 
-              ref={imageInputRef} 
-              style={{ display: 'none' }} 
-              multiple 
-              accept="image/*"
-              onChange={handleProductImageUpload}
-            />
-
-            <div className="product-upload-box" onClick={() => imageInputRef.current.click()}>
-              <div className="upload-circle">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2"><path d="M17.5 19a5.5 5.5 0 0 0 1-10.9A7 7 0 0 0 5 8.4a5 5 0 0 0 0 9.6"></path><polyline points="17 13 12 8 7 13"></polyline><line x1="12" y1="8" x2="12" y2="18"></line></svg>
-              </div>
-              <div className="upload-text">
-                <strong>Drag & drop images here</strong>
-                <span>or <button className="text-btn" onClick={(e) => { e.stopPropagation(); imageInputRef.current.click(); }}>Choose Files</button></span>
-                <p className="upload-sub">PNG, JPG or WEBP (max. 5MB each)</p>
-              </div>
-            </div>
-
-            {productImages.length > 0 && (
-              <div className="images-preview-grid">
-                {productImages.map((img, index) => (
-                  <div key={index} className={`image-preview-item ${index === 0 ? 'is-main' : ''}`}>
-                    <img src={img} alt={`Preview ${index}`} />
-                    {index === 0 ? (
-                      <span className="main-image-badge">⭐ Main</span>
-                    ) : (
-                      <button 
-                        type="button" 
-                        className="set-main-action-btn" 
-                        onClick={(e) => { e.stopPropagation(); setAsMain(index); }}
-                      >
-                        Set Main
-                      </button>
-                    )}
-                    <button type="button" className="remove-image-btn" onClick={(e) => { e.stopPropagation(); removeProductImage(index); }}>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Product Tabs Customization Section */}
-          <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '16px', marginTop: '16px' }}>
-            <h3 style={{ fontSize: '14px', fontWeight: '800', color: '#1e293b', marginBottom: '12px' }}>Product Tabs (Specifications, Shipping & Returns)</h3>
-            
-            <div className="form-row">
-              <div className="form-group">
-                <label>Dimensions</label>
-                <input 
-                  type="text" 
-                  placeholder="e.g. Standard size, 55cm x 55cm x 85cm" 
-                  value={formData.spec_dimensions}
-                  onChange={(e) => setFormData({...formData, spec_dimensions: e.target.value})}
-                />
-              </div>
-              <div className="form-group">
-                <label>Material</label>
-                <input 
-                  type="text" 
-                  placeholder="e.g. Solid Oak Wood & Premium Fabric" 
-                  value={formData.spec_material}
-                  onChange={(e) => setFormData({...formData, spec_material: e.target.value})}
-                />
-              </div>
-            </div>
-
-            <div className="form-row" style={{ marginTop: '8px' }}>
-              <div className="form-group">
-                <label>Finish</label>
-                <input 
-                  type="text" 
-                  placeholder="e.g. Satin matte protective coating" 
-                  value={formData.spec_finish}
-                  onChange={(e) => setFormData({...formData, spec_finish: e.target.value})}
-                />
-              </div>
-              <div className="form-group">
-                <label>Warranty</label>
-                <input 
-                  type="text" 
-                  placeholder="e.g. 2 Year Manufacturer Warranty" 
-                  value={formData.spec_warranty}
-                  onChange={(e) => setFormData({...formData, spec_warranty: e.target.value})}
-                />
-              </div>
-              <div className="form-group">
-                <label>Origin</label>
-                <input 
-                  type="text" 
-                  placeholder="e.g. Handcrafted in India" 
-                  value={formData.spec_origin}
-                  onChange={(e) => setFormData({...formData, spec_origin: e.target.value})}
-                />
-              </div>
-            </div>
-
-            <div className="form-group" style={{ marginTop: '8px' }}>
-              <label>Shipping Details (Custom text or list)</label>
-              <textarea 
-                placeholder="Enter standard shipping policies, delivery timelines, carrier specifications..." 
-                rows="3"
-                value={formData.shipping_details}
-                onChange={(e) => setFormData({...formData, shipping_details: e.target.value})}
-              ></textarea>
-            </div>
-
-            <div className="form-group" style={{ marginTop: '8px' }}>
-              <label>Return Policy (Custom text or list)</label>
-              <textarea 
-                placeholder="Enter refund windows, item condition requirements, defect policies..." 
-                rows="3"
-                value={formData.return_policy}
-                onChange={(e) => setFormData({...formData, return_policy: e.target.value})}
-              ></textarea>
-            </div>
-          </div>
-
-          {/* SEO Optimization Section */}
-          <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '16px', marginTop: '16px' }}>
-            <h3 style={{ fontSize: '14px', fontWeight: '800', color: '#1e293b', marginBottom: '12px' }}>SEO Optimization</h3>
-            
-            <div className="form-row">
-              <div className="form-group">
-                <label>SEO Title</label>
-                <input 
-                  type="text" 
-                  placeholder="e.g. Premium Leather Sofa - Buy Online" 
-                  value={formData.seo_title}
-                  onChange={(e) => setFormData({...formData, seo_title: e.target.value})}
-                />
-                <span className="help-text">Current: {formData.seo_title.length} chars</span>
-              </div>
-              <div className="form-group">
-                <label>Canonical URL</label>
-                <input 
-                  type="text" 
-                  placeholder="https://example.com/product" 
-                  value={formData.canonical_url}
-                  onChange={(e) => setFormData({...formData, canonical_url: e.target.value})}
-                />
-              </div>
-            </div>
-
-            <div className="form-group" style={{ marginTop: '8px' }}>
-              <label>SEO Description</label>
-              <textarea 
-                placeholder="Description snippet that appears in search results..." 
-                rows="2"
-                value={formData.seo_description}
-                onChange={(e) => setFormData({...formData, seo_description: e.target.value})}
-              ></textarea>
-              <span className="help-text">Current: {formData.seo_description.length} chars</span>
-            </div>
-
-            <div className="form-row" style={{ marginTop: '8px' }}>
-              <div className="form-group">
-                <label>Open Graph Title</label>
-                <input 
-                  type="text" 
-                  placeholder="Social share title" 
-                  value={formData.og_title}
-                  onChange={(e) => setFormData({...formData, og_title: e.target.value})}
-                />
-              </div>
-              <div className="form-group">
-                <label>Open Graph Description</label>
-                <textarea 
-                  placeholder="Social share description" 
-                  rows="2"
-                  value={formData.og_description}
-                  onChange={(e) => setFormData({...formData, og_description: e.target.value})}
-                ></textarea>
-              </div>
-            </div>
-
-            {/* Google Search Preview for Product */}
-            <div className="google-preview-container" style={{ marginTop: '16px' }}>
-              <h4>Google Search Preview</h4>
-              <div className="google-preview-box">
-                <div className="google-url">
-                  {formData.canonical_url || `https://launchcart.com/store/store-slug/product/${editingProduct?.slug || 'product-slug'}`}
-                </div>
-                <div className="google-title">
-                  {formData.seo_title || formData.name || 'Product Name'}
-                </div>
-                <div className="google-description">
-                  {formData.seo_description || formData.description || 'No description provided. Add an SEO description to help people find your product.'}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </Modal>
 
       {/* Filter Drawer */}
       <div className={`filter-drawer ${isFilterOpen ? 'open' : ''}`}>
