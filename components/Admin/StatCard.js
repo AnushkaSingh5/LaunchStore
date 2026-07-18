@@ -130,6 +130,39 @@ export default function StatCard({ title, value, icon, color, change, trend, sub
           opacity: 0.8;
           filter: drop-shadow(0 4px 4px ${color}20);
         }
+        @media (max-width: 576px) {
+          .stat-card {
+            padding: 14px;
+            gap: 10px;
+          }
+          .icon-wrapper {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+          }
+          .icon-wrapper :global(svg) {
+            width: 16px;
+            height: 16px;
+          }
+          .trend-indicator {
+            font-size: 10px;
+            padding: 2px 6px;
+          }
+          .value {
+            font-size: 20px;
+            margin: 4px 0;
+          }
+          .title {
+            font-size: 10px;
+            letter-spacing: 0.4px;
+          }
+          .sub-change {
+            font-size: 10px;
+          }
+          .chart-section {
+            display: none !important;
+          }
+        }
       `}</style>
     </div>
   );

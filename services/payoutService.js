@@ -263,11 +263,9 @@ export const payoutService = {
         .order('requested_at', { ascending: false });
 
       if (error) {
-        if (error.code === '42P01' || error.code === 'PGRST205') {
-          forceMockMode = true;
-          return payoutService.getPayoutRequests(creatorId);
-        }
-        throw error;
+        console.warn('[LaunchCart - PayoutService] Fallback to mock mode due to DB error:', error);
+        forceMockMode = true;
+        return payoutService.getPayoutRequests(creatorId);
       }
       return (data || []).map(r => ({
         id: r.id,
@@ -405,11 +403,9 @@ export const payoutService = {
         .order('requested_at', { ascending: false });
 
       if (error) {
-        if (error.code === '42P01' || error.code === 'PGRST205') {
-          forceMockMode = true;
-          return payoutService.adminGetPayoutRequests();
-        }
-        throw error;
+        console.warn('[LaunchCart - PayoutService] Fallback to mock mode due to DB error:', error);
+        forceMockMode = true;
+        return payoutService.adminGetPayoutRequests();
       }
       return (data || []).map(r => ({
         id: r.id,

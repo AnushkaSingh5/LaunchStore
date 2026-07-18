@@ -7,7 +7,6 @@ import StatCard from '@/components/Admin/StatCard';
 import AdminAnalytics from '@/components/Admin/AdminAnalytics';
 import ActivityFeed from '@/components/Admin/ActivityFeed';
 import PendingApprovals from '@/components/Admin/PendingApprovals';
-import AIInsights from '@/components/Admin/AIInsights';
 import TopStores from '@/components/Admin/TopStores';
 import Table from '@/components/UI/Table';
 import Button from '@/components/UI/Button';
@@ -99,7 +98,8 @@ export default function AdminOverview() {
           }
           @media (max-width: 768px) {
             .stats-grid {
-              grid-template-columns: 1fr;
+              grid-template-columns: repeat(2, 1fr);
+              gap: 12px;
             }
           }
         `}</style>
@@ -278,8 +278,13 @@ export default function AdminOverview() {
         <AdminAnalytics revenueData={analytics?.revenueData} ordersData={analytics?.ordersData} />
       </div>
 
-      <div className="activity-row">
-        <ActivityFeed activities={activity} />
+      <div className="activity-stores-grid" style={{ marginBottom: '24px' }}>
+        <div className="grid-left">
+          <ActivityFeed activities={activity} />
+        </div>
+        <div className="grid-right">
+          <TopStores stores={stores} />
+        </div>
       </div>
 
       <div className="secondary-grid">
@@ -288,30 +293,80 @@ export default function AdminOverview() {
           <div className="recent-orders-card">
             <div className="card-header">
               <h3>Recent Platform Orders</h3>
-              <button className="view-all" onClick={() => router.push('/admin/orders')}>View All</button>
+              <button className="view-all" onClick={() => router.push('/admin/orders')}>
+                <span>View All</span>
+                <svg className="mobile-only-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </button>
             </div>
-            <Table columns={recentOrdersColumns} data={orders.slice(0, 5)} />
+            
+            {/* Desktop view: Table */}
+            <div className="desktop-only-view">
+              <Table columns={recentOrdersColumns} data={orders.slice(0, 5)} />
+            </div>
+
+            {/* Mobile view: Mockup-matched Cards */}
+            <div className="mobile-only-view mobile-orders-list">
+              {orders.slice(0, 5).map(order => {
+                const orderId = order.id ? `${order.id.substring(0, 8)}...` : 'N/A';
+                const statusClass = String(order.status || 'pending').toLowerCase();
+                
+                return (
+                  <div key={order.id} className="mobile-order-row-card">
+                    {/* Top Row: Icon, Order ID Stack, Status Stack */}
+                    <div className="mobile-order-top-section">
+                      <div className="order-icon-wrapper">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                      </div>
+                      <div className="order-id-stack">
+                        <span className="stack-label">ORDER ID</span>
+                        <span className="stack-value">{orderId}</span>
+                      </div>
+                      <div className="order-status-stack">
+                        <span className="stack-label">STATUS</span>
+                        <span className={`status-pill ${statusClass}`}>{order.status}</span>
+                      </div>
+                    </div>
+
+                    {/* Bottom Row: 3 columns (Customer, Store, Amount) */}
+                    <div className="mobile-order-bottom-section">
+                      {/* Customer column */}
+                      <div className="meta-column">
+                        <div className="meta-icon-wrapper">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                        </div>
+                        <div className="meta-text-stack">
+                          <span className="stack-label">CUSTOMER</span>
+                          <span className="stack-value">{order.customer}</span>
+                        </div>
+                      </div>
+
+                      {/* Store column */}
+                      <div className="meta-column">
+                        <div className="meta-icon-wrapper">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+                        </div>
+                        <div className="meta-text-stack">
+                          <span className="stack-label">STORE</span>
+                          <span className="stack-value">{order.store}</span>
+                        </div>
+                      </div>
+
+                      {/* Amount column */}
+                      <div className="meta-column">
+                        <div className="meta-icon-wrapper">
+                          <span className="rupee-icon">₹</span>
+                        </div>
+                        <div className="meta-text-stack">
+                          <span className="stack-label">AMOUNT</span>
+                          <span className="stack-value">₹{order.total.toLocaleString()}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
-        <div className="grid-right">
-          <div className="inventory-health-card" style={{ marginBottom: '8px' }}>
-            <div className="card-header">
-              <h3>Inventory Health</h3>
-              <button className="view-all" onClick={() => router.push('/admin/products')}>Manage</button>
-            </div>
-            <div className="inventory-stats">
-              <div className="inventory-stat-item out-of-stock">
-                <span className="label">Out of Stock</span>
-                <span className="count">{outOfStockProductsCount}</span>
-              </div>
-              <div className="inventory-stat-item low-stock">
-                <span className="label">Low Stock</span>
-                <span className="count">{lowStockProductsCount}</span>
-              </div>
-            </div>
-          </div>
-          <TopStores stores={stores} />
-          <AIInsights insights={aiInsights} />
         </div>
       </div>
 
@@ -365,9 +420,14 @@ export default function AdminOverview() {
         .activity-row {
           width: 100%;
         }
+        .activity-stores-grid {
+          display: grid;
+          grid-template-columns: 1fr 480px;
+          gap: 24px;
+        }
         .secondary-grid {
           display: grid;
-          grid-template-columns: 1fr 340px;
+          grid-template-columns: 1fr;
           gap: 24px;
         }
         .grid-left {
@@ -392,6 +452,134 @@ export default function AdminOverview() {
         .recent-orders-card th,
         .recent-orders-card td {
           padding: 12px 14px !important;
+        }
+
+        /* Mobile Order Card styling */
+        .mobile-orders-list {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+        .mobile-order-row-card {
+          background: #ffffff;
+          border: 1px solid #f1f5f9;
+          border-radius: 20px;
+          padding: 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.01);
+        }
+        .mobile-order-top-section {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          border-bottom: 1px dashed #f1f5f9;
+          padding-bottom: 12px;
+        }
+        .order-icon-wrapper {
+          width: 36px;
+          height: 36px;
+          border-radius: 10px;
+          background: #f5f3ff;
+          color: #7c3aed;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+        .order-id-stack {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+        .order-status-stack {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 2px;
+          flex-shrink: 0;
+        }
+        .stack-label {
+          font-size: 9px;
+          font-weight: 700;
+          color: #94a3b8;
+          letter-spacing: 0.5px;
+        }
+        .stack-value {
+          font-size: 13px;
+          font-weight: 700;
+          color: #1e293b;
+        }
+
+        .mobile-order-bottom-section {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 8px;
+        }
+        .meta-column {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          min-width: 0;
+        }
+        .meta-icon-wrapper {
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          background: #f8fafc;
+          color: #64748b;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+        .meta-icon-wrapper :global(svg) {
+          width: 12px;
+          height: 12px;
+        }
+        .rupee-icon {
+          font-size: 11px;
+          font-weight: 800;
+        }
+        .meta-text-stack {
+          display: flex;
+          flex-direction: column;
+          gap: 1px;
+          min-width: 0;
+        }
+        .meta-text-stack .stack-value {
+          font-size: 11px;
+          white-space: nowrap;
+          text-overflow: ellipsis;
+          overflow: hidden;
+        }
+
+        /* View toggles */
+        .desktop-only-view {
+          display: block;
+        }
+        .mobile-only-view {
+          display: none;
+        }
+        .mobile-only-icon {
+          display: none;
+        }
+
+        @media (max-width: 576px) {
+          .desktop-only-view {
+            display: none !important;
+          }
+          .mobile-only-view {
+            display: block !important;
+          }
+          .mobile-only-icon {
+            display: inline-block !important;
+          }
+          .recent-orders-card {
+            padding: 16px !important;
+          }
         }
         .card-header {
           display: flex;
@@ -463,7 +651,7 @@ export default function AdminOverview() {
         }
 
         @media (max-width: 1400px) {
-          .analytics-overview, .secondary-grid {
+          .analytics-overview, .secondary-grid, .activity-stores-grid {
             grid-template-columns: 1fr;
           }
           .grid-right {
@@ -476,8 +664,14 @@ export default function AdminOverview() {
           }
         }
         @media (max-width: 768px) {
+          .overview-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 16px;
+          }
           .stats-grid {
-            grid-template-columns: 1fr;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
           }
         }
       `}</style>

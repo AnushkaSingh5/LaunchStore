@@ -8,10 +8,31 @@ import Modal from '@/components/UI/Modal';
 import { useState, useEffect } from 'react';
 import { profileService } from '@/services/profileService';
 
+// Helper for dynamic creator avatar colors
+const getAvatarColor = (name) => {
+  const colors = ['#1e293b', '#8b5cf6', '#10b981', '#f59e0b', '#3b82f6', '#ec4899'];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return colors[Math.abs(hash) % colors.length];
+};
+
+// Helper for initials
+const getInitials = (name) => {
+  if (!name) return '??';
+  return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+};
+
 export default function AdminCreators() {
-  const { stores = [], loading } = useAdmin();
+  const { stores = [], approveStore, rejectStore, disableStore, loading } = useAdmin();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCreator, setSelectedCreator] = useState(null);
+
+  // Dynamic Metrics
+  const activeSellers = loading ? 0 : stores.filter(s => s.status === 'Active').length;
+  const pendingSellers = loading ? 0 : stores.filter(s => s.status === 'Pending').length;
+  const rejectedSellers = loading ? 0 : stores.filter(s => s.status === 'Rejected').length;
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
@@ -215,8 +236,104 @@ export default function AdminCreators() {
         </div>
       </div>
 
-      <div className="creators-card">
-        <Table columns={columns} data={creators} actions={actions} loading={loading} />
+      {/* Overview Section */}
+      <div className="overview-section">
+        <h4>Overview</h4>
+        <div className="summary-cards">
+          <div className="summary-card">
+            <div className="icon-wrap purple-bg">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            </div>
+            <div className="card-data">
+              <p className="card-label">Total Sellers</p>
+              <h3 className="card-val">{creators.length}</h3>
+            </div>
+          </div>
+          <div className="summary-card">
+            <div className="icon-wrap green-bg">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            </div>
+            <div className="card-data">
+              <p className="card-label">Active Sellers</p>
+              <h3 className="card-val">{activeSellers}</h3>
+            </div>
+          </div>
+          <div className="summary-card">
+            <div className="icon-wrap orange-bg">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            </div>
+            <div className="card-data">
+              <p className="card-label">Pending</p>
+              <h3 className="card-val">{pendingSellers}</h3>
+            </div>
+          </div>
+          <div className="summary-card">
+            <div className="icon-wrap red-bg">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+            </div>
+            <div className="card-data">
+              <p className="card-label">Rejected</p>
+              <h3 className="card-val">{rejectedSellers}</h3>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="desktop-view-only">
+        <div className="creators-card">
+          <Table columns={columns} data={creators} actions={actions} loading={loading} />
+        </div>
+      </div>
+
+      <div className="mobile-view-only">
+
+        {/* List Header */}
+        <div className="mobile-list-header">
+          <h3>All Sellers ({creators.length})</h3>
+        </div>
+
+        {/* Creators List */}
+        <div className="mobile-creators-list">
+          {loading ? (
+            [...Array(3)].map((_, i) => (
+              <div key={i} className="mobile-creator-card skeleton shim">
+                <div className="creator-header-section">
+                  <div className="creator-avatar" style={{ background: '#e2e8f0' }}></div>
+                  <div className="creator-meta-stack" style={{ width: '100%' }}>
+                    <div className="skeleton-bar" style={{ width: '60%', height: '14px', marginBottom: '8px', background: '#e2e8f0', borderRadius: '4px' }}></div>
+                    <div className="skeleton-bar" style={{ width: '80%', height: '12px', marginBottom: '8px', background: '#e2e8f0', borderRadius: '4px' }}></div>
+                    <div className="skeleton-bar" style={{ width: '40%', height: '12px', background: '#e2e8f0', borderRadius: '4px' }}></div>
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : creators.length === 0 ? (
+            <div className="empty-state">No data available</div>
+          ) : (
+            creators.map(c => (
+              <div key={c.id} className="mobile-creator-card">
+                <div className="creator-header-section">
+                  <div className="creator-avatar" style={{ backgroundColor: getAvatarColor(c.name) }}>
+                    {getInitials(c.name)}
+                  </div>
+                  <div className="creator-meta-stack">
+                    <h4 className="creator-name-text">{c.name}</h4>
+                    <span className="email-text">{c.email}</span>
+                    <span className="store-name-text">{c.storeName}</span>
+                    <span className={`status-pill ${c.status.toLowerCase()}`}>
+                      <span className={`status-dot ${c.status.toLowerCase()}`}></span>
+                      {c.status === 'Active' ? 'Active' : c.status}
+                    </span>
+                    <span className="revenue-text">Revenue: ₹{(c.revenue || 0).toLocaleString()}</span>
+                  </div>
+                </div>
+                <div className="mobile-card-actions">
+                  <button className="btn-action btn-details" style={{ width: '100%' }} onClick={() => setSelectedCreator(c)}>Details</button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       </div>
 
       <Modal 
@@ -228,11 +345,17 @@ export default function AdminCreators() {
           <div className="modal-footer-actions">
             {extendedProfile && (extendedProfile.verification_status === 'Under Review' || extendedProfile.verification_status === 'Not Submitted') && (
               <>
-                <button className="btn-moderate verify" onClick={handleVerifyCreator} disabled={actionLoading}>Verify Seller</button>
-                <button className="btn-moderate reject" onClick={handleRejectCreator} disabled={actionLoading}>Reject Verification</button>
+                <button className="btn-moderate verify" onClick={handleVerifyCreator} disabled={actionLoading}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ marginRight: '6px' }}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                  Verify Seller
+                </button>
+                <button className="btn-moderate reject" onClick={handleRejectCreator} disabled={actionLoading}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ marginRight: '6px' }}><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+                  Reject Verification
+                </button>
               </>
             )}
-            <Button variant="secondary" onClick={() => setSelectedCreator(null)}>Close</Button>
+            <button className="btn-moderate close-btn" onClick={() => setSelectedCreator(null)}>Close</button>
           </div>
         }
       >
@@ -286,7 +409,7 @@ export default function AdminCreators() {
 
             <div className="details-section">
               <h4>Business Information</h4>
-              <div className="detail-grid">
+              <div className="detail-grid business-grid">
                 <div className="detail-item">
                   <strong>Business Name</strong>
                   <span>{extendedProfile?.business_name || '--'}</span>
@@ -315,7 +438,13 @@ export default function AdminCreators() {
               {docsLoading ? (
                 <div className="docs-loader">Loading documents...</div>
               ) : documents.length === 0 ? (
-                <p className="no-docs-message">No verification documents have been uploaded yet.</p>
+                <div className="empty-docs-box">
+                  <div className="folder-icon-wrap">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                  </div>
+                  <h5>No verification documents</h5>
+                  <p>No verification documents have been uploaded yet.</p>
+                </div>
               ) : (
                 <div className="docs-list">
                   {documents.map((doc, idx) => (
@@ -513,6 +642,467 @@ export default function AdminCreators() {
         }
         .btn-moderate.reject:hover {
           box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+        }
+
+        /* Global Overview Styles (Desktop) */
+        .overview-section {
+          margin-bottom: 32px;
+          width: 100%;
+        }
+        .overview-section h4 {
+          font-size: 18px;
+          font-weight: 800;
+          color: #1e293b;
+          margin: 0 0 16px 0;
+        }
+        .summary-cards {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 24px;
+        }
+        .summary-card {
+          background: #fff;
+          border-radius: 20px;
+          padding: 24px;
+          display: flex;
+          align-items: flex-start;
+          gap: 16px;
+          box-shadow: 0 10px 25px -5px rgba(0,0,0,0.02), 0 8px 10px -6px rgba(0,0,0,0.02);
+          border: 1px solid #f8fafc;
+        }
+        .icon-wrap {
+          width: 48px;
+          height: 48px;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+        .purple-bg { background: #f3e8ff; }
+        .green-bg { background: #dcfce7; }
+        .orange-bg { background: #fef3c7; }
+        .red-bg { background: #fee2e2; }
+        
+        .card-data {
+          display: flex;
+          flex-direction: column;
+        }
+        .card-label {
+          font-size: 13px;
+          font-weight: 600;
+          color: #64748b;
+          margin: 0 0 4px 0;
+        }
+        .card-val {
+          font-size: 28px;
+          font-weight: 800;
+          color: #1e293b;
+          margin: 0;
+          line-height: 1.2;
+        }
+
+        .desktop-view-only {
+          display: block;
+        }
+        .mobile-view-only {
+          display: none;
+        }
+
+        @media (max-width: 768px) {
+          .desktop-view-only {
+            display: none !important;
+          }
+          .mobile-view-only {
+            display: block !important;
+          }
+          
+          .creators-card {
+            background: transparent !important;
+            padding: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+          }
+          
+          .page-header {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 16px !important;
+          }
+          
+          .header-actions {
+            width: 100% !important;
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 12px !important;
+          }
+          
+          .date-filter-group {
+            display: flex !important;
+            width: 100% !important;
+            justify-content: space-between !important;
+            gap: 12px !important;
+          }
+          
+          .date-filter-group > div {
+            flex: 1 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 4px !important;
+          }
+          
+          .date-filter-group input {
+            width: 100% !important;
+            padding: 10px 12px !important;
+            font-size: 14px !important;
+            border: 1px solid #cbd5e1 !important;
+            border-radius: 12px !important;
+            outline: none !important;
+          }
+          
+          .header-actions > div:last-child {
+            width: 100% !important;
+          }
+
+          /* Overview section */
+          .overview-section {
+            margin-top: 10px !important;
+            margin-bottom: 10px !important;
+            width: 100%;
+          }
+          .overview-section h4 {
+            font-size: 16px;
+            font-weight: 800;
+            color: #1e293b;
+            margin: 0 0 16px 0;
+          }
+          .summary-cards {
+            display: grid !important;
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 12px !important;
+          }
+          .summary-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 14px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+            border: 1px solid #f1f5f9;
+          }
+          .icon-wrap {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+          }
+          .purple-bg { background: #f3e8ff; }
+          .green-bg { background: #dcfce7; }
+          .orange-bg { background: #fef3c7; }
+          .red-bg { background: #fee2e2; }
+          
+          .card-data {
+            display: flex;
+            flex-direction: column;
+          }
+          .card-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #64748b;
+            margin: 0 0 2px 0;
+          }
+          .card-val {
+            font-size: 20px;
+            font-weight: 800;
+            color: #1e293b;
+            margin: 0;
+            line-height: 1.2;
+          }
+          
+          /* Mobile List Header */
+          .mobile-list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px !important;
+            margin-bottom: 10px !important;
+          }
+          .mobile-list-header h3 {
+            font-size: 16px;
+            font-weight: 800;
+            color: #1e293b;
+            margin: 0;
+          }
+          .sort-btn {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+          }
+          .sort-btn:hover {
+            background: #f8fafc;
+          }
+
+          /* Creators List */
+          .mobile-creators-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 24px;
+          }
+          .mobile-creator-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 16px;
+            border: 1px solid #f1f5f9;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            position: relative;
+          }
+          
+          .creator-header-section {
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+          }
+          
+          .creator-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: 800;
+            font-size: 16px;
+            flex-shrink: 0;
+          }
+          
+          .creator-meta-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex: 1;
+            padding-right: 24px;
+          }
+          
+          .creator-name-text {
+            font-size: 15px;
+            font-weight: 800;
+            color: #1e293b;
+            margin: 0;
+          }
+          
+          .email-text {
+            font-size: 13px;
+            color: #64748b;
+            font-weight: 500;
+            word-break: break-all;
+          }
+          
+          .store-name-text {
+            font-size: 13px;
+            color: #475569;
+            font-weight: 700;
+          }
+          
+          .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            width: fit-content;
+          }
+          .status-pill.active { background: #dcfce7; color: #166534; }
+          .status-pill.pending { background: #fef3c7; color: #92400e; }
+          .status-pill.rejected { background: #fee2e2; color: #b91c1c; }
+          
+          .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+          }
+          .status-dot.active { background: #166534; }
+          .status-dot.pending { background: #92400e; }
+          .status-dot.rejected { background: #b91c1c; }
+
+          .revenue-text {
+            font-size: 13px;
+            font-weight: 700;
+            color: #1e293b;
+          }
+          
+          .chevron-icon {
+            position: absolute;
+            top: 24px;
+            right: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+          
+          .mobile-card-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 4px;
+            border-top: 1px solid #f1f5f9;
+            padding-top: 12px;
+          }
+          
+          .mobile-card-actions .btn-action {
+            padding: 8px 12px !important;
+            font-size: 12px !important;
+            font-weight: 700 !important;
+            border-radius: 10px !important;
+            cursor: pointer;
+            transition: all 0.2s;
+            height: auto !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            border: none;
+          }
+          
+          .mobile-card-actions .btn-details {
+            background: #f1f5f9 !important;
+            color: #475569 !important;
+            flex: 1.5 !important;
+          }
+          .mobile-card-actions .btn-approve {
+            background: #f3e8ff !important;
+            color: #8b5cf6 !important;
+            flex: 1 !important;
+          }
+          .mobile-card-actions .btn-reject {
+            background: #fee2e2 !important;
+            color: #ef4444 !important;
+            flex: 1 !important;
+          }
+          .mobile-card-actions .btn-disable {
+            background: #fff !important;
+            border: 1px solid #fca5a5 !important;
+            color: #ef4444 !important;
+            flex: 1 !important;
+          }
+          .mobile-card-actions .btn-enable {
+            background: #f3e8ff !important;
+            color: #8b5cf6 !important;
+            flex: 1 !important;
+          }
+          
+          .table-footer {
+            flex-direction: column-reverse !important;
+            gap: 16px !important;
+            align-items: center !important;
+            margin-top: 24px !important;
+          }
+        }
+
+        /* Empty verification docs dashed container styling */
+        .empty-docs-box {
+          border: 2px dashed #cbd5e1;
+          border-radius: 16px;
+          padding: 32px 24px;
+          text-align: center;
+          background: #f8fafc;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 12px;
+          margin: 12px 0;
+          width: 100%;
+        }
+        .folder-icon-wrap {
+          width: 48px;
+          height: 48px;
+          border-radius: 50%;
+          background: #f1f5f9;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .empty-docs-box h5 {
+          font-size: 15px;
+          font-weight: 800;
+          color: #1e293b;
+          margin: 0;
+        }
+        .empty-docs-box p {
+          font-size: 13px;
+          color: #64748b;
+          margin: 0;
+          max-width: 280px;
+          line-height: 1.4;
+        }
+
+        /* Desktop close button styling */
+        .btn-moderate.close-btn {
+          background: #fff;
+          border: 1px solid #cbd5e1;
+          color: #475569;
+        }
+        .btn-moderate.close-btn:hover {
+          background: #f8fafc;
+        }
+
+        /* Responsive Modal adjustments */
+        @media (max-width: 576px) {
+          .profile-main {
+            gap: 16px !important;
+            align-items: flex-start !important;
+          }
+          .profile-main .avatar {
+            width: 56px !important;
+            height: 56px !important;
+            border-radius: 12px !important;
+            font-size: 20px !important;
+          }
+          .profile-main .info h3 {
+            font-size: 16px !important;
+          }
+          .profile-main .info p {
+            font-size: 13px !important;
+            margin-bottom: 6px !important;
+          }
+          .detail-grid {
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 12px !important;
+          }
+          .business-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+          }
+          .business-grid .detail-item.full-width {
+            grid-column: span 2 !important;
+          }
+          .modal-footer-actions {
+            flex-direction: column !important;
+            gap: 10px !important;
+          }
+          .modal-footer-actions .btn-moderate {
+            width: 100% !important;
+            justify-content: center !important;
+            display: flex !important;
+            align-items: center !important;
+            padding: 12px 16px !important;
+            font-size: 14px !important;
+          }
         }
       `}</style>
     </div>

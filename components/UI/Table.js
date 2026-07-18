@@ -7,7 +7,7 @@ export default function Table({ columns, data = [], keyField = 'id', actions, lo
         <thead>
           <tr>
             {columns.map((col, i) => (
-              <th key={i} className={styles.th}>{col.label}</th>
+              <th key={i} className={`${styles.th} ${col.hiddenMobile ? styles.hiddenMobile : ''}`}>{col.label}</th>
             ))}
             {actions && <th className={styles.th}>Actions</th>}
           </tr>
@@ -17,12 +17,16 @@ export default function Table({ columns, data = [], keyField = 'id', actions, lo
             [...Array(5)].map((_, rowIndex) => (
               <tr key={rowIndex} className={styles.tr}>
                 {columns.map((col, colIndex) => (
-                  <td key={colIndex} className={styles.td}>
+                  <td 
+                    key={colIndex} 
+                    className={`${styles.td} ${col.hiddenMobile ? styles.hiddenMobile : ''}`}
+                    data-label={col.label}
+                  >
                     <div className={`${styles.skeletonBar} ${styles.shim}`}></div>
                   </td>
                 ))}
                 {actions && (
-                  <td className={styles.td}>
+                  <td className={styles.td} data-label="Actions">
                     <div className={`${styles.skeletonBar} ${styles.shim}`} style={{ width: '80px' }}></div>
                   </td>
                 )}
@@ -38,12 +42,16 @@ export default function Table({ columns, data = [], keyField = 'id', actions, lo
             data.map((row) => (
               <tr key={row[keyField]} className={styles.tr}>
                 {columns.map((col, i) => (
-                  <td key={i} className={styles.td}>
+                  <td 
+                    key={i} 
+                    className={`${styles.td} ${col.hiddenMobile ? styles.hiddenMobile : ''}`}
+                    data-label={col.label}
+                  >
                     {col.render ? col.render(row) : row[col.field]}
                   </td>
                 ))}
                 {actions && (
-                  <td className={styles.td}>
+                  <td className={styles.td} data-label="Actions">
                     <div className={styles.actions}>
                       {actions(row)}
                     </div>

@@ -55,7 +55,7 @@ export default function AdminSidebar({ isOpen, onClose, isCollapsed, onToggle })
       
       <aside className={`${styles.sidebar} ${isOpen ? styles.open : ''} ${isCollapsed ? styles.collapsed : ''}`}>
         <div className={styles.logoSection}>
-          <Link href="/admin" className={styles.logo}>
+          <Link href="/admin" className={styles.logo} onClick={onClose}>
             <span className={styles.logoText}>Admin Portal</span>
           </Link>
           <button className={styles.collapseBtn} onClick={onToggle}>
@@ -73,6 +73,7 @@ export default function AdminSidebar({ isOpen, onClose, isCollapsed, onToggle })
                     href={item.path} 
                     className={`${styles.navLink} ${isActive ? styles.active : ''}`}
                     style={!isActive ? { '--icon-color': item.color } : {}}
+                    onClick={onClose}
                   >
                     <span className={styles.navIcon}>{item.icon}</span>
                     <span className={styles.navLabel}>{item.label}</span>

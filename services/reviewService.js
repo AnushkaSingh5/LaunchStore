@@ -505,7 +505,7 @@ export const reviewService = {
             customer:customer_id(id, full_name, email, banned_from_reviews),
             review_images(id, image_url)
           ),
-          reporter:reporter_id(email, name)
+          reporter:reporter_id(email)
         `)
         .order('created_at', { ascending: false });
 

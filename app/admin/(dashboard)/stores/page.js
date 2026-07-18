@@ -215,7 +215,67 @@ export default function StoresManagement() {
           })}
         </div>
 
-        <Table columns={columns} data={filteredStores} actions={actions} loading={loading} />
+        <div className="desktop-view-only">
+          <Table columns={columns} data={filteredStores} actions={actions} loading={loading} />
+        </div>
+
+        <div className="mobile-view-only">
+          <div className="mobile-stores-list">
+            {loading ? (
+              [...Array(3)].map((_, i) => (
+                <div key={i} className="mobile-store-card skeleton shim">
+                  <div className="store-header-section">
+                    <div className="store-avatar" style={{ background: '#e2e8f0' }}></div>
+                    <div className="store-meta-stack" style={{ width: '100%' }}>
+                      <div className="skeleton-bar" style={{ width: '60%', height: '14px', marginBottom: '8px', background: '#e2e8f0', borderRadius: '4px' }}></div>
+                      <div className="skeleton-bar" style={{ width: '80%', height: '12px', marginBottom: '8px', background: '#e2e8f0', borderRadius: '4px' }}></div>
+                      <div className="skeleton-bar" style={{ width: '40%', height: '12px', background: '#e2e8f0', borderRadius: '4px' }}></div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : filteredStores.length === 0 ? (
+              <div className="empty-state">No data available</div>
+            ) : (
+              filteredStores.map(store => (
+                <div key={store.id} className="mobile-store-card">
+                  <div className="store-header-section">
+                    <div className="store-avatar" style={{ backgroundColor: getAvatarColor(store.name) }}>
+                      {getInitials(store.name)}
+                    </div>
+                    <div className="store-meta-stack">
+                      <h4 className="store-name-text">{store.name}</h4>
+                      <span className="email-text">{store.email}</span>
+                      <span className={`status-pill ${store.status.toLowerCase()}`}>
+                        <span className={`status-dot ${store.status.toLowerCase()}`}></span>
+                        {store.status === 'Active' ? 'Approved' : store.status}
+                      </span>
+                      <span className="date-text">Registered: {store.createdDate || '15 Apr 2026'}</span>
+                    </div>
+                  </div>
+                  <div className="mobile-card-actions">
+                    <button className="btn-action btn-details" onClick={() => setSelectedStore(store)}>Details</button>
+                    {store.status === 'Pending' && (
+                      <>
+                        <button className="btn-action btn-approve" onClick={() => approveStore(store.id)}>Approve</button>
+                        <button className="btn-action btn-reject" onClick={() => setRejectingStoreId(store.id)}>Reject</button>
+                      </>
+                    )}
+                    {store.status === 'Active' && (
+                      <button className="btn-action btn-disable" onClick={() => setDisablingStoreId(store.id)}>Disable</button>
+                    )}
+                    {store.status === 'Disabled' && (
+                      <button className="btn-action btn-enable" onClick={() => approveStore(store.id)}>Enable</button>
+                    )}
+                    {store.status === 'Rejected' && (
+                      <button className="btn-action btn-enable" onClick={() => approveStore(store.id)}>Approve</button>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
         
         <div className="table-footer">
           <div className="showing-text">
@@ -496,6 +556,8 @@ export default function StoresManagement() {
           justify-content: space-between;
           align-items: center;
           margin-bottom: 32px;
+          gap: 16px;
+          flex-wrap: wrap;
         }
         .header-text h2 {
           font-size: 24px;
@@ -607,6 +669,12 @@ export default function StoresManagement() {
           margin-bottom: 24px;
           border-bottom: 1px solid #f1f5f9;
           padding-bottom: 12px;
+          overflow-x: auto;
+          scrollbar-width: none;
+          -webkit-overflow-scrolling: touch;
+        }
+        .filter-tabs::-webkit-scrollbar {
+          display: none;
         }
         .tab-btn {
           display: flex;
@@ -621,6 +689,7 @@ export default function StoresManagement() {
           font-weight: 600;
           cursor: pointer;
           transition: all 0.2s;
+          white-space: nowrap;
         }
         .tab-btn:hover {
           background: #f8fafc;
@@ -1041,6 +1110,191 @@ export default function StoresManagement() {
           color: #ef4444;
         }
         .btn-disable:hover { background: #fef2f2; }
+
+        @media (max-width: 768px) {
+          .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+          }
+          .search-box {
+            width: 100%;
+          }
+        }
+        
+        .desktop-view-only {
+          display: block;
+        }
+        .mobile-view-only {
+          display: none;
+        }
+
+        @media (max-width: 1024px) {
+          .summary-cards {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+        
+        @media (max-width: 768px) {
+          .desktop-view-only {
+            display: none !important;
+          }
+          .mobile-view-only {
+            display: block !important;
+          }
+          
+          .mobile-stores-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-top: 16px;
+          }
+          
+          .mobile-store-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 16px;
+            border: 1px solid #f1f5f9;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+          }
+          
+          .store-header-section {
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+          }
+          
+          .store-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: 800;
+            font-size: 16px;
+            flex-shrink: 0;
+          }
+          
+          .store-meta-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex: 1;
+          }
+          
+          .store-name-text {
+            font-size: 15px;
+            font-weight: 800;
+            color: #1e293b;
+            margin: 0;
+          }
+          
+          .email-text {
+            font-size: 13px;
+            color: #64748b;
+            font-weight: 500;
+            word-break: break-all;
+          }
+          
+          .date-text {
+            font-size: 12px;
+            color: #94a3b8;
+            font-weight: 550;
+          }
+          
+          .mobile-card-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 4px;
+            border-top: 1px solid #f1f5f9;
+            padding-top: 12px;
+          }
+          
+          .mobile-card-actions .btn-action {
+            padding: 8px 12px !important;
+            font-size: 12px !important;
+            height: auto !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+          }
+          
+          .mobile-card-actions .btn-details {
+            flex: 1.5 !important;
+          }
+          .mobile-card-actions .btn-approve,
+          .mobile-card-actions .btn-reject,
+          .mobile-card-actions .btn-disable,
+          .mobile-card-actions .btn-enable {
+            flex: 1 !important;
+          }
+          
+          .table-footer {
+            flex-direction: column-reverse !important;
+            gap: 16px !important;
+            align-items: center !important;
+          }
+        }
+
+        @media (max-width: 576px) {
+          .summary-cards {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 12px !important;
+          }
+          .summary-card {
+            padding: 14px !important;
+            gap: 10px !important;
+            border-radius: 16px !important;
+          }
+          .icon-wrap {
+            width: 36px !important;
+            height: 36px !important;
+            border-radius: 10px !important;
+          }
+          .icon-wrap svg {
+            width: 18px !important;
+            height: 18px !important;
+          }
+          .card-val {
+            font-size: 20px !important;
+          }
+          .card-label {
+            font-size: 11px !important;
+          }
+          .card-subtext {
+            font-size: 10px !important;
+          }
+          .table-card {
+            padding: 16px !important;
+          }
+          .filter-tabs {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            gap: 8px !important;
+            padding-bottom: 12px !important;
+            border-bottom: 1px solid #f1f5f9 !important;
+          }
+          .tab-btn {
+            font-size: 13px !important;
+            padding: 6px 12px !important;
+            border-radius: 10px !important;
+            border: 1px solid #e2e8f0 !important;
+            background: #f8fafc !important;
+            flex: none !important;
+          }
+          .tab-btn.active {
+            background: #f1f5f9 !important;
+            border-color: #cbd5e1 !important;
+          }
+          .tab-count {
+            padding: 2px 6px !important;
+            font-size: 10px !important;
+          }
+        }
       `}</style>
     </div>
   );

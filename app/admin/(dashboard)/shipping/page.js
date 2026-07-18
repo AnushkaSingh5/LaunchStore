@@ -225,12 +225,12 @@ export default function AdminShippingPage() {
 
   return (
     <div className="admin-shipping-page" style={{ padding: '24px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
         <div>
           <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#1e293b', marginBottom: '6px' }}>Platform Shipping Monitor</h1>
           <p style={{ color: '#64748b' }}>Supervise all Shiprocket integrations, track package delivery lifecycles, and audit courier allocations across stores.</p>
         </div>
-        <div style={{ width: '320px' }}>
+        <div className="search-wrap" style={{ width: '320px' }}>
           <Input 
             placeholder="Search Order ID, AWB, Customer, Store..." 
             value={searchQuery}
@@ -240,31 +240,31 @@ export default function AdminShippingPage() {
       </div>
 
       {/* Metrics Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '20px', marginBottom: '32px' }}>
-        <div style={{ background: '#ffffff', borderRadius: '16px', padding: '20px', border: '1px solid #f1f5f9', boxShadow: '0 2px 10px rgba(0,0,0,0.01)' }}>
+      <div className="summary-cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '20px', marginBottom: '32px' }}>
+        <div className="summary-card" style={{ background: '#ffffff', borderRadius: '16px', padding: '20px', border: '1px solid #f1f5f9', boxShadow: '0 2px 10px rgba(0,0,0,0.01)' }}>
           <span style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Total Orders Paid</span>
           <div style={{ fontSize: '28px', fontWeight: 800, color: '#1e293b', marginTop: '6px' }}>{totalShipments}</div>
         </div>
-        <div style={{ background: '#ffffff', borderRadius: '16px', padding: '20px', border: '1px solid #f1f5f9', boxShadow: '0 2px 10px rgba(0,0,0,0.01)' }}>
+        <div className="summary-card" style={{ background: '#ffffff', borderRadius: '16px', padding: '20px', border: '1px solid #f1f5f9', boxShadow: '0 2px 10px rgba(0,0,0,0.01)' }}>
           <span style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Pending Shipments</span>
           <div style={{ fontSize: '28px', fontWeight: 800, color: '#f59e0b', marginTop: '6px' }}>{pendingCount}</div>
         </div>
-        <div style={{ background: '#ffffff', borderRadius: '16px', padding: '20px', border: '1px solid #f1f5f9', boxShadow: '0 2px 10px rgba(0,0,0,0.01)' }}>
+        <div className="summary-card" style={{ background: '#ffffff', borderRadius: '16px', padding: '20px', border: '1px solid #f1f5f9', boxShadow: '0 2px 10px rgba(0,0,0,0.01)' }}>
           <span style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Delivered Orders</span>
           <div style={{ fontSize: '28px', fontWeight: 800, color: '#10b981', marginTop: '6px' }}>{deliveredCount}</div>
         </div>
-        <div style={{ background: '#ffffff', borderRadius: '16px', padding: '20px', border: '1px solid #f1f5f9', boxShadow: '0 2px 10px rgba(0,0,0,0.01)' }}>
+        <div className="summary-card" style={{ background: '#ffffff', borderRadius: '16px', padding: '20px', border: '1px solid #f1f5f9', boxShadow: '0 2px 10px rgba(0,0,0,0.01)' }}>
           <span style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Returned Orders</span>
           <div style={{ fontSize: '28px', fontWeight: 800, color: '#ef4444', marginTop: '6px' }}>{returnedCount}</div>
         </div>
-        <div style={{ background: '#ffffff', borderRadius: '16px', padding: '20px', border: '1px solid #f1f5f9', boxShadow: '0 2px 10px rgba(0,0,0,0.01)' }}>
+        <div className="summary-card last-card" style={{ background: '#ffffff', borderRadius: '16px', padding: '20px', border: '1px solid #f1f5f9', boxShadow: '0 2px 10px rgba(0,0,0,0.01)' }}>
           <span style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Cancelled Shipments</span>
           <div style={{ fontSize: '28px', fontWeight: 800, color: '#64748b', marginTop: '6px' }}>{cancelledCount}</div>
         </div>
       </div>
 
       {/* Status Filter Pills */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
+      <div className="filter-tabs" style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
         {['All', 'Pending', 'Delivered', 'Returned', 'Cancelled'].map(filter => {
           const isActive = statusFilter === filter;
           let count = totalShipments;
@@ -309,8 +309,99 @@ export default function AdminShippingPage() {
         })}
       </div>
 
-      <div className="card" style={{ background: '#fff', borderRadius: '20px', padding: '24px', boxShadow: '0 2px 12px rgba(0,0,0,0.02)', border: '1px solid #f1f5f9' }}>
+      {/* Desktop view: Table */}
+      <div className="desktop-view-only card" style={{ background: '#fff', borderRadius: '20px', padding: '24px', boxShadow: '0 2px 12px rgba(0,0,0,0.02)', border: '1px solid #f1f5f9' }}>
         <Table columns={columns} data={filteredOrders} actions={actions} loading={loading} />
+      </div>
+
+      {/* Mobile view: Shipping Cards */}
+      <div className="mobile-view-only mobile-list">
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>Loading shipments...</div>
+        ) : filteredOrders.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '40px', color: '#64748b', background: '#fff', borderRadius: '16px' }}>No shipments found.</div>
+        ) : (
+          filteredOrders.map(order => {
+            const isDelivered = order.shipping_status === 'Delivered';
+            const isCancelled = order.shipping_status === 'Cancelled';
+            const statusClass = String(order.shipping_status || 'Pending').toLowerCase().replace(' ', '-');
+            
+            // Get avatar initial colors based on store name
+            const storeName = order.store?.name || 'Platform Store';
+            const getStoreColor = (name) => {
+              const colors = [
+                { bg: '#eff6ff', text: '#2563eb', border: '#bfdbfe' }, // blue
+                { bg: '#fffbeb', text: '#d97706', border: '#fef3c7' }, // orange
+                { bg: '#ecfdf5', text: '#059669', border: '#a7f3d0' }, // green
+                { bg: '#f5f3ff', text: '#7c3aed', border: '#ddd6fe' }  // purple
+              ];
+              let sum = 0;
+              for (let i = 0; i < name.length; i++) {
+                sum += name.charCodeAt(i);
+              }
+              return colors[sum % colors.length];
+            };
+            const storeColors = getStoreColor(storeName);
+
+            return (
+              <div key={order.id} className="mobile-shipping-card">
+                {/* Upper block: Avatar, ID, Status, Date */}
+                <div className="mobile-card-top-section">
+                  {/* Left Box Icon */}
+                  <div className="mobile-shipping-box-icon" style={{ background: storeColors.bg, color: storeColors.text, borderColor: storeColors.border }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                  </div>
+                  {/* Info Column */}
+                  <div className="mobile-shipping-info">
+                    <span className="order-id">{order.id.substring(0, 8).toUpperCase()}</span>
+                    <span className="subtitle-text">{storeName} • {order.customer_name}</span>
+                    <span className="courier-text">{order.courier_name || 'Not Shipped'}</span>
+                  </div>
+                  {/* Right Status / Date Column */}
+                  <div className="mobile-shipping-status-date">
+                    <span className={`status-pill ${statusClass}`} style={{
+                      background: isDelivered ? '#ecfdf5' : isCancelled ? '#fef2f2' : '#eff6ff',
+                      color: isDelivered ? '#047857' : isCancelled ? '#b91c1c' : '#1d4ed8'
+                    }}>
+                      {order.shipping_status || 'Pending'}
+                    </span>
+                    <div className="requested-date-row">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                      <span>{new Date(order.created_at).toLocaleDateString('en-GB')}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Divider */}
+                <div className="mobile-card-divider"></div>
+
+                {/* Bottom block: AWB tracking and Actions */}
+                <div className="mobile-card-bottom-section">
+                  <div className="awb-track-column">
+                    <span className="bottom-label">AWB / TRACKING</span>
+                    <span className="awb-value">{order.awb_number || 'N/A'}</span>
+                  </div>
+                  <div className="actions-column">
+                    <span className="bottom-label">ACTIONS</span>
+                    <div className="mobile-buttons-row">
+                      <Button variant="secondary" size="sm" onClick={() => setSelectedOrder(order)}>Manage</Button>
+                      {order.awb_number && (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          disabled={syncingMap[order.id]} 
+                          onClick={() => handleSyncStatus(order.id)}
+                        >
+                          {syncingMap[order.id] ? 'Syncing...' : 'Sync'}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
       </div>
 
       <Modal 
@@ -391,6 +482,176 @@ export default function AdminShippingPage() {
           </div>
         )}
       </Modal>
+
+      <style jsx>{`
+        /* Desktop / Mobile view toggles */
+        .desktop-view-only {
+          display: block;
+        }
+        .mobile-view-only {
+          display: none;
+        }
+
+        @media (max-width: 768px) {
+          .desktop-view-only {
+            display: none !important;
+          }
+          .mobile-view-only {
+            display: block !important;
+          }
+          
+          /* Stacking the header and search box */
+          .admin-shipping-page {
+            padding: 16px !important;
+          }
+          .page-header {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 16px !important;
+            margin-bottom: 24px !important;
+          }
+          .search-wrap {
+            width: 100% !important;
+          }
+
+          /* Metrics grid: 2-column, last spans 2 columns */
+          .summary-cards {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 12px !important;
+            margin-bottom: 24px !important;
+          }
+          .summary-card {
+            padding: 16px !important;
+            border-radius: 16px !important;
+          }
+          .summary-card.last-card {
+            grid-column: span 2 !important;
+          }
+
+          /* Filter tabs wrapping (No scroll!) */
+          .filter-tabs {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            gap: 8px !important;
+            margin-bottom: 16px !important;
+          }
+        }
+
+        /* Mobile Card Styling */
+        .mobile-shipping-card {
+          background: #fff;
+          border: 1px solid #f1f5f9;
+          border-radius: 16px;
+          padding: 16px;
+          margin-bottom: 16px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.01);
+          display: flex;
+          flex-direction: column;
+        }
+        .mobile-card-top-section {
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+        }
+        .mobile-shipping-box-icon {
+          width: 44px;
+          height: 44px;
+          border-radius: 12px;
+          border: 1px solid;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+        .mobile-shipping-info {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          min-width: 0;
+        }
+        .mobile-shipping-info .order-id {
+          font-size: 15px;
+          font-weight: 800;
+          color: #1e293b;
+          font-family: monospace;
+          margin-bottom: 2px;
+        }
+        .mobile-shipping-info .subtitle-text {
+          font-size: 12px;
+          color: #64748b;
+          margin-bottom: 2px;
+        }
+        .mobile-shipping-info .courier-text {
+          font-size: 12px;
+          color: #94a3b8;
+          font-weight: 600;
+        }
+        .mobile-shipping-status-date {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 6px;
+          flex-shrink: 0;
+        }
+        .status-pill {
+          display: inline-block;
+          font-size: 11px;
+          font-weight: 700;
+          padding: 4px 10px;
+          border-radius: 99px;
+        }
+        .requested-date-row {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 11px;
+          color: #94a3b8;
+          font-weight: 600;
+        }
+
+        .mobile-card-divider {
+          height: 1px;
+          background: #f8fafc;
+          margin: 12px 0;
+        }
+
+        .mobile-card-bottom-section {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-end;
+        }
+        .awb-track-column, .actions-column {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+        .actions-column {
+          align-items: flex-end;
+        }
+        .bottom-label {
+          font-size: 9px;
+          font-weight: 700;
+          color: #94a3b8;
+          letter-spacing: 0.3px;
+        }
+        .awb-value {
+          font-size: 13px;
+          font-weight: 700;
+          color: #475569;
+          font-family: monospace;
+        }
+        .mobile-buttons-row {
+          display: flex;
+          gap: 6px;
+        }
+        .mobile-buttons-row button,
+        .mobile-buttons-row :global(button) {
+          padding: 6px 12px !important;
+          font-size: 11px !important;
+          font-weight: 700 !important;
+          border-radius: 8px !important;
+        }
+      `}</style>
     </div>
   );
 }

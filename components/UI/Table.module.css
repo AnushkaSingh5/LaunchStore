@@ -49,6 +49,8 @@
 .actions {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .skeletonBar {
@@ -84,5 +86,65 @@
 @keyframes shimmer {
   100% {
     transform: translateX(100%);
+  }
+}
+
+@media (max-width: 576px) {
+  .hiddenMobile {
+    display: none !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .tableContainer {
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+  }
+  .table, 
+  .table tbody, 
+  .table tr, 
+  .table td {
+    display: block !important;
+    width: 100% !important;
+  }
+  .table thead {
+    display: none !important;
+  }
+  .tr {
+    background: #fff !important;
+    border: 1px solid var(--secondary) !important;
+    border-radius: 16px !important;
+    padding: 16px !important;
+    margin-bottom: 16px !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02) !important;
+  }
+  .tr:hover .td {
+    background: transparent !important;
+  }
+  .td {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 10px 0 !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+    font-size: 13px !important;
+    text-align: right !important;
+  }
+  .td:last-child {
+    border-bottom: none !important;
+    padding-bottom: 0 !important;
+    margin-top: 4px !important;
+  }
+  .td::before {
+    content: attr(data-label) !important;
+    font-weight: 700 !important;
+    color: var(--text-sub) !important;
+    font-size: 11px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    text-align: left !important;
+    flex-shrink: 0 !important;
+    margin-right: 16px !important;
   }
 }

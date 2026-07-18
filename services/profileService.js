@@ -47,7 +47,11 @@ export const profileService = {
         }
         throw error;
       }
-      return { success: true, profile: data };
+      const mappedProfile = {
+        ...data,
+        full_name: data ? data.name : ''
+      };
+      return { success: true, profile: mappedProfile };
     } catch (e) {
       console.error('Error fetching profile:', e);
       return { success: false, error: e.message, profile: mockProfile };
@@ -60,9 +64,14 @@ export const profileService = {
       return { success: true, profile: mockProfile };
     }
     try {
+      const dbData = { ...profileData };
+      if ('full_name' in dbData) {
+        dbData.name = dbData.full_name;
+        delete dbData.full_name;
+      }
       const { data, error } = await supabaseClient
         .from('profiles')
-        .update(profileData)
+        .update(dbData)
         .eq('id', userId)
         .select()
         .single();
@@ -74,7 +83,11 @@ export const profileService = {
         }
         throw error;
       }
-      return { success: true, profile: data };
+      const mappedProfile = {
+        ...data,
+        full_name: data ? data.name : ''
+      };
+      return { success: true, profile: mappedProfile };
     } catch (e) {
       console.error('Error updating profile:', e);
       return { success: false, error: e.message };
@@ -169,38 +182,27 @@ export const profileService = {
       const fileExt = file.name.split('.').pop();
       const filePath = `${creatorId}/${documentType.replace(/\s+/g, '_')}-${Date.now()}.${fileExt}`;
 
-      const { error: uploadError } = await supabaseClient.storage
-        .from('verification-documents')
-        .upload(filePath, file, { upsert: true });
+      let publicUrl = '';
+      try {
+        const { error: uploadError } = await supabaseClient.storage
+          .from('verification-documents')
+          .upload(filePath, file, { upsert: true });
 
-      if (uploadError) {
-        if (uploadError.message?.includes('Bucket not found') || uploadError.message?.includes('bucket_not_found')) {
-          console.warn('[LaunchCart - Storage] Bucket "verification-documents" not found. Creating it...');
-          try {
-            await supabaseClient.storage.createBucket('verification-documents', { public: true });
-            const { error: retryError } = await supabaseClient.storage
-              .from('verification-documents')
-              .upload(filePath, file, { upsert: true });
-            if (retryError) throw retryError;
-          } catch (createErr) {
-            console.error('Failed to create bucket programmatically, falling back to base64');
-            const reader = new FileReader();
-            const p = new Promise((resolve) => {
-              reader.onloadend = () => resolve(reader.result);
-            });
-            reader.readAsDataURL(file);
-            const url = await p;
-            const doc = { id: `doc-mock-${Date.now()}`, creator_id: creatorId, document_type: documentType, document_url: url, status: 'Under Review', uploaded_at: new Date().toISOString() };
-            return { success: true, document: doc };
-          }
-        } else {
-          throw uploadError;
-        }
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl: url } } = supabaseClient.storage
+          .from('verification-documents')
+          .getPublicUrl(filePath);
+        publicUrl = url;
+      } catch (storageErr) {
+        console.warn('⚠️ [LaunchCart - Storage] Storage upload failed, falling back to database base64 storage:', storageErr.message);
+        const reader = new FileReader();
+        const p = new Promise((resolve) => {
+          reader.onloadend = () => resolve(reader.result);
+        });
+        reader.readAsDataURL(file);
+        publicUrl = await p;
       }
-
-      const { data: { publicUrl } } = supabaseClient.storage
-        .from('verification-documents')
-        .getPublicUrl(filePath);
 
       const { data, error } = await supabaseClient
         .from('creator_documents')
@@ -228,7 +230,7 @@ export const profileService = {
 
       return { success: true, document: data };
     } catch (e) {
-      console.error('Error uploading document:', e);
+      console.warn('Error uploading document:', e);
       return { success: false, error: e.message };
     }
   },

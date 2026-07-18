@@ -49,7 +49,10 @@ export const authService = {
       .eq('id', userId)
       .single();
     if (error) throw error;
-    return data;
+    return {
+      ...data,
+      full_name: data ? data.name : ''
+    };
   },
 
   /**
@@ -57,14 +60,22 @@ export const authService = {
    */
   updateProfile: async (userId, profileData) => {
     if (!supabaseClient) throw new Error('Supabase client is not initialized.');
+    const dbData = { ...profileData };
+    if ('full_name' in dbData) {
+      dbData.name = dbData.full_name;
+      delete dbData.full_name;
+    }
     const { data, error } = await supabaseClient
       .from('profiles')
-      .update(profileData)
+      .update(dbData)
       .eq('id', userId)
       .select()
       .single();
     if (error) throw error;
-    return data;
+    return {
+      ...data,
+      full_name: data ? data.name : ''
+    };
   },
 };
 

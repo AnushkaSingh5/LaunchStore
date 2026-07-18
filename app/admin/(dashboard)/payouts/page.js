@@ -149,6 +149,31 @@ export default function AdminPayouts() {
     );
   });
 
+  const getAvatarColor = (name) => {
+    const colors = [
+      { bg: '#f3e8ff', text: '#8b5cf6' }, // purple
+      { bg: '#dcfce7', text: '#166534' }, // green
+      { bg: '#fee2e2', text: '#ef4444' }, // red
+      { bg: '#fffbeb', text: '#b45309' }, // orange
+      { bg: '#e0f2fe', text: '#0369a1' }  // blue
+    ];
+    let sum = 0;
+    const cleanName = name || '';
+    for (let i = 0; i < cleanName.length; i++) {
+      sum += cleanName.charCodeAt(i);
+    }
+    return colors[sum % colors.length];
+  };
+
+  const getInitials = (name) => {
+    if (!name) return '';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      return (parts[0].charAt(0) + parts[1].charAt(0)).toUpperCase();
+    }
+    return name.charAt(0).toUpperCase();
+  };
+
   const columns = [
     { field: 'id', label: 'PAYOUT ID', render: (row) => <span style={{ fontWeight: 700, fontFamily: 'monospace' }}>#{row.id.substring(0, 8)}...</span> },
     { 
@@ -282,7 +307,103 @@ export default function AdminPayouts() {
           })}
         </div>
 
-        <Table columns={columns} data={filteredPayouts} actions={actions} loading={loading} />
+        {/* Desktop view: Table */}
+        <div className="desktop-view-only">
+          <Table columns={columns} data={filteredPayouts} actions={actions} loading={loading} />
+        </div>
+
+        {/* Mobile view: Payout Cards */}
+        <div className="mobile-view-only mobile-list">
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>Loading payouts...</div>
+          ) : filteredPayouts.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '40px', color: '#64748b', background: '#fff', borderRadius: '16px' }}>No payout requests found.</div>
+          ) : (
+            filteredPayouts.map(payout => {
+              const avatarStyles = getAvatarColor(payout.creatorName);
+              const statusClass = payout.status.toLowerCase();
+              return (
+                <div key={payout.id} className="mobile-payout-card">
+                  {/* Header Row: Request ID & Status Badge */}
+                  <div className="mobile-payout-header-row">
+                    <span className="mobile-payout-id">#{payout.id.substring(0, 8)}...</span>
+                    <span className={`status-pill ${statusClass}`}>
+                      <span className={`status-dot ${statusClass}`}></span>
+                      {payout.status}
+                    </span>
+                  </div>
+
+                  {/* Creator Profile Info */}
+                  <div className="mobile-payout-profile-row">
+                    <div className="profile-avatar" style={{ background: avatarStyles.bg, color: avatarStyles.text }}>
+                      {getInitials(payout.creatorName)}
+                    </div>
+                    <div className="profile-info">
+                      <span className="profile-name">{payout.creatorName}</span>
+                      <span className="profile-email">{payout.creatorEmail}</span>
+                    </div>
+                    <div className="requested-date">
+                      <span className="date-label">Requested on</span>
+                      <span className="date-val">{payout.requestedAt}</span>
+                    </div>
+                  </div>
+
+                  {/* Metadata details grid (wrapped/flex) */}
+                  <div className="mobile-payout-meta-row">
+                    <div className="meta-item">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2.5"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                      <div className="meta-info">
+                        <span className="meta-label">AMOUNT</span>
+                        <span className="meta-val highlight">₹{payout.amount.toLocaleString()}</span>
+                      </div>
+                    </div>
+
+                    <div className="meta-item">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
+                      <div className="meta-info">
+                        <span className="meta-label">METHOD</span>
+                        <span className="meta-val">{payout.method}</span>
+                      </div>
+                    </div>
+
+                    <div className="meta-item full-width-meta">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2.5"><circle cx="12" cy="12" r="10"></circle><path d="M8 12l2 2 4-4"></path></svg>
+                      <div className="meta-info">
+                        <span className="meta-label">ACCOUNT DETAILS</span>
+                        <span className="meta-val account-text">{payout.accountDetails}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Remarks Row */}
+                  <div className="mobile-payout-remarks">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                    <div className="remarks-info">
+                      <span className="remarks-label">REMARKS/NOTES</span>
+                      <span className="remarks-val" style={{ color: payout.status === 'rejected' ? '#ef4444' : '#475569' }}>
+                        {payout.adminNotes || '--'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Approve/Reject Action Buttons */}
+                  {payout.status === 'pending' && (
+                    <div className="mobile-payout-actions-row">
+                      <button className="btn-action btn-approve" onClick={() => handleApprove(payout.id)} disabled={actioning}>Approve</button>
+                      <button className="btn-action btn-reject" onClick={() => setRejectingId(payout.id)} disabled={actioning}>Reject</button>
+                    </div>
+                  )}
+                  {payout.status === 'approved' && (
+                    <div className="mobile-payout-actions-row">
+                      <button className="btn-action btn-complete" onClick={() => setCompletingId(payout.id)} disabled={actioning}>Settle</button>
+                      <button className="btn-action btn-reject" onClick={() => setRejectingId(payout.id)} disabled={actioning}>Reject</button>
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
       </div>
 
       {/* Reject Modal */}
@@ -692,6 +813,240 @@ export default function AdminPayouts() {
         .btn-complete-submit:hover:not(:disabled) {
           transform: translateY(-1px);
           box-shadow: 0 6px 16px rgba(16, 185, 129, 0.35);
+        }
+
+        /* Desktop / Mobile view toggles */
+        .desktop-view-only {
+          display: block;
+        }
+        .mobile-view-only {
+          display: none;
+        }
+
+        @media (max-width: 768px) {
+          .desktop-view-only {
+            display: none !important;
+          }
+          .mobile-view-only {
+            display: block !important;
+          }
+          .admin-payouts-page {
+            gap: 16px !important;
+          }
+          .page-header {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 16px !important;
+            margin-bottom: 0 !important;
+          }
+          .search-box {
+            width: 100% !important;
+          }
+
+          .summary-cards {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 12px !important;
+          }
+          .summary-card {
+            padding: 16px !important;
+            border-radius: 16px !important;
+            gap: 10px !important;
+          }
+          .icon-wrap {
+            width: 36px !important;
+            height: 36px !important;
+          }
+          .icon-wrap svg {
+            width: 18px !important;
+            height: 18px !important;
+          }
+          .card-val {
+            font-size: 20px !important;
+          }
+          .card-label {
+            font-size: 11px !important;
+          }
+          .card-subtext {
+            font-size: 10px !important;
+          }
+          
+          .table-card {
+            padding: 16px !important;
+            border-radius: 16px !important;
+          }
+          .filter-tabs {
+            margin-bottom: 16px !important;
+            padding-bottom: 8px !important;
+            display: flex !important;
+            flex-wrap: wrap !important;
+            gap: 8px !important;
+          }
+          .tab-btn {
+            padding: 6px 12px !important;
+            font-size: 13px !important;
+          }
+        }
+
+        /* Mobile Payout Card CSS */
+        .mobile-payout-card {
+          background: #fff;
+          border: 1px solid #f1f5f9;
+          border-radius: 16px;
+          padding: 16px;
+          margin-bottom: 16px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.01);
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+        }
+        .mobile-payout-header-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          border-bottom: 1px solid #f8fafc;
+          padding-bottom: 8px;
+        }
+        .mobile-payout-id {
+          font-family: monospace;
+          font-size: 13px;
+          font-weight: 700;
+          color: #64748b;
+        }
+        
+        .mobile-payout-profile-row {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          position: relative;
+        }
+        .mobile-payout-profile-row .profile-avatar {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 15px;
+          font-weight: 800;
+          flex-shrink: 0;
+        }
+        .mobile-payout-profile-row .profile-info {
+          display: flex;
+          flex-direction: column;
+          min-width: 0;
+          flex: 1;
+        }
+        .profile-name {
+          font-size: 14px;
+          font-weight: 700;
+          color: #1e293b;
+        }
+        .profile-email {
+          font-size: 12px;
+          color: #64748b;
+          word-break: break-all;
+        }
+        .requested-date {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          font-size: 11px;
+          flex-shrink: 0;
+        }
+        .date-label {
+          color: #94a3b8;
+          font-weight: 600;
+        }
+        .date-val {
+          color: #475569;
+          font-weight: 700;
+        }
+
+        .mobile-payout-meta-row {
+          display: flex;
+          flex-wrap: wrap;
+          column-gap: 16px;
+          row-gap: 10px;
+          background: #f8fafc;
+          padding: 12px;
+          border-radius: 12px;
+        }
+        .meta-item {
+          display: flex;
+          align-items: flex-start;
+          gap: 8px;
+          flex: 1;
+          min-width: 120px;
+        }
+        .meta-item.full-width-meta {
+          flex: 1 1 100%;
+          border-top: 1px solid #f1f5f9;
+          padding-top: 8px;
+          margin-top: 4px;
+        }
+        .meta-item svg {
+          margin-top: 2px;
+          flex-shrink: 0;
+        }
+        .meta-info {
+          display: flex;
+          flex-direction: column;
+        }
+        .meta-label {
+          font-size: 9px;
+          font-weight: 700;
+          color: #94a3b8;
+          letter-spacing: 0.3px;
+        }
+        .meta-val {
+          font-size: 12px;
+          font-weight: 700;
+          color: #475569;
+        }
+        .meta-val.highlight {
+          color: #1e293b;
+          font-size: 13px;
+        }
+        .account-text {
+          word-break: break-all;
+        }
+
+        .mobile-payout-remarks {
+          display: flex;
+          align-items: flex-start;
+          gap: 8px;
+          padding: 0 4px;
+        }
+        .mobile-payout-remarks svg {
+          margin-top: 2px;
+          flex-shrink: 0;
+        }
+        .remarks-info {
+          display: flex;
+          flex-direction: column;
+        }
+        .remarks-label {
+          font-size: 9px;
+          font-weight: 700;
+          color: #94a3b8;
+          letter-spacing: 0.3px;
+        }
+        .remarks-val {
+          font-size: 12px;
+          font-weight: 600;
+        }
+
+        .mobile-payout-actions-row {
+          display: flex;
+          gap: 8px;
+          margin-top: 4px;
+        }
+        .mobile-payout-actions-row button {
+          flex: 1;
+          padding: 8px 16px !important;
+          font-size: 12px !important;
+          font-weight: 700 !important;
+          border-radius: 10px !important;
         }
       `}</style>
     </div>

@@ -132,6 +132,18 @@ export default function PendingApprovals({ stores = [], onManage }) {
           filter: brightness(0.95);
           transform: scale(1.05);
         }
+
+        @media (max-width: 576px) {
+          .store-approval-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 16px;
+          }
+          .actions {
+            width: 100%;
+            justify-content: flex-end;
+          }
+        }
         .empty-state {
           text-align: center;
           padding: 32px;

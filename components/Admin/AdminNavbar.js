@@ -3,42 +3,78 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import styles from './AdminLayout.module.css';
+import { useAdmin } from '@/context/AdminContext';
+import { payoutService } from '@/services/payoutService';
 
 export default function AdminNavbar({ onToggleSidebar }) {
+  const { stores = [], orders = [], loading } = useAdmin();
   const [showNotifications, setShowNotifications] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(3);
+  const [unreadCount, setUnreadCount] = useState(0);
   const dropdownRef = useRef(null);
+  const [notifications, setNotifications] = useState([]);
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
 
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      text: '🏪 New Store Pending Approval: Store "bugfix" has been created and is awaiting review.',
-      time: '5 mins ago',
-      unread: true,
-      link: '/admin/stores'
-    },
-    {
-      id: 2,
-      text: '👤 Creator Verification Submitted: bugfix (bugfix@gmail.com) uploaded verification documents.',
-      time: '1 hour ago',
-      unread: true,
-      link: '/admin/creators'
-    },
-    {
-      id: 3,
-      text: '💳 New Payout Request: Store owner Anushka requested a payout of ₹15,000.',
-      time: '2 hours ago',
-      unread: true,
-      link: '/admin/payouts'
-    },
-    {
-      id: 4,
-      text: '📦 New Platform Order Placed: Order #748c94b9 was placed on "bugfix" store for ₹216.',
-      time: '1 day ago',
-      unread: false,
-      link: '/admin/orders'
-    }
-  ]);
+  useEffect(() => {
+    if (loading) return;
+
+    const generateNotifications = async () => {
+      const list = [];
+
+      // 1. Pending Stores
+      const pendingStores = stores.filter(s => s.status === 'Pending');
+      pendingStores.forEach(s => {
+        list.push({
+          id: `pending-store-${s.id}`,
+          text: `🏪 New Store Pending Approval: Store "${s.name}" is awaiting review.`,
+          time: s.createdDate || 'Recent',
+          link: '/admin/stores',
+          type: 'store'
+        });
+      });
+
+      // 2. Pending Payout Requests
+      let fetchedPayouts = [];
+      try {
+        fetchedPayouts = await payoutService.adminGetPayoutRequests();
+      } catch (err) {
+        console.error('Error fetching admin payouts:', err);
+      }
+      const pendingPayouts = (fetchedPayouts || []).filter(p => (p.status || '').toLowerCase() === 'pending');
+      pendingPayouts.forEach(p => {
+        list.push({
+          id: `pending-payout-${p.id}`,
+          text: `💳 New Payout Request: Payout of ₹${parseFloat(p.amount).toLocaleString()} requested by creator.`,
+          time: p.requestedAt || 'Recent',
+          link: '/admin/payouts',
+          type: 'payout'
+        });
+      });
+
+      // 3. Recent Orders
+      const recentOrders = (orders || []).slice(0, 5);
+      recentOrders.forEach(o => {
+        list.push({
+          id: `recent-order-${o.id}`,
+          text: `📦 Order Placed: Order #${o.id.substring(0, 8)}... was placed on "${o.store}" for ₹${o.total.toLocaleString()}.`,
+          time: o.date || 'Recent',
+          link: '/admin/orders',
+          type: 'order'
+        });
+      });
+
+      // Load read status from localStorage
+      const readNotifications = JSON.parse(localStorage.getItem('admin_read_notifications') || '[]');
+      const processedList = list.map(item => ({
+        ...item,
+        unread: !readNotifications.includes(item.id)
+      }));
+
+      setNotifications(processedList);
+      setUnreadCount(processedList.filter(n => n.unread).length);
+    };
+
+    generateNotifications();
+  }, [stores, orders, loading]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -56,20 +92,27 @@ export default function AdminNavbar({ onToggleSidebar }) {
 
   const markAllRead = (e) => {
     e.stopPropagation();
+    const allIds = notifications.map(n => n.id);
+    localStorage.setItem('admin_read_notifications', JSON.stringify(allIds));
     setNotifications(prev => prev.map(n => ({ ...n, unread: false })));
     setUnreadCount(0);
   };
 
   const handleNotificationClick = (id) => {
+    const readNotifications = JSON.parse(localStorage.getItem('admin_read_notifications') || '[]');
+    if (!readNotifications.includes(id)) {
+      readNotifications.push(id);
+      localStorage.setItem('admin_read_notifications', JSON.stringify(readNotifications));
+    }
     setNotifications(prev =>
       prev.map(n => {
-        if (n.id === id && n.unread) {
-          setUnreadCount(c => Math.max(0, c - 1));
+        if (n.id === id) {
           return { ...n, unread: false };
         }
         return n;
       })
     );
+    setUnreadCount(c => Math.max(0, c - 1));
     setShowNotifications(false);
   };
 
@@ -77,19 +120,42 @@ export default function AdminNavbar({ onToggleSidebar }) {
 
   return (
     <header className={styles.navbar}>
-      <div className={styles.navLeft}>
-        <button className={styles.mobileToggle} onClick={onToggleSidebar}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-        </button>
-        <div className={styles.searchWrapper}>
-          <svg className={styles.searchIcon} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-          <input type="text" placeholder="Search stores, orders, sellers..." />
-          <span className={styles.searchShortcut}>⌘K</span>
+      {showMobileSearch ? (
+        <div className="mobileSearchOverlay">
+          <svg className="overlaySearchIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input 
+            type="text" 
+            placeholder="Search stores, orders, sellers..." 
+            autoFocus 
+            className="overlaySearchInput"
+          />
+          <button className="closeOverlayBtn" onClick={() => setShowMobileSearch(false)}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
         </div>
-      </div>
+      ) : (
+        <>
+          <div className={styles.navLeft}>
+            <button className={styles.mobileToggle} onClick={onToggleSidebar}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            </button>
+            <div className={styles.searchWrapper}>
+              <svg className={styles.searchIcon} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input type="text" placeholder="Search stores, orders, sellers..." />
+              <span className={styles.searchShortcut}>⌘K</span>
+            </div>
+          </div>
 
-      <div className={styles.navRight}>
-        <div className={styles.navActions}>
+          <div className={styles.navRight}>
+            <div className={styles.navActions}>
+              {/* Mobile Search Toggle Button */}
+              <button 
+                className="mobileSearchTriggerBtn"
+                onClick={() => setShowMobileSearch(true)}
+                title="Search"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              </button>
           {/* Notifications Trigger Wrapper */}
           <div className={styles.navDropdownWrapper} ref={dropdownRef} style={{ position: 'relative' }}>
             <button 
@@ -139,13 +205,6 @@ export default function AdminNavbar({ onToggleSidebar }) {
               </div>
             )}
           </div>
-
-          <button className={styles.navActionBtn} title="Help">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-          </button>
-          <button className={styles.navActionBtn} title="Settings">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
-          </button>
         </div>
         <div className={styles.divider}></div>
         <div className={styles.adminProfile}>
@@ -156,6 +215,8 @@ export default function AdminNavbar({ onToggleSidebar }) {
           </div>
         </div>
       </div>
+    </>
+  )}
 
       <style jsx>{`
         .dropdownMenu {
@@ -301,6 +362,84 @@ export default function AdminNavbar({ onToggleSidebar }) {
           text-align: center;
           font-size: 13px;
           color: #94a3b8;
+        }
+
+        @media (max-width: 576px) {
+          .dropdownMenu {
+            position: fixed;
+            top: 75px;
+            left: 16px;
+            right: 16px;
+            width: auto;
+            max-width: calc(100vw - 32px);
+            margin-top: 0;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+          }
+        }
+
+        .mobileSearchTriggerBtn {
+          display: none;
+          background: none;
+          border: none;
+          color: #64748b;
+          cursor: pointer;
+          padding: 8px;
+          border-radius: 10px;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s;
+        }
+        .mobileSearchTriggerBtn:hover {
+          background: #f1f5f9;
+          color: #1e293b;
+        }
+
+        .mobileSearchOverlay {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: #ffffff;
+          display: flex;
+          align-items: center;
+          padding: 0 20px;
+          gap: 12px;
+          z-index: 100;
+        }
+        .overlaySearchIcon {
+          color: #94a3b8;
+          flex-shrink: 0;
+        }
+        .overlaySearchInput {
+          flex: 1;
+          border: none;
+          outline: none;
+          font-size: 15px;
+          color: #1e293b;
+          font-family: inherit;
+        }
+        .closeOverlayBtn {
+          background: none;
+          border: none;
+          color: #64748b;
+          cursor: pointer;
+          padding: 6px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s;
+        }
+        .closeOverlayBtn:hover {
+          background: #f1f5f9;
+          color: #1e293b;
+        }
+
+        @media (max-width: 1024px) {
+          .mobileSearchTriggerBtn {
+            display: flex;
+          }
         }
       `}</style>
     </header>
