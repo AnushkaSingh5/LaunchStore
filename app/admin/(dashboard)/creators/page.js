@@ -12,6 +12,8 @@ export default function AdminCreators() {
   const { stores = [], loading } = useAdmin();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCreator, setSelectedCreator] = useState(null);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   // Extended Profile and Document States
   const [extendedProfile, setExtendedProfile] = useState(null);
@@ -30,10 +32,18 @@ export default function AdminCreators() {
     joinedDate: store.createdDate || '',
     revenue: store.revenue || 0,
     growth: store.growth || 0
-  })).filter(c => 
-    c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.storeName.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  })).filter(c => {
+    // Search filter
+    const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          c.storeName.toLowerCase().includes(searchQuery.toLowerCase());
+    if (!matchesSearch) return false;
+
+    // Date range filter
+    if (startDate && c.joinedDate < startDate) return false;
+    if (endDate && c.joinedDate > endDate) return false;
+
+    return true;
+  });
 
   // Fetch extended details when creator is selected
   useEffect(() => {
@@ -138,12 +148,70 @@ export default function AdminCreators() {
           <h2>Seller Management</h2>
           <p>Monitor profiles, verify credentials, and review verification documents.</p>
         </div>
-        <div className="header-actions">
-          <Input 
-            placeholder="Search sellers or stores..." 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+        <div className="header-actions" style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div className="date-filter-group" style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '12px', fontWeight: '700', color: '#64748b' }}>From:</span>
+              <input 
+                type="date" 
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                style={{
+                  padding: '6px 10px',
+                  borderRadius: '10px',
+                  border: '1px solid #e2e8f0',
+                  fontSize: '13px',
+                  fontFamily: 'inherit',
+                  color: '#334155',
+                  outline: 'none',
+                  background: '#fff'
+                }}
+              />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '12px', fontWeight: '700', color: '#64748b' }}>To:</span>
+              <input 
+                type="date" 
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                style={{
+                  padding: '6px 10px',
+                  borderRadius: '10px',
+                  border: '1px solid #e2e8f0',
+                  fontSize: '13px',
+                  fontFamily: 'inherit',
+                  color: '#334155',
+                  outline: 'none',
+                  background: '#fff'
+                }}
+              />
+            </div>
+            {(startDate || endDate) && (
+              <button 
+                onClick={() => { setStartDate(''); setEndDate(''); }}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '10px',
+                  border: '1px solid #cbd5e1',
+                  background: '#f8fafc',
+                  color: '#475569',
+                  fontSize: '12px',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          <div style={{ width: '220px' }}>
+            <Input 
+              placeholder="Search sellers..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
         </div>
       </div>
 
@@ -276,10 +344,10 @@ export default function AdminCreators() {
 
       <style jsx>{`
         .admin-creators { display: flex; flex-direction: column; gap: 32px; }
-        .page-header { display: flex; justify-content: space-between; align-items: flex-end; }
+        .page-header { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; flex-wrap: wrap; }
         .header-text h2 { font-size: 24px; font-weight: 800; color: #1e293b; margin: 0; }
         .header-text p { color: #64748b; margin: 4px 0 0 0; }
-        .header-actions { width: 300px; }
+        .header-actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
         
         .creators-card {
           background: #fff;
