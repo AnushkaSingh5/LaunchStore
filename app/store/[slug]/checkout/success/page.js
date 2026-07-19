@@ -564,7 +564,7 @@ export default function CheckoutSuccessPage({ params }) {
           width: 100%;
           margin-top: 10px;
         }
-        .primary-btn, .secondary-btn {
+        :global(.primary-btn), :global(.secondary-btn) {
           flex: 1;
           padding: 14px;
           border-radius: 12px;
@@ -573,25 +573,61 @@ export default function CheckoutSuccessPage({ params }) {
           text-align: center;
           transition: all 0.2s;
           text-decoration: none;
+          display: inline-block;
         }
-        .primary-btn {
-          background: var(--primary, #8b5cf6);
-          color: #fff;
+        :global(.primary-btn) {
+          background: #0f172a !important;
+          color: #fff !important;
         }
-        .primary-btn:hover {
-          background: var(--accent, #7c3aed);
+        :global(.primary-btn:hover) {
+          background: #1e293b !important;
           transform: translateY(-1px);
         }
-        .secondary-btn {
-          background: transparent;
-          color: var(--text-main, #0f172a);
-          border: 1px solid var(--secondary, #e2e8f0);
+        :global(.secondary-btn) {
+          background: transparent !important;
+          color: #0f172a !important;
+          border: 1.5px solid #0f172a !important;
         }
-        .secondary-btn:hover {
-          background: var(--secondary, #e2e8f0);
+        :global(.secondary-btn:hover) {
+          background: rgba(15, 23, 42, 0.04) !important;
           transform: translateY(-1px);
         }
-        @media (max-width: 576px) {
+        @media (max-width: 768px) {
+          .success-container {
+            padding-top: 80px !important;
+            padding-bottom: 40px !important;
+            padding-left: 12px !important;
+            padding-right: 12px !important;
+          }
+          .success-card {
+            padding: 24px 16px !important;
+            border-radius: 16px !important;
+            gap: 16px !important;
+          }
+          .success-icon-wrapper {
+            width: 64px !important;
+            height: 64px !important;
+          }
+          .success-icon {
+            font-size: 32px !important;
+          }
+          h1 {
+            font-size: 22px !important;
+          }
+          .success-lead {
+            font-size: 14px !important;
+          }
+          .orders-summary-box {
+            padding: 16px !important;
+          }
+          .order-summary-item {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 4px;
+          }
+          .order-val {
+            text-align: left !important;
+          }
           .action-row {
             flex-direction: column;
             gap: 12px;

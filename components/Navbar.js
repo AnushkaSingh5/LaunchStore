@@ -856,14 +856,48 @@ export default function Navbar({ storeName, logoUrl }) {
 
         @media (max-width: 768px) {
           .navbar-wrapper {
-            padding: 12px 16px;
+            padding: 12px 10px !important;
           }
           :global(.logo) {
-            font-size: 18px !important;
+            font-size: 16px !important;
+            gap: 6px !important;
           }
-          .action-btn {
-            width: 36px;
-            height: 36px;
+          :global(.logo-img) {
+            width: 28px !important;
+            height: 28px !important;
+          }
+          :global(.logo span) {
+            max-width: 90px !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+          .nav-icons {
+            gap: 4px !important;
+          }
+          :global(.action-btn) {
+            width: 32px !important;
+            height: 32px !important;
+          }
+          :global(.action-btn svg) {
+            width: 18px !important;
+            height: 18px !important;
+          }
+          :global(.badge) {
+            top: 2px !important;
+            right: 2px !important;
+            min-width: 14px !important;
+            height: 14px !important;
+            font-size: 8px !important;
+          }
+          .user-dropdown-container {
+            position: static !important;
+          }
+          :global(.dropdown-menu) {
+            right: 10px !important;
+            left: auto !important;
+            width: 280px !important;
+            top: 54px !important;
           }
         }
       `}</style>

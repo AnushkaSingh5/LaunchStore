@@ -1180,6 +1180,15 @@ export default function StoreClient({ slug, initialStoreDetails, initialProducts
           .catalog-container-layout {
             gap: 12px;
           }
+          .categories-pill-section {
+            overflow-x: visible !important;
+            padding-bottom: 0 !important;
+          }
+          .categories-pill-list {
+            flex-wrap: wrap !important;
+            white-space: normal !important;
+            gap: 8px !important;
+          }
         }
 
         /* Preview banner */

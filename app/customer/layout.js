@@ -8,6 +8,8 @@ import { storeService } from '@/services/storeService';
 import StoreUnderReview from '@/components/StoreUnderReview';
 import PageLoader from '@/components/PageLoader';
 import { demoStores } from '@/lib/demoData';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
 
 export default function CustomerPortalLayout({ children }) {
   const { customer, customerProfile, loading, logout } = useCustomerAuth();
@@ -96,6 +98,8 @@ export default function CustomerPortalLayout({ children }) {
 
   return (
     <div className="profile-dashboard">
+      <Navbar storeName={storeDetails?.name} logoUrl={storeDetails?.logo_url || storeDetails?.logo} />
+
       <div className="profile-container container">
         <aside className="profile-sidebar dashboard-card">
           <div className="sidebar-profile-header">
@@ -167,11 +171,14 @@ export default function CustomerPortalLayout({ children }) {
         </main>
       </div>
 
+      <Footer storeName={storeDetails?.name} />
+
       <style jsx>{`
         .profile-dashboard {
           min-height: 100vh;
           background: var(--bg-main, #f8f9fb);
-          padding: 80px 0;
+          padding-top: 100px;
+          padding-bottom: 80px;
           font-family: 'Outfit', sans-serif;
         }
 
@@ -342,9 +349,16 @@ export default function CustomerPortalLayout({ children }) {
         }
 
         @media (max-width: 991px) {
+          .profile-dashboard {
+            padding-top: 72px !important;
+            padding-bottom: 40px !important;
+          }
           .profile-container {
             grid-template-columns: 1fr;
-            gap: 30px;
+            gap: 20px;
+            margin-top: 0 !important;
+            padding-left: 12px !important;
+            padding-right: 12px !important;
           }
           .profile-sidebar {
             position: relative;

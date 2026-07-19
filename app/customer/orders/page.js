@@ -819,6 +819,49 @@ export default function CustomerOrdersPage() {
           .details-grid {
             grid-template-columns: 1fr;
           }
+          .modal-overlay {
+            padding: 0 !important;
+            background: #ffffff !important;
+          }
+          .modal-card {
+            width: 100vw !important;
+            height: 100vh !important;
+            max-width: 100vw !important;
+            max-height: 100vh !important;
+            border-radius: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+            display: flex !important;
+            flex-direction: column !important;
+          }
+          .modal-header {
+            padding: 16px 20px !important;
+            border-bottom: 1px solid #f1f5f9 !important;
+            flex-shrink: 0 !important;
+          }
+          .modal-body {
+            padding: 16px 20px 100px 20px !important; /* 100px bottom padding for the fixed footer */
+            flex: 1 !important;
+            overflow-y: auto !important;
+            max-height: none !important;
+          }
+          .modal-divider {
+            margin: 16px 0 !important;
+          }
+          .shipping-timeline-section {
+            padding: 0 !important;
+          }
+          .total-breakdown {
+            position: fixed !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            background: #ffffff !important;
+            border-top: 1px solid #f1f5f9 !important;
+            padding: 16px 20px !important;
+            box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.04) !important;
+            z-index: 100 !important;
+          }
         }
       `}</style>
     </div>

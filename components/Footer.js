@@ -396,6 +396,16 @@ export default function Footer({ storeName, description }) {
             align-items: flex-start;
             gap: 16px;
             width: 100%;
+            min-width: 0 !important;
+          }
+          .newsletter-title {
+            font-size: 20px !important;
+            word-wrap: break-word !important;
+            word-break: break-word !important;
+          }
+          .newsletter-subtitle {
+            word-wrap: break-word !important;
+            word-break: break-word !important;
           }
           .newsletter-form-box {
             max-width: 100%;

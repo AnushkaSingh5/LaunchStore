@@ -1448,6 +1448,42 @@ export default function StoreCheckoutPage({ params }) {
         @media (max-width: 991px) {
           .checkout-layout {
             grid-template-columns: 1fr;
+            gap: 24px;
+          }
+        }
+        @media (max-width: 768px) {
+          .main-content {
+            padding-top: 80px !important;
+            padding-bottom: 40px !important;
+            padding-left: 12px !important;
+            padding-right: 12px !important;
+          }
+          .page-title {
+            font-size: 24px !important;
+            margin-bottom: 20px !important;
+          }
+          .checkout-form, .summary-section {
+            padding: 16px !important;
+            border-radius: 16px !important;
+          }
+          .summary-section {
+            border: 1px solid rgba(0, 0, 0, 0.06) !important;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02) !important;
+          }
+          .form-row, .form-grid {
+            grid-template-columns: 1fr !important;
+            gap: 12px !important;
+          }
+          .address-cards-grid {
+            grid-template-columns: 1fr !important;
+            gap: 12px !important;
+          }
+          .coupons-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 8px !important;
+          }
+          .coupon-offer-card {
+            padding: 8px 10px !important;
           }
         }
 

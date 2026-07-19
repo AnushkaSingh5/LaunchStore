@@ -1635,51 +1635,21 @@ export default function ProductClient({ slug, initialStoreDetails, initialProduc
         }
 
         .carousel-arrows {
-          display: flex;
-          gap: 8px;
-        }
-
-        .carousel-arrow-btn {
-          width: 36px;
-          height: 36px;
-          border-radius: 50%;
-          border: 1px solid #e2e8f0;
-          background: #ffffff;
-          color: #121212;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-
-        .carousel-arrow-btn:hover {
-          background: #f8fafc;
-          border-color: #cbd5e1;
+          display: none !important;
         }
 
         .carousel-scroll-container {
-          display: flex;
-          gap: 24px;
-          overflow-x: auto;
-          scroll-behavior: smooth;
-          padding: 8px 4px 16px;
-          scrollbar-width: none;
-          -ms-overflow-style: none;
+          display: grid !important;
+          grid-template-columns: repeat(2, 1fr) !important;
+          gap: 24px !important;
+          overflow-x: visible !important;
+          padding: 8px 4px 16px !important;
         }
 
-        .carousel-scroll-container::-webkit-scrollbar {
-          display: none;
-        }
-
-        .related-products-carousel .carousel-product-card-wrap {
-          flex: 0 0 calc(33.333% - 16px);
-          min-width: 280px;
-        }
-
-        .other-products-carousel .carousel-product-card-wrap {
-          flex: 0 0 calc(25% - 18px);
-          min-width: 280px;
+        .carousel-product-card-wrap {
+          flex: none !important;
+          width: 100% !important;
+          min-width: 0 !important;
         }
 
         @media (max-width: 1024px) {
@@ -1813,6 +1783,10 @@ export default function ProductClient({ slug, initialStoreDetails, initialProduc
           }
           .section-title {
             font-size: 24px;
+          }
+          .carousel-scroll-container {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 12px !important;
           }
         }
 
