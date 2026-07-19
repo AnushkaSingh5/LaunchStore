@@ -7,6 +7,7 @@ import Input from '@/components/UI/Input';
 import Select from '@/components/UI/Select';
 import Toggle from '@/components/UI/Toggle';
 import Button from '@/components/UI/Button';
+import ImageCropperModal from '@/components/ImageCropperModal';
 
 export default function SettingsPage() {
   const { store, user, refreshStore, setStore } = useAuth();
@@ -29,6 +30,9 @@ export default function SettingsPage() {
 
   const logoInputRef = useRef(null);
   const bannerInputRef = useRef(null);
+  const [cropperOpen, setCropperOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [cropType, setCropType] = useState('banner');
 
   useEffect(() => {
     if (store) {
@@ -95,28 +99,81 @@ export default function SettingsPage() {
     setSettings(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleFileUpload = async (field, e) => {
-    const file = e.target.files[0];
-    if (!file || !user || !store) return;
+  const handleAdjustCurrent = (type) => {
+    setCropType(type);
+    setSelectedFile(type === 'logo' ? settings.logo : settings.banner);
+    setCropperOpen(true);
+  };
+
+  const handleCroppedImageConfirm = async (croppedFile) => {
+    setCropperOpen(false);
+    setSelectedFile(null);
+    
     setSaving(true);
     try {
       let url = '';
-      if (field === 'logo') {
-        url = await storeService.uploadLogo(file, store.id);
+      if (cropType === 'logo') {
+        if (logoInputRef.current) logoInputRef.current.value = '';
+        url = await storeService.uploadLogo(croppedFile, store.id);
         await storeService.updateStore(store.id, { logo_url: url });
         setStore(prev => prev ? { ...prev, logo_url: url } : prev);
-      } else if (field === 'banner') {
-        url = await storeService.uploadBanner(file, store.id);
+        handleChange('logo', url);
+        alert('Store logo updated successfully!');
+      } else {
+        if (bannerInputRef.current) bannerInputRef.current.value = '';
+        url = await storeService.uploadBanner(croppedFile, store.id);
         await storeService.updateStore(store.id, { banner_url: url });
         setStore(prev => prev ? { ...prev, banner_url: url } : prev);
+        handleChange('banner', url);
+        alert('Cover banner updated successfully!');
       }
-      handleChange(field, url);
       await refreshStore();
     } catch (err) {
       console.error(err);
       alert('Upload failed: ' + err.message);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleFileUpload = async (field, e) => {
+    const file = e.target.files[0];
+    if (!file || !user || !store) return;
+
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      alert('Unsupported file format. Please upload a JPG, PNG, or WEBP image.');
+      if (field === 'logo') logoInputRef.current.value = '';
+      else bannerInputRef.current.value = '';
+      return;
+    }
+
+    if (field === 'logo') {
+      // Validate file size (Max 2MB)
+      const maxSize = 2 * 1024 * 1024;
+      if (file.size > maxSize) {
+        alert('Logo file size exceeds the 2MB limit. Please upload a smaller image.');
+        logoInputRef.current.value = '';
+        return;
+      }
+
+      setCropType('logo');
+      setSelectedFile(file);
+      setCropperOpen(true);
+    }
+
+    if (field === 'banner') {
+      // Validate size (Max 5MB)
+      const maxSize = 5 * 1024 * 1024;
+      if (file.size > maxSize) {
+        alert('File size exceeds the 5MB limit. Please upload a smaller image.');
+        bannerInputRef.current.value = '';
+        return;
+      }
+
+      setCropType('banner');
+      setSelectedFile(file);
+      setCropperOpen(true);
     }
   };
 
@@ -173,6 +230,9 @@ export default function SettingsPage() {
           <div className="upload-grid">
             <div className="upload-group">
               <label><b>Store Logo</b></label>
+              <span className="upload-instructions">
+                Recommended: 500 × 500 px (1:1 Ratio) &bull; Max 2MB &bull; JPG, PNG, WEBP
+              </span>
               <input
                 type="file"
                 ref={logoInputRef}
@@ -180,13 +240,19 @@ export default function SettingsPage() {
                 accept="image/*"
                 onChange={(e) => handleFileUpload('logo', e)}
               />
-              <div className={`upload-box logo-upload-box ${settings.logo ? 'has-preview' : ''}`} onClick={() => logoInputRef.current.click()}>
+              <div className={`upload-box logo-upload-box ${settings.logo ? 'has-preview' : ''}`} onClick={(e) => {
+                if (!settings.logo) logoInputRef.current.click();
+              }}>
                 {settings.logo ? (
                   <div className="preview-container">
                     <img src={settings.logo} alt="Logo preview" className="logo-preview" />
                     <div className="preview-overlay">
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
-                      <span>Change Logo</span>
+                      <button type="button" className="overlay-action-btn" onClick={(e) => { e.stopPropagation(); logoInputRef.current.click(); }}>
+                        Upload New
+                      </button>
+                      <button type="button" className="overlay-action-btn" onClick={(e) => { e.stopPropagation(); handleAdjustCurrent('logo'); }}>
+                        Crop / Adjust
+                      </button>
                     </div>
                   </div>
                 ) : (
@@ -195,13 +261,15 @@ export default function SettingsPage() {
                       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
                     </div>
                     <strong>Upload Logo</strong>
-                    <p>PNG, JPG up to 2MB</p>
                   </>
                 )}
               </div>
             </div>
             <div className="upload-group">
               <label><b>Store Banner</b></label>
+              <span className="upload-instructions">
+                Recommended: 1920 × 600 px (16:5 Ratio) &bull; Max 5MB &bull; JPG, PNG, WEBP
+              </span>
               <input
                 type="file"
                 ref={bannerInputRef}
@@ -209,13 +277,19 @@ export default function SettingsPage() {
                 accept="image/*"
                 onChange={(e) => handleFileUpload('banner', e)}
               />
-              <div className={`upload-box banner-upload-box ${settings.banner ? 'has-preview' : ''}`} onClick={() => bannerInputRef.current.click()}>
+              <div className={`upload-box banner-upload-box ${settings.banner ? 'has-preview' : ''}`} onClick={(e) => {
+                if (!settings.banner) bannerInputRef.current.click();
+              }}>
                 {settings.banner ? (
                   <div className="preview-container">
                     <img src={settings.banner} alt="Banner preview" className="banner-preview" />
                     <div className="preview-overlay">
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
-                      <span>Change Banner</span>
+                      <button type="button" className="overlay-action-btn" onClick={(e) => { e.stopPropagation(); bannerInputRef.current.click(); }}>
+                        Upload New
+                      </button>
+                      <button type="button" className="overlay-action-btn" onClick={(e) => { e.stopPropagation(); handleAdjustCurrent('banner'); }}>
+                        Crop / Adjust
+                      </button>
                     </div>
                   </div>
                 ) : (
@@ -223,8 +297,7 @@ export default function SettingsPage() {
                     <div className="upload-circle">
                       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
                     </div>
-                    <strong>Upload Banner</strong>
-                    <p>PNG, JPG up to 5MB</p>
+                    <strong>Upload Cover Banner</strong>
                   </>
                 )}
               </div>
@@ -371,6 +444,21 @@ export default function SettingsPage() {
 
         </div>
       </div>
+
+      <ImageCropperModal
+        isOpen={cropperOpen}
+        imageFile={selectedFile}
+        cropType={cropType}
+        storeName={settings.storeName}
+        logoUrl={settings.logo}
+        onClose={() => {
+          setCropperOpen(false);
+          setSelectedFile(null);
+          if (bannerInputRef.current) bannerInputRef.current.value = '';
+          if (logoInputRef.current) logoInputRef.current.value = '';
+        }}
+        onConfirm={handleCroppedImageConfirm}
+      />
 
       <style jsx>{`
         .settings-page {
@@ -583,10 +671,19 @@ export default function SettingsPage() {
           border-radius: 14px;
         }
 
+        .upload-instructions {
+          display: block;
+          font-size: 11px;
+          color: #64748b;
+          margin-top: 2px;
+          margin-bottom: 8px;
+          font-weight: 500;
+        }
+
         .preview-overlay {
           position: absolute;
           top: 0; left: 0; right: 0; bottom: 0;
-          background: rgba(0, 0, 0, 0.4);
+          background: rgba(15, 23, 42, 0.65);
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -595,6 +692,40 @@ export default function SettingsPage() {
           opacity: 0;
           transition: opacity 0.2s;
           border-radius: 14px;
+          padding: 10px;
+          box-sizing: border-box;
+          z-index: 10;
+        }
+
+        .preview-container {
+          position: relative;
+          width: 100%;
+          height: 100%;
+        }
+
+        .preview-container:hover .preview-overlay {
+          opacity: 1;
+        }
+
+        .overlay-action-btn {
+          background: #ffffff;
+          border: none;
+          color: #1e293b;
+          font-size: 11px;
+          font-weight: 700;
+          padding: 6px 10px;
+          border-radius: 6px;
+          cursor: pointer;
+          transition: all 0.2s;
+          width: 90%;
+          max-width: 110px;
+          text-align: center;
+          box-shadow: 0 4px 6px -1px rgba(0,0,0,0.15);
+        }
+
+        .overlay-action-btn:hover {
+          background: #f1f5f9;
+          transform: scale(1.03);
         }
 
         .preview-container:hover .preview-overlay {

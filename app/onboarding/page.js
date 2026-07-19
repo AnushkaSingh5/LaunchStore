@@ -8,6 +8,7 @@ import { categoryService } from '@/services/categoryService';
 import { productService } from '@/services/productService';
 import { authService } from '@/services/authService';
 import PageLoader from '@/components/PageLoader';
+import ImageCropperModal from '@/components/ImageCropperModal';
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -28,6 +29,9 @@ export default function OnboardingPage() {
   const [bannerFile, setBannerFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState('');
   const [bannerPreview, setBannerPreview] = useState('');
+  const [cropperOpen, setCropperOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [cropType, setCropType] = useState('banner');
 
   // Step 3: Category Setup State
   const [categoryName, setCategoryName] = useState('');
@@ -101,20 +105,62 @@ export default function OnboardingPage() {
     setSlug(val.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''));
   };
 
+
+
+  const handleCroppedImageConfirm = (croppedFile) => {
+    setCropperOpen(false);
+    setSelectedFile(null);
+    if (cropType === 'logo') {
+      setLogoFile(croppedFile);
+      setLogoPreview(URL.createObjectURL(croppedFile));
+    } else {
+      setBannerFile(croppedFile);
+      setBannerPreview(URL.createObjectURL(croppedFile));
+    }
+  };
+
   const handleLogoUpload = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      setLogoFile(file);
-      setLogoPreview(URL.createObjectURL(file));
+    if (!file) return;
+
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      alert('Unsupported file format. Please upload a JPG, PNG, or WEBP image.');
+      e.target.value = '';
+      return;
     }
+
+    const maxSize = 2 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert('Logo file size exceeds the 2MB limit. Please upload a smaller image.');
+      e.target.value = '';
+      return;
+    }
+
+    setLogoFile(file);
+    setLogoPreview(URL.createObjectURL(file));
   };
 
   const handleBannerUpload = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      setBannerFile(file);
-      setBannerPreview(URL.createObjectURL(file));
+    if (!file) return;
+
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      alert('Unsupported file format. Please upload a JPG, PNG, or WEBP image.');
+      e.target.value = '';
+      return;
     }
+
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert('File size exceeds the 5MB limit. Please upload a smaller image.');
+      e.target.value = '';
+      return;
+    }
+
+    setBannerFile(file);
+    setBannerPreview(URL.createObjectURL(file));
   };
 
   const fileToBase64 = (file) => {
@@ -421,9 +467,15 @@ export default function OnboardingPage() {
                     {logoPreview ? (
                       <img src={logoPreview} alt="Logo preview" />
                     ) : (
-                      <div className="upload-placeholder-text">
-                        <span className="icon">🖼️</span>
-                        <span>Upload Logo</span>
+                      <div className="upload-placeholder-text logo-guidelines-onboarding">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2" style={{ marginBottom: '2px' }}><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                        <strong>Upload Logo</strong>
+                        <div className="guidelines-list-mini logo-list-mini">
+                          <span>500 × 500 px (Rec.)</span>
+                          <span>Ratio 1:1</span>
+                          <span>Max Size 2MB</span>
+                          <span>JPG, PNG, WEBP</span>
+                        </div>
                       </div>
                     )}
                     <input
@@ -442,9 +494,15 @@ export default function OnboardingPage() {
                     {bannerPreview ? (
                       <img src={bannerPreview} alt="Banner preview" />
                     ) : (
-                      <div className="upload-placeholder-text">
-                        <span className="icon">🌄</span>
-                        <span>Upload Banner</span>
+                      <div className="upload-placeholder-text banner-guidelines-onboarding">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2" style={{ marginBottom: '2px' }}><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                        <strong>Upload Store Banner</strong>
+                        <div className="guidelines-list-mini">
+                          <span>1920 × 600 px (Rec.)</span>
+                          <span>Ratio 16:5</span>
+                          <span>Max Size 5MB</span>
+                          <span>JPG, PNG, WEBP</span>
+                        </div>
                       </div>
                     )}
                     <input
@@ -945,6 +1003,72 @@ export default function OnboardingPage() {
           font-size: 12px;
           font-weight: 600;
           color: #64748b;
+        }
+
+        .logo-guidelines-onboarding {
+          padding: 8px;
+          text-align: center;
+          gap: 2px !important;
+        }
+
+        .logo-guidelines-onboarding strong {
+          font-size: 10px;
+          color: #1e293b;
+        }
+
+        .logo-list-mini {
+          grid-template-columns: repeat(2, 1fr);
+          gap: 2px 6px !important;
+        }
+
+        .logo-list-mini span {
+          font-size: 8px !important;
+        }
+
+        .upload-guidelines-above {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 4px;
+          margin-top: 2px;
+          margin-bottom: 6px;
+        }
+
+        .guideline-item {
+          font-size: 9px;
+          color: #475569;
+          background: #f1f5f9;
+          padding: 3px 6px;
+          border-radius: 4px;
+          font-weight: 600;
+          border: 1px solid #e2e8f0;
+          display: inline-flex;
+          align-items: center;
+          gap: 3px;
+        }
+
+        .banner-guidelines-onboarding {
+          padding: 8px;
+          text-align: center;
+          gap: 4px !important;
+        }
+
+        .banner-guidelines-onboarding strong {
+          font-size: 11px;
+          color: #1e293b;
+        }
+
+        .guidelines-list-mini {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 4px 10px;
+          margin-top: 4px;
+        }
+
+        .guidelines-list-mini span {
+          font-size: 9px;
+          color: #64748b;
+          font-weight: 500;
+          white-space: nowrap;
         }
 
         .upload-placeholder-text .icon {
