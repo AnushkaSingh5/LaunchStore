@@ -745,19 +745,21 @@ export default function CategoriesPage() {
         .filter-drawer {
           position: fixed;
           top: 0;
-          right: -400px;
-          width: 380px;
+          right: 0;
+          width: 100%;
+          max-width: 380px;
           height: 100%;
           background: #fff;
           box-shadow: -10px 0 30px rgba(0,0,0,0.05);
           z-index: 1000;
-          transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          transform: translateX(100%);
+          transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           display: flex;
           flex-direction: column;
         }
 
         .filter-drawer.open {
-          right: 0;
+          transform: translateX(0);
         }
 
         .drawer-header {
@@ -1136,9 +1138,173 @@ export default function CategoriesPage() {
         }
 
         @media (max-width: 768px) {
-          .summary-grid { grid-template-columns: 1fr; }
-          .category-row { flex-direction: column; align-items: flex-start; gap: 20px; }
-          .cat-products, .cat-actions { justify-content: flex-start; width: 100%; }
+          .header-row {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 16px !important;
+          }
+          .header-left {
+            width: 100% !important;
+          }
+          .header-left h1 {
+            font-size: 24px !important;
+          }
+          .add-btn {
+            width: 100% !important;
+            justify-content: center !important;
+            display: flex !important;
+            height: 44px !important;
+            font-size: 14px !important;
+            align-items: center;
+          }
+
+          .summary-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+          }
+          .summary-card {
+            padding: 12px !important;
+          }
+          .icon-wrapper {
+            width: 36px !important;
+            height: 36px !important;
+            border-radius: 8px !important;
+          }
+          .icon-wrapper svg {
+            width: 16px !important;
+            height: 16px !important;
+          }
+          .card-info .label {
+            font-size: 11px !important;
+          }
+          .card-info .value {
+            font-size: 18px !important;
+          }
+          .card-info .sub {
+            font-size: 10px !important;
+          }
+
+          .actions-bar {
+            display: flex !important;
+            flex-direction: row !important;
+            gap: 8px !important;
+            margin-top: 4px !important;
+          }
+          .search-box {
+            flex: 1 !important;
+            height: 42px !important;
+            border-radius: 12px !important;
+          }
+          .filter-btn-toggle {
+            height: 42px !important;
+            border-radius: 12px !important;
+            padding: 0 12px !important;
+          }
+
+          /* Standalone card deck for categories on mobile */
+          .list-header {
+            display: none !important;
+          }
+          .list-container {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+          }
+          .category-row {
+            background: #ffffff !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 16px !important;
+            padding: 16px !important;
+            margin-bottom: 12px !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.01) !important;
+            display: grid !important;
+            grid-template-columns: 1fr auto !important;
+            grid-template-rows: auto auto !important;
+            gap: 12px !important;
+            align-items: center !important;
+          }
+          .category-row:hover {
+            background: #ffffff !important;
+          }
+          .cat-main {
+            grid-column: 1 !important;
+            grid-row: 1 !important;
+            gap: 12px !important;
+            min-width: 0;
+          }
+          .cat-icon {
+            width: 50px !important;
+            height: 50px !important;
+            border-radius: 12px !important;
+          }
+          .cat-details h3 {
+            font-size: 14px !important;
+          }
+          .cat-details p {
+            font-size: 12px !important;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+          
+          .cat-order {
+            grid-column: 2 !important;
+            grid-row: 1 !important;
+            display: flex !important;
+            flex-direction: row !important;
+            gap: 6px !important;
+            justify-content: flex-end !important;
+          }
+          .order-btn {
+            width: 30px !important;
+            height: 30px !important;
+            border-radius: 8px !important;
+          }
+
+          .cat-products {
+            grid-column: 1 !important;
+            grid-row: 2 !important;
+            justify-content: flex-start !important;
+            display: flex !important;
+          }
+          .count-pill {
+            padding: 4px 8px !important;
+            font-size: 11px !important;
+            border-radius: 6px !important;
+          }
+
+          .cat-actions {
+            grid-column: 2 !important;
+            grid-row: 2 !important;
+            justify-content: flex-end !important;
+            display: flex !important;
+            gap: 6px !important;
+          }
+          .row-btn {
+            padding: 6px 12px !important;
+            border-radius: 8px !important;
+            font-size: 12px !important;
+            gap: 6px !important;
+          }
+
+          /* Footer styling */
+          .list-footer {
+            flex-direction: column !important;
+            gap: 12px !important;
+            align-items: center !important;
+            background: #ffffff !important;
+            padding: 16px !important;
+            border-radius: 16px !important;
+            border: 1px solid #e2e8f0 !important;
+            margin-top: 12px !important;
+          }
+          .footer-right {
+            width: 100% !important;
+            justify-content: center !important;
+          }
         }
 
         /* Modal Specific Styles */

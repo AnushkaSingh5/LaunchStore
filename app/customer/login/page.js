@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useCustomerAuth } from '@/context/CustomerAuthContext';
 import { storeService } from '@/services/storeService';
 import StoreUnderReview from '@/components/StoreUnderReview';
+import { demoStores } from '@/lib/demoData';
 
 function LoginContent() {
   const router = useRouter();
@@ -37,13 +38,17 @@ function LoginContent() {
   useEffect(() => {
     const checkTargetStore = async () => {
       const redirectPath = redirect || '';
-      if (redirectPath.startsWith('/store/')) {
+      if (redirectPath.startsWith('/store/') || redirectPath.startsWith('/demo-store/')) {
         const slug = redirectPath.split('/')[2];
         if (slug) {
           setCheckingStore(true);
           try {
-            const store = await storeService.getStoreBySlug(slug);
-            setStoreDetails(store);
+            if (redirectPath.startsWith('/demo-store/')) {
+              setStoreDetails(demoStores[slug] || null);
+            } else {
+              const store = await storeService.getStoreBySlug(slug);
+              setStoreDetails(store);
+            }
           } catch (e) {
             console.error('Failed to pre-check store status on customer login:', e);
           } finally {
@@ -56,7 +61,7 @@ function LoginContent() {
   }, [redirect]);
 
   // Calculate back URL to return to the active store instead of the root landing page
-  const backUrl = redirect && redirect.startsWith('/store/') ? redirect : '/';
+  const backUrl = redirect && (redirect.startsWith('/store/') || redirect.startsWith('/demo-store/')) ? redirect : '/';
 
   // Auto-redirect if already logged in (essential for OAuth callback landing)
   useEffect(() => {
@@ -170,7 +175,7 @@ function LoginContent() {
   return (
     <div className="login-card dashboard-card fade-in">
       <Link href={backUrl} className="back-link">
-        {redirect && redirect.startsWith('/store/') ? '← Back to store' : '← Back to homepage'}
+        {redirect && (redirect.startsWith('/store/') || redirect.startsWith('/demo-store/')) ? '← Back to store' : '← Back to homepage'}
       </Link>
 
       <div className="brand-header">

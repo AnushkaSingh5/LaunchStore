@@ -311,92 +311,100 @@ export default function CreatorProfile() {
         {/* Right Side: Business & Verification Documents */}
         <div className="right-panel">
           <div className="form-card business-card">
-            <h3 className="section-title">Business Profile</h3>
-            <div className="form-grid">
-              <div className="form-group">
-                <label htmlFor="businessName">Business Name</label>
-                <input
-                  id="businessName"
-                  type="text"
-                  placeholder="e.g. Anushka Singh Designs"
-                  value={businessName}
-                  onChange={(e) => setBusinessName(e.target.value)}
-                  required
-                />
-              </div>
+            <form onSubmit={handleProfileSubmit}>
+              <h3 className="section-title">Business Profile</h3>
+              <div className="form-grid">
+                <div className="form-group">
+                  <label htmlFor="businessName">Business Name</label>
+                  <input
+                    id="businessName"
+                    type="text"
+                    placeholder="e.g. Anushka Singh Designs"
+                    value={businessName}
+                    onChange={(e) => setBusinessName(e.target.value)}
+                    required
+                  />
+                </div>
 
-              <div className="form-group">
-                <label htmlFor="businessType">Business Type</label>
-                <div className="select-wrapper">
-                  <select id="businessType" value={businessType} onChange={(e) => setBusinessType(e.target.value)}>
-                    <option value="Individual">Individual/Proprietor</option>
-                    <option value="Partnership">Partnership Company</option>
-                    <option value="LLP">Limited Liability Partnership</option>
-                    <option value="Private Limited">Private Limited Company</option>
-                  </select>
+                <div className="form-group">
+                  <label htmlFor="businessType">Business Type</label>
+                  <div className="select-wrapper">
+                    <select id="businessType" value={businessType} onChange={(e) => setBusinessType(e.target.value)}>
+                      <option value="Individual">Individual/Proprietor</option>
+                      <option value="Partnership">Partnership Company</option>
+                      <option value="LLP">Limited Liability Partnership</option>
+                      <option value="Private Limited">Private Limited Company</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="form-group full-width">
+                  <label htmlFor="address">Registered Business Address</label>
+                  <input
+                    id="address"
+                    type="text"
+                    placeholder="Office/House No, Building, Street Address"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="city">City</label>
+                  <input
+                    id="city"
+                    type="text"
+                    placeholder="e.g. New Delhi"
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="state">State</label>
+                  <input
+                    id="state"
+                    type="text"
+                    placeholder="e.g. Delhi"
+                    value={state}
+                    onChange={(e) => setState(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="country">Country</label>
+                  <input
+                    id="country"
+                    type="text"
+                    placeholder="e.g. India"
+                    value={country}
+                    onChange={(e) => setCountry(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="postalCode">Postal PIN Code</label>
+                  <input
+                    id="postalCode"
+                    type="text"
+                    placeholder="e.g. 110001"
+                    value={postalCode}
+                    onChange={(e) => setPostalCode(e.target.value.replace(/[^0-9]/g, ''))}
+                    required
+                  />
                 </div>
               </div>
 
-              <div className="form-group full-width">
-                <label htmlFor="address">Registered Business Address</label>
-                <input
-                  id="address"
-                  type="text"
-                  placeholder="Office/House No, Building, Street Address"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  required
-                />
+              <div className="form-submit-row" style={{ marginTop: '24px' }}>
+                <button type="submit" className="btn-save-profile" disabled={saving}>
+                  {saving ? 'Saving changes...' : 'Save Business Profile'}
+                </button>
               </div>
-
-              <div className="form-group">
-                <label htmlFor="city">City</label>
-                <input
-                  id="city"
-                  type="text"
-                  placeholder="e.g. New Delhi"
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="state">State</label>
-                <input
-                  id="state"
-                  type="text"
-                  placeholder="e.g. Delhi"
-                  value={state}
-                  onChange={(e) => setState(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="country">Country</label>
-                <input
-                  id="country"
-                  type="text"
-                  placeholder="e.g. India"
-                  value={country}
-                  onChange={(e) => setCountry(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="postalCode">Postal PIN Code</label>
-                <input
-                  id="postalCode"
-                  type="text"
-                  placeholder="e.g. 110001"
-                  value={postalCode}
-                  onChange={(e) => setPostalCode(e.target.value.replace(/[^0-9]/g, ''))}
-                  required
-                />
-              </div>
-            </div>
+            </form>
           </div>
 
           {/* Documents Upload Grid */}
@@ -842,6 +850,70 @@ export default function CreatorProfile() {
         @media (max-width: 1280px) {
           .profile-content-grid {
             grid-template-columns: 1fr;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .profile-container {
+            padding: 0 0 16px 0 !important;
+            gap: 16px !important;
+          }
+          .profile-header {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 12px !important;
+          }
+          .verification-banner {
+            justify-content: center !important;
+            width: 100% !important;
+          }
+          .form-card {
+            padding: 20px !important;
+            border-radius: 20px !important;
+          }
+          .avatar-section {
+            flex-direction: column !important;
+            text-align: center !important;
+            gap: 12px !important;
+            align-items: center !important;
+          }
+          .avatar-text {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+          }
+          .form-grid {
+            grid-template-columns: 1fr !important;
+            gap: 16px !important;
+          }
+          .form-group.full-width {
+            grid-column: span 1 !important;
+          }
+          .form-submit-row {
+            margin-top: 20px !important;
+          }
+          .btn-save-profile {
+            width: 100% !important;
+            justify-content: center !important;
+          }
+          .doc-upload-box {
+            padding: 16px !important;
+          }
+          .uploaded-indicator {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 10px !important;
+            text-align: center !important;
+          }
+          .badge-status {
+            text-align: center !important;
+          }
+          .btn-view-doc {
+            text-align: center !important;
+            padding: 8px !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 8px !important;
+            background: #f8fafc !important;
           }
         }
       `}</style>

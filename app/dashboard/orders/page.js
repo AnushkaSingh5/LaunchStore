@@ -462,55 +462,123 @@ export default function OrdersPage() {
             const status = getStatusColor(order.status);
             return (
               <div key={order.id} className="order-row">
-                <div className="col-id"><strong>{order.id}</strong></div>
-                <div className="col-customer">
-                  <div className="cust-info">
-                    <strong>{order.customer || 'Guest Customer'}</strong>
-                    <span>{order.email || 'no-email@example.com'}</span>
+                {/* Desktop-only Columns Container */}
+                <div className="desktop-columns">
+                  <div className="col-id"><strong>{order.id}</strong></div>
+                  <div className="col-customer">
+                    <div className="cust-info">
+                      <strong>{order.customer || 'Guest Customer'}</strong>
+                      <span>{order.email || 'no-email@example.com'}</span>
+                    </div>
+                  </div>
+                  <div className="col-date">
+                    <div className="date-info">
+                      <strong>{new Date(order.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</strong>
+                      <span>10:30 AM</span>
+                    </div>
+                  </div>
+                  <div className="col-total"><strong>₹{order.total.toFixed(2)}</strong></div>
+                  <div className="col-status">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <span className="status-pill" style={{ background: status.bg, color: status.text }}>
+                        <span className="dot" style={{ background: status.dot }}></span>
+                        {order.status}
+                      </span>
+                      <span className="status-pill" style={{ 
+                        background: getPaymentStatusColor(order.payment).bg, 
+                        color: getPaymentStatusColor(order.payment).text,
+                        fontSize: '11px',
+                        padding: '2px 8px',
+                        borderRadius: '99px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        fontWeight: '700'
+                      }}>
+                        <span className="dot" style={{ 
+                          background: getPaymentStatusColor(order.payment).dot,
+                          width: '5px',
+                          height: '5px',
+                          borderRadius: '50%',
+                          marginRight: '4px'
+                        }}></span>
+                        {order.payment}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="col-actions">
+                    <div className="action-btns">
+                      <button className="row-btn view" onClick={() => setSelectedOrder(order)}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                        View Details
+                      </button>
+                    </div>
                   </div>
                 </div>
-                <div className="col-date">
-                  <div className="date-info">
-                    <strong>{new Date(order.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</strong>
-                    <span>10:30 AM</span>
+
+                {/* Mobile-only Card Wrapper */}
+                <div className="mobile-card-wrapper">
+                  <div className="mobile-card-top">
+                    {/* Left Icon */}
+                    <div className="mobile-order-icon" style={{ background: status.bg, color: status.text }}>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                    </div>
+
+                    {/* Middle Info Column */}
+                    <div className="mobile-order-info">
+                      {/* Row 1: Date & Badge 1 */}
+                      <div className="mobile-date-badge-row">
+                        <div className="mobile-date-row">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                          <span>{new Date(order.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                        </div>
+                        <span className="status-pill-mini" style={{ background: status.bg, color: status.text }}>
+                          <span className="dot" style={{ background: status.dot }}></span>
+                          {order.status}
+                        </span>
+                      </div>
+
+                      {/* Row 2: Time & Badge 2 */}
+                      <div className="mobile-time-badge-row">
+                        <div className="mobile-time-row">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                          <span>{new Date(order.date).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>
+                        </div>
+                        <span className="status-pill-mini" style={{ 
+                          background: getPaymentStatusColor(order.payment).bg, 
+                          color: getPaymentStatusColor(order.payment).text,
+                        }}>
+                          <span className="dot" style={{ background: getPaymentStatusColor(order.payment).dot }}></span>
+                          {order.payment}
+                        </span>
+                      </div>
+
+                      {/* Row 3: Name & Price Flex Container */}
+                      <div className="mobile-name-price-row">
+                        <span className="mobile-cust-name-lbl">
+                          {order.customer || 'Guest Customer'}
+                        </span>
+                        <div className="mobile-price-lbl">
+                          ₹{order.total.toFixed(2)}
+                        </div>
+                      </div>
+
+                      {/* Row 4: Order ID */}
+                      <span className="mobile-order-id-lbl">
+                        ID: {order.id}
+                      </span>
+
+                      {/* Row 5: Email */}
+                      <div className="mobile-cust-email-row">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                        <span>{order.email || 'no-email@example.com'}</span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div className="col-total"><strong>₹{order.total.toFixed(2)}</strong></div>
-                <div className="col-status">
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <span className="status-pill" style={{ background: status.bg, color: status.text }}>
-                      <span className="dot" style={{ background: status.dot }}></span>
-                      {order.status}
-                    </span>
-                    <span className="status-pill" style={{ 
-                      background: getPaymentStatusColor(order.payment).bg, 
-                      color: getPaymentStatusColor(order.payment).text,
-                      fontSize: '11px',
-                      padding: '2px 8px',
-                      borderRadius: '99px',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      fontWeight: '700'
-                    }}>
-                      <span className="dot" style={{ 
-                        background: getPaymentStatusColor(order.payment).dot,
-                        width: '5px',
-                        height: '5px',
-                        borderRadius: '50%',
-                        marginRight: '4px'
-                      }}></span>
-                      {order.payment}
-                    </span>
-                  </div>
-                </div>
-                <div className="col-actions">
-                  <div className="action-btns">
-                    <button className="row-btn view" onClick={() => setSelectedOrder(order)}>
+
+                  <div className="mobile-card-footer">
+                    <button className="mobile-details-btn" onClick={() => setSelectedOrder(order)}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                       View Details
-                    </button>
-                    <button className="menu-btn">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
                     </button>
                   </div>
                 </div>
@@ -941,19 +1009,21 @@ export default function OrdersPage() {
         .filter-drawer {
           position: fixed;
           top: 0;
-          right: -400px;
+          right: 0;
           width: 380px;
+          max-width: 100vw;
           height: 100%;
           background: #fff;
           box-shadow: -10px 0 30px rgba(0,0,0,0.05);
           z-index: 1000;
-          transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          transform: translateX(100%);
+          transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           display: flex;
           flex-direction: column;
         }
 
         .filter-drawer.open {
-          right: 0;
+          transform: translateX(0);
         }
 
         .drawer-header {
@@ -1611,12 +1681,332 @@ export default function OrdersPage() {
           gap: 12px;
         }
 
+        .mobile-card-wrapper {
+          display: none;
+        }
+        .desktop-columns {
+          display: contents;
+        }
+
         @media (max-width: 768px) {
-          .summary-grid { grid-template-columns: 1fr; }
-          .order-row { flex-direction: column; align-items: flex-start; gap: 16px; }
-          .col-check { display: none; }
-          .col-actions { text-align: left; width: 100%; }
-          .action-btns { justify-content: flex-start; }
+          .orders-page {
+            gap: 16px !important;
+          }
+
+          .header-row {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 12px !important;
+          }
+          .export-btn {
+            width: 100% !important;
+            justify-content: center !important;
+            margin-bottom: 8px !important;
+          }
+
+          .summary-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 12px !important;
+          }
+          .summary-grid .summary-card:last-child {
+            grid-column: 1 / span 2 !important;
+            justify-self: center !important;
+            width: 100% !important;
+          }
+          .summary-card {
+            padding: 12px !important;
+          }
+          .card-top {
+            gap: 12px !important;
+          }
+          .icon-wrapper {
+            width: 36px !important;
+            height: 36px !important;
+            border-radius: 8px !important;
+          }
+          .icon-wrapper svg {
+            width: 16px !important;
+            height: 16px !important;
+          }
+          .summary-card .value {
+            font-size: 18px !important;
+          }
+          .summary-card .label {
+            font-size: 11px !important;
+          }
+          .trend {
+            font-size: 10px !important;
+            margin-top: 6px !important;
+          }
+
+          .actions-bar {
+            flex-direction: column !important;
+            gap: 12px !important;
+            margin-top: 4px !important;
+          }
+          .search-box {
+            width: 100% !important;
+            height: 52px !important;
+            border-radius: 14px !important;
+            padding: 0 18px !important;
+          }
+          .search-box svg {
+            width: 22px !important;
+            height: 22px !important;
+          }
+          .search-box input {
+            font-size: 15px !important;
+            height: 100% !important;
+          }
+          .action-right-group {
+            display: flex !important;
+            gap: 8px !important;
+            width: 100% !important;
+          }
+          .filter-btn-toggle {
+            flex: 4 !important;
+            height: 44px !important;
+            border-radius: 12px !important;
+            justify-content: center !important;
+            font-size: 13px !important;
+          }
+          .sort-dropdown-container {
+            flex: 6 !important;
+            height: 44px !important;
+          }
+          .bar-select {
+            width: 100% !important;
+            height: 100% !important;
+            border-radius: 12px !important;
+            padding: 0 12px !important;
+            font-size: 13px !important;
+          }
+
+          .quick-filters-bar {
+            display: flex !important;
+            overflow-x: auto !important;
+            white-space: nowrap !important;
+            gap: 10px !important;
+            padding: 4px 0 12px 0 !important;
+            align-items: center !important;
+            -webkit-overflow-scrolling: touch;
+          }
+          .quick-chip {
+            flex-shrink: 0 !important;
+            padding: 8px 16px !important;
+            font-size: 13px !important;
+            height: 38px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            border-radius: 10px !important;
+          }
+
+          /* Mobile list deck styling */
+          .list-header {
+            display: none !important;
+          }
+          .list-container {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+          }
+          
+          .desktop-columns {
+            display: none !important;
+          }
+
+          .order-row {
+            background: #ffffff !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 20px !important;
+            padding: 14px !important;
+            margin-bottom: 12px !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02) !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 0 !important;
+          }
+          .order-row:hover {
+            background: #ffffff !important;
+          }
+
+          .mobile-card-wrapper {
+            display: flex !important;
+            flex-direction: column !important;
+            width: 100% !important;
+          }
+          .mobile-card-top {
+            display: flex !important;
+            align-items: flex-start !important;
+            justify-content: space-between !important;
+            width: 100% !important;
+            padding-bottom: 12px !important;
+            gap: 16px !important;
+          }
+          .mobile-order-icon {
+            width: 52px !important;
+            height: 52px !important;
+            border-radius: 12px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            flex-shrink: 0 !important;
+            align-self: flex-start !important;
+          }
+          .mobile-order-icon svg {
+            width: 24px !important;
+            height: 24px !important;
+          }
+          .mobile-order-info {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 4px !important;
+            flex: 1 !important;
+            min-width: 0 !important;
+          }
+          .mobile-date-row, .mobile-time-row {
+            display: flex !important;
+            align-items: center !important;
+            gap: 8px !important;
+            font-size: 13.5px !important;
+            font-weight: 600 !important;
+            color: #1e293b !important;
+          }
+          .mobile-date-row svg, .mobile-time-row svg {
+            color: #6366f1 !important;
+            flex-shrink: 0 !important;
+          }
+          .mobile-date-badge-row, .mobile-time-badge-row {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            width: 100% !important;
+            gap: 8px !important;
+          }
+          .mobile-name-price-row {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            gap: 8px !important;
+            width: 100% !important;
+            margin-top: 4px !important;
+          }
+          .mobile-cust-name-lbl {
+            font-size: 17px !important;
+            font-weight: 800 !important;
+            color: #1e293b !important;
+            word-break: break-word !important;
+          }
+          .mobile-price-lbl {
+            font-size: 17px !important;
+            font-weight: 800 !important;
+            color: #1e293b !important;
+            white-space: nowrap !important;
+          }
+          .mobile-order-id-lbl {
+            font-size: 12.5px !important;
+            color: #64748b !important;
+            margin-top: 1px !important;
+            word-break: break-all !important;
+          }
+          .mobile-cust-email-row {
+            display: flex !important;
+            align-items: flex-start !important;
+            gap: 6px !important;
+            font-size: 12.5px !important;
+            color: #64748b !important;
+            margin-top: 2px !important;
+            min-width: 0 !important;
+          }
+          .mobile-cust-email-row svg {
+            color: #6366f1 !important;
+            flex-shrink: 0 !important;
+            margin-top: 2px !important;
+          }
+          .mobile-cust-email-row span {
+            word-break: break-all !important;
+          }
+
+          .status-pill-mini {
+            padding: 4px 10px !important;
+            border-radius: 99px !important;
+            font-size: 11.5px !important;
+            font-weight: 700 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 4px !important;
+          }
+          .status-pill-mini .dot {
+            width: 4px !important;
+            height: 4px !important;
+            border-radius: 50% !important;
+            margin-right: 0 !important;
+          }
+
+          .mobile-card-footer {
+            display: flex !important;
+            gap: 8px !important;
+            width: 100% !important;
+            padding-top: 12px !important;
+            border-top: 1px solid #f1f5f9 !important;
+            align-items: center !important;
+          }
+          .mobile-details-btn {
+            flex: 1 !important;
+            height: 38px !important;
+            border-radius: 10px !important;
+            border: 1px solid #e2e8f0 !important;
+            background: #ffffff !important;
+            color: #475569 !important;
+            font-size: 12.5px !important;
+            font-weight: 700 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 6px !important;
+            cursor: pointer !important;
+            transition: all 0.2s;
+          }
+          .mobile-details-btn:hover {
+            background: #f8fafc;
+          }
+          .mobile-dots-btn {
+            width: 38px !important;
+            height: 38px !important;
+            border-radius: 10px !important;
+            border: 1px solid #e2e8f0 !important;
+            background: #ffffff !important;
+            color: #64748b !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            cursor: pointer !important;
+            transition: all 0.2s;
+            flex-shrink: 0 !important;
+          }
+          .mobile-dots-btn:hover {
+            background: #f8fafc;
+            color: #1e293b;
+          }
+          
+          /* Footer styling */
+          .list-footer {
+            flex-direction: column !important;
+            gap: 12px !important;
+            align-items: center !important;
+            background: #ffffff !important;
+            padding: 16px !important;
+            border-radius: 16px !important;
+            border: 1px solid #e2e8f0 !important;
+            margin-top: 12px !important;
+          }
+          .footer-right {
+            width: 100% !important;
+            justify-content: center !important;
+          }
         }
         .export-btn {
           background: #6366f1;

@@ -231,6 +231,65 @@ export default function ProductsPage() {
       )}
 
       <div className="table-container">
+        {/* Mobile Products List */}
+        <div className="mobile-products-list">
+          {loading ? (
+            <div className="mobile-loading">Loading products...</div>
+          ) : filteredProducts.length === 0 ? (
+            <div className="mobile-empty">No products found matching your criteria.</div>
+          ) : (
+            filteredProducts.map(product => {
+              const price = parseFloat(product.price) || 0;
+              const stock = parseInt(product.stock) || 0;
+              const status = String(product.status || 'Published');
+              const category = String(product.category || 'Uncategorized');
+
+              return (
+                <div key={product.id} className="mobile-product-card">
+                  <div className="mobile-product-main">
+                    <img src={product.image || 'https://images.unsplash.com/photo-1533090481720-856c6e3c1fdc?auto=format&fit=crop&q=80&w=300'} alt="" className="mobile-product-img" />
+                    <div className="mobile-product-info">
+                      <h4 className="mobile-product-name">{product.name || 'Unnamed Product'}</h4>
+                      <p className="mobile-product-meta">
+                        {category} <span className="meta-dot">•</span> ₹{price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </p>
+                      <div className="mobile-product-badges">
+                        {stock === 0 ? (
+                          <span className="stock-badge-pill out-of-stock">
+                            Out Of Stock
+                          </span>
+                        ) : stock < 10 ? (
+                          <span className="stock-badge-pill low-stock">
+                            Low Stock ({stock})
+                          </span>
+                        ) : (
+                          <span className="stock-badge-pill in-stock">
+                            In Stock ({stock})
+                          </span>
+                        )}
+                        <span className={`status-pill ${status.toLowerCase()}`}>
+                          {status}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mobile-product-actions">
+                    <button className="mobile-action-btn edit" onClick={() => router.push(`/dashboard/products/addproduct?id=${product.id}`)}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                      Edit
+                    </button>
+                    <button className="mobile-action-btn delete" onClick={() => handleDeleteProduct(product.id)}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
         <table className="products-table">
           <thead>
             <tr>
@@ -294,9 +353,6 @@ export default function ProductsPage() {
                     <button className="delete-btn" onClick={() => handleDeleteProduct(product.id)}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                       Delete
-                    </button>
-                    <button className="menu-btn">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
                     </button>
                   </div>
                 </td>
@@ -469,6 +525,10 @@ export default function ProductsPage() {
           display: flex;
           flex-direction: column;
           gap: 24px;
+        }
+
+        .mobile-products-list {
+          display: none;
         }
 
         .stock-badge-pill {
@@ -730,19 +790,21 @@ export default function ProductsPage() {
         .filter-drawer {
           position: fixed;
           top: 0;
-          right: -400px;
-          width: 380px;
+          right: 0;
+          width: 100%;
+          max-width: 380px;
           height: 100%;
           background: #fff;
           box-shadow: -10px 0 30px rgba(0,0,0,0.05);
           z-index: 1000;
-          transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          transform: translateX(100%);
+          transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           display: flex;
           flex-direction: column;
         }
 
         .filter-drawer.open {
-          right: 0;
+          transform: translateX(0);
         }
 
         .drawer-header {
@@ -1100,11 +1162,185 @@ export default function ProductsPage() {
         }
 
         @media (max-width: 768px) {
-          .summary-grid { grid-template-columns: 1fr; }
-          .header-row { flex-direction: column; align-items: flex-start; gap: 16px; }
-          .add-product-btn { width: 100%; justify-content: center; }
-          .actions-bar { flex-direction: column; }
-          .table-container { overflow-x: auto; }
+          .summary-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+          }
+          .summary-card {
+            padding: 12px;
+            gap: 10px;
+            border-radius: 16px;
+          }
+          .summary-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+          }
+          .summary-icon svg {
+            width: 16px;
+            height: 16px;
+          }
+          .summary-info h3 {
+            font-size: 18px;
+          }
+          .summary-info p {
+            font-size: 11px;
+          }
+          .summary-spark {
+            right: 8px;
+          }
+          .summary-spark svg {
+            width: 48px;
+            height: 22px;
+          }
+
+          .header-row {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 16px;
+          }
+          .add-product-btn {
+            width: 100%;
+            justify-content: center;
+          }
+          .actions-bar {
+            flex-direction: column;
+          }
+          
+          /* Switch table to cards layout on mobile */
+          .products-table {
+            display: none !important;
+          }
+          .mobile-products-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 20px;
+          }
+          .table-container {
+            background: transparent !important;
+            box-shadow: none !important;
+            border: none !important;
+            padding: 0 !important;
+          }
+          
+          /* Footer positioning adjustments on mobile */
+          .table-footer {
+            flex-direction: column;
+            gap: 16px;
+            align-items: center;
+            background: #fff;
+            padding: 16px;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+          }
+          .footer-right {
+            width: 100%;
+            justify-content: space-between;
+          }
+
+          /* Mobile product cards styles */
+          .mobile-product-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            text-align: left;
+          }
+          .mobile-product-main {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+          }
+          .mobile-product-img {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            object-fit: cover;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            flex-shrink: 0;
+          }
+          .mobile-product-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1;
+            min-width: 0;
+          }
+          .mobile-product-name {
+            font-size: 15px;
+            font-weight: 700;
+            color: #1e293b;
+            margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+          .mobile-product-meta {
+            font-size: 13px;
+            color: #64748b;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+          }
+          .meta-dot {
+            color: #cbd5e1;
+          }
+          .mobile-product-badges {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 4px;
+            flex-wrap: wrap;
+          }
+          .mobile-product-actions {
+            display: flex;
+            gap: 8px;
+            border-top: 1px solid #f1f5f9;
+            padding-top: 12px;
+          }
+          .mobile-action-btn {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            height: 38px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+          }
+          .mobile-action-btn.edit {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            color: #475569;
+          }
+          .mobile-action-btn.edit:hover {
+            background: #f8fafc;
+          }
+          .mobile-action-btn.delete {
+            background: #fef2f2;
+            border: 1px solid #fca5a5;
+            color: #ef4444;
+          }
+          .mobile-action-btn.delete:hover {
+            background: #fee2e2;
+          }
+          .mobile-action-btn.menu {
+            flex: 0 0 40px;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            color: #475569;
+            padding: 0;
+          }
         }
         .modal-custom-header {
           display: flex;

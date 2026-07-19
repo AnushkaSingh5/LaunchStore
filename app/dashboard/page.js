@@ -1110,7 +1110,35 @@ export default function DashboardOverview() {
 
         @media (max-width: 768px) {
           .stats-grid {
-            grid-template-columns: 1fr;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+          }
+          .stat-card {
+            padding: 12px;
+            gap: 8px;
+            border-radius: 16px;
+          }
+          .icon-wrapper {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+          }
+          .icon-wrapper svg {
+            width: 18px;
+            height: 18px;
+          }
+          .stat-info h3 {
+            font-size: 11px;
+            margin-bottom: 2px;
+          }
+          .stat-value {
+            font-size: 16px;
+          }
+          .sparkline {
+            display: none !important;
+          }
+          .stat-change {
+            font-size: 10px;
           }
           .header-container {
             flex-direction: column;

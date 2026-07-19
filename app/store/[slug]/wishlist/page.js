@@ -245,7 +245,8 @@ export default function WishlistPage({ params }) {
                 if (cleanName.includes('kettle') || price === 50 || cleanName === '5p') return 15;
                 if (cleanName.includes('organizer') || price === 40 || cleanName === '4p') return 11;
                 if (cleanName.includes('pen') || price === 20 || cleanName === '2p') return 30;
-                return 10 + (product.id % 20);
+                const parsedId = parseInt(String(product.id).replace(/\D/g, '')) || 0;
+                return 10 + (parsedId % 20);
               };
 
               // Category count badge (4 ct, 3 ct, 5 ct, etc.)

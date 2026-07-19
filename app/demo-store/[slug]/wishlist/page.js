@@ -9,6 +9,8 @@ import { storeService } from '@/services/storeService';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import StoreUnderReview from '@/components/StoreUnderReview';
+import { demoStores } from '@/lib/demoData';
+import DemoStoreBanner from '@/components/DemoStoreBanner';
 
 export default function WishlistPage({ params }) {
   const { slug } = use(params);
@@ -24,16 +26,37 @@ export default function WishlistPage({ params }) {
   const [shareSuccess, setShareSuccess] = useState(false);
 
   // Filter wishlist items for this store
-  const storeWishlist = (wishlist || []).filter(
+  const userWishlist = (wishlist || []).filter(
     item => item.store_id === storeDetails?.id || item.store_slug === slug
   );
+
+  const [mockItems, setMockItems] = useState([]);
+
+  useEffect(() => {
+    if (storeDetails && userWishlist.length === 0) {
+      const demoProds = (storeDetails.products || []).slice(0, 2).map(p => ({
+        ...p,
+        store_slug: slug,
+        stock: p.stock !== undefined ? p.stock : 10
+      }));
+      setMockItems(demoProds);
+    } else {
+      setMockItems([]);
+    }
+  }, [storeDetails, userWishlist.length, slug]);
+
+  const displayWishlist = userWishlist.length > 0 ? userWishlist : mockItems;
 
   useEffect(() => {
     const fetchStore = async () => {
       setLoading(true);
       try {
-        const data = await storeService.getStoreBySlug(slug);
-        setStoreDetails(data);
+        if (isDemo) {
+          setStoreDetails(demoStores[slug] || null);
+        } else {
+          const data = await storeService.getStoreBySlug(slug);
+          setStoreDetails(data);
+        }
       } catch (e) {
         console.error('Failed to fetch store details in wishlist:', e);
       } finally {
@@ -41,11 +64,11 @@ export default function WishlistPage({ params }) {
       }
     };
     fetchStore();
-  }, [slug]);
+  }, [slug, isDemo]);
 
   // Handle move all in-stock items to cart
   const handleMoveAllToCart = () => {
-    const inStockItems = storeWishlist.filter(item => item.stock > 0);
+    const inStockItems = displayWishlist.filter(item => item.stock > 0);
     if (inStockItems.length === 0) return;
     inStockItems.forEach(item => {
       addToCart(item);
@@ -62,7 +85,7 @@ export default function WishlistPage({ params }) {
   };
 
   // Sort wishlist items
-  const sortedWishlist = [...storeWishlist].sort((a, b) => {
+  const sortedWishlist = [...displayWishlist].sort((a, b) => {
     if (sortBy === 'price-asc') {
       return parseFloat(a.price) - parseFloat(b.price);
     }
@@ -163,30 +186,24 @@ export default function WishlistPage({ params }) {
     );
   }
 
-  if (storeDetails.status !== 'approved') {
-    return (
-      <StoreUnderReview 
-        storeName={storeDetails.name} 
-        status={storeDetails.status} 
-        statusReason={storeDetails.status_reason} 
-      />
-    );
-  }
+
 
   return (
     <main className="wishlist-layout">
+      <DemoStoreBanner />
       <Navbar storeName={storeDetails.name} logoUrl={storeDetails.logo_url || storeDetails.logo} />
 
       <div className="container wishlist-container">
         
         {/* Breadcrumbs */}
         <div className="breadcrumbs">
-          <Link href={`/store/${slug}`} className="breadcrumb-link">Home</Link>
+          <Link href={`/demo-store/${slug}`} className="breadcrumb-link">Home</Link>
           <span className="separator">&gt;</span>
           <span className="current">Wishlist</span>
         </div>
 
-        {/* Header Block *        <div className="wishlist-header-row">
+        {/* Header Block */}
+        <div className="wishlist-header-row">
           <div className="header-text-col">
             <h1 className="wishlist-title">
               My Wishlist ♡
@@ -199,7 +216,7 @@ export default function WishlistPage({ params }) {
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
               {shareSuccess ? 'Link Copied!' : 'Share Wishlist'}
             </button>
-            <button className="move-all-btn" onClick={handleMoveAllToCart} disabled={storeWishlist.filter(item => item.stock > 0).length === 0}>
+            <button className="move-all-btn" onClick={handleMoveAllToCart} disabled={displayWishlist.filter(item => item.stock > 0).length === 0}>
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
               Move All to Cart
             </button>
@@ -207,9 +224,9 @@ export default function WishlistPage({ params }) {
         </div>
 
         {/* Sub-header controls */}
-        {storeWishlist.length > 0 && (
+        {displayWishlist.length > 0 && (
           <div className="wishlist-controls-bar">
-            <span className="items-count-label">{storeWishlist.length} {storeWishlist.length === 1 ? 'item' : 'items'}</span>
+            <span className="items-count-label">{displayWishlist.length} {displayWishlist.length === 1 ? 'item' : 'items'}</span>
             <div className="sorting-selector">
               <span className="sort-label">Sort by:</span>
               <div className="select-wrapper">
@@ -238,7 +255,8 @@ export default function WishlistPage({ params }) {
                 if (cleanName.includes('kettle') || price === 50 || cleanName === '5p') return 15;
                 if (cleanName.includes('organizer') || price === 40 || cleanName === '4p') return 11;
                 if (cleanName.includes('pen') || price === 20 || cleanName === '2p') return 30;
-                return 10 + (product.id % 20);
+                const parsedId = parseInt(String(product.id).replace(/\D/g, '')) || 0;
+                return 10 + (parsedId % 20);
               };
 
               // Category count badge (4 ct, 3 ct, 5 ct, etc.)
@@ -365,7 +383,7 @@ export default function WishlistPage({ params }) {
           background: #FAF8F5;
           min-height: 100vh;
           font-family: 'Outfit', sans-serif;
-          padding-top: 76px;
+          padding-top: 148px;
         }
 
         .wishlist-container {

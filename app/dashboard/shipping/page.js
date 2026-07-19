@@ -272,27 +272,27 @@ export default function CreatorShippingPage() {
       </div>
 
       {successMsg && (
-        <div style={{ padding: '12px 16px', borderRadius: '12px', background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', marginBottom: '20px', fontSize: '14px', fontWeight: 600 }}>
+        <div className="alert-message success" style={{ padding: '12px 16px', borderRadius: '12px', background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', marginBottom: '20px', fontSize: '14px', fontWeight: 600 }}>
           {successMsg}
         </div>
       )}
 
       {errorMsg && (
-        <div style={{ padding: '12px 16px', borderRadius: '12px', background: '#fef2f2', color: '#b91c1c', border: '1px solid #fca5a5', marginBottom: '20px', fontSize: '14px', fontWeight: 600 }}>
+        <div className="alert-message error" style={{ padding: '12px 16px', borderRadius: '12px', background: '#fef2f2', color: '#b91c1c', border: '1px solid #fca5a5', marginBottom: '20px', fontSize: '14px', fontWeight: 600 }}>
           {errorMsg}
         </div>
       )}
 
       {settings.pickup_location_id && (
-        <div style={{ padding: '12px 16px', borderRadius: '12px', background: '#f8fafc', color: '#334155', border: '1px solid #e2e8f0', marginBottom: '20px', fontSize: '13px' }}>
+        <div className="sync-badge" style={{ padding: '12px 16px', borderRadius: '12px', background: '#f8fafc', color: '#334155', border: '1px solid #e2e8f0', marginBottom: '20px', fontSize: '13px' }}>
           <span style={{ fontWeight: 700 }}>✅ Delhivery Registered:</span> Location Nickname <strong>"{settings.pickup_location_name}"</strong> is synced with Delhivery (ID: <code>{settings.pickup_location_id}</code>).
         </div>
       )}
 
-      <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid rgba(0,0,0,0.06)', padding: '28px', boxShadow: '0 4px 20px rgba(0,0,0,0.02)' }}>
+      <div className="shipping-card">
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+          <div className="shipping-grid-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
             <div>
               <label style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '8px' }}>Warehouse Name / Nickname</label>
               <Input
@@ -317,7 +317,7 @@ export default function CreatorShippingPage() {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+          <div className="shipping-grid-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
             <div>
               <label style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '8px' }}>Contact Person</label>
               <Input
@@ -341,7 +341,7 @@ export default function CreatorShippingPage() {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+          <div className="shipping-grid-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
             <div>
               <label style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '8px' }}>Contact Mobile Number</label>
               <Input
@@ -364,7 +364,7 @@ export default function CreatorShippingPage() {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+          <div className="shipping-grid-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
             <div>
               <label style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '8px' }}>Pickup Address Line 1</label>
               <Input
@@ -387,7 +387,7 @@ export default function CreatorShippingPage() {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px' }}>
+          <div className="shipping-grid-2col" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px' }}>
             <div>
               <label style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '8px' }}>Landmark (Optional)</label>
               <Input
@@ -409,7 +409,7 @@ export default function CreatorShippingPage() {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '20px' }}>
+          <div className="shipping-grid-4col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '20px' }}>
             <div>
               <label style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '8px' }}>Pincode</label>
               <Input
@@ -455,7 +455,7 @@ export default function CreatorShippingPage() {
             </div>
           </div>
 
-          <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'flex-end' }}>
+          <div className="shipping-btn-row" style={{ marginTop: '10px', display: 'flex', justifyContent: 'flex-end' }}>
             <Button
               type="submit"
               variant="primary"
@@ -468,14 +468,14 @@ export default function CreatorShippingPage() {
         </form>
       </div>
 
-      <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid rgba(0,0,0,0.06)', padding: '28px', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', marginTop: '24px' }}>
+      <div className="shipping-card" style={{ marginTop: '24px' }}>
         <div style={{ marginBottom: '24px' }}>
           <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#1e293b', margin: '0 0 4px 0' }}>Shipping Rules</h3>
           <p style={{ fontSize: '14px', color: '#64748b', margin: 0 }}>Configure shipping cost calculation and delivery preferences.</p>
         </div>
 
         <form onSubmit={handleSaveRules} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' }}>
+          <div className="shipping-grid-3col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' }}>
             <div>
               <label style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '8px' }}>Shipping Cost Calculation</label>
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
@@ -518,15 +518,15 @@ export default function CreatorShippingPage() {
                 >
                    <option value="platform">Platform Default Partner (Recommended)</option>
                    <option value="manual">Manual fulfillment</option>
-                </select>
+                 </select>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" style={{ position: 'absolute', right: '16px', pointerEvents: 'none' }}><polyline points="6 9 12 15 18 9"></polyline></svg>
               </div>
               <span style={{ fontSize: '11px', color: '#94a3b8' }}>We'll choose the best delivery partner automatically.</span>
             </div>
           </div>
 
-          <div style={{ background: '#fbfaff', border: '1px solid #f5f3ff', borderRadius: '16px', padding: '16px 24px', display: 'flex', alignItems: 'center', gap: '20px' }}>
-            <div style={{ width: '40px', height: '40px', background: '#fff', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6366f1', border: '1px solid #f1f5f9' }}>
+          <div className="how-it-works-box" style={{ background: '#fbfaff', border: '1px solid #f5f3ff', borderRadius: '16px', padding: '16px 24px', display: 'flex', alignItems: 'center', gap: '20px' }}>
+            <div style={{ width: '40px', height: '40px', background: '#fff', borderRadius: '10px', display: 'flex', alignItems: 'center', justifycontent: 'center', color: '#6366f1', border: '1px solid #f1f5f9', flexShrink: 0, justifyContent: 'center' }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9.663 17h4.674M12 3v1m0 16v1m5.657-13.657l-.707.707m-9.9 9.9l-.707.707M18 12h-1M7 12H6m11.657 5.657l-.707-.707M6.343 6.343l-.707-.707M12 7a5 5 0 0 0-5 5 5 5 0 0 0 5 5 5 5 0 0 0 5-5 5 5 0 0 0-5-5z"></path></svg>
             </div>
             <div style={{ textAlign: 'left' }}>
@@ -535,7 +535,7 @@ export default function CreatorShippingPage() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <div className="shipping-btn-row" style={{ display: 'flex', justifyContent: 'flex-end' }}>
             <Button
               type="submit"
               variant="primary"
@@ -547,6 +547,77 @@ export default function CreatorShippingPage() {
           </div>
         </form>
       </div>
+
+      <style jsx global>{`
+        .shipping-card {
+          background: #ffffff;
+          border-radius: 16px;
+          border: 1px solid rgba(0,0,0,0.06);
+          padding: 28px;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+        }
+
+        @media (max-width: 768px) {
+          .shipping-dashboard-container {
+            padding: 0 12px 16px 12px !important;
+          }
+          .shipping-header {
+            margin-bottom: 16px !important;
+          }
+          .shipping-header h1 {
+            font-size: 22px !important;
+          }
+          .shipping-header p {
+            font-size: 13px !important;
+          }
+          .sync-badge {
+            padding: 12px !important;
+            border-radius: 10px !important;
+            font-size: 12px !important;
+            word-break: break-all !important;
+          }
+          
+          /* Forms card containers */
+          .shipping-card {
+            background: #ffffff !important;
+            border: 1px solid rgba(0,0,0,0.06) !important;
+            border-radius: 16px !important;
+            padding: 16px !important;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.02) !important;
+            margin-top: 16px !important;
+          }
+          
+          /* Grid columns override to stack vertically */
+          .shipping-grid-2col, 
+          .shipping-grid-3col, 
+          .shipping-grid-4col {
+            grid-template-columns: 1fr !important;
+            gap: 16px !important;
+          }
+          
+          /* Full-width action buttons */
+          .shipping-btn-row {
+            width: 100% !important;
+            margin-top: 10px !important;
+          }
+          .shipping-btn-row button {
+            width: 100% !important;
+            justify-content: center !important;
+          }
+
+          /* Info banner stacking */
+          .how-it-works-box {
+            flex-direction: column !important;
+            align-items: center !important;
+            gap: 12px !important;
+            padding: 16px !important;
+            text-align: center !important;
+          }
+          .how-it-works-box div:last-child {
+            text-align: center !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

@@ -322,44 +322,103 @@ export default function CustomersPage() {
         {loading ? (
           <div className="loading-state">Loading customers...</div>
         ) : (
-          filteredCustomers.map(cust => (
-            <div className="customer-row" key={cust.id}>
-              <div className="col-customer">
-                <div className="cust-avatar-box">
-                  <div className="avatar" style={{ background: cust.color, color: cust.textColor }}>{cust.initial}</div>
-                  <div className="cust-name-box">
-                    <strong>{cust.name}</strong>
-                    {cust.type === 'VIP Customers' && <span className="vip-indicator">VIP</span>}
+          filteredCustomers.map(cust => {
+            const typeColors = cust.type === 'VIP Customers' 
+              ? { bg: '#fffbeb', text: '#f59e0b' }
+              : cust.type === 'Returning Customers'
+                ? { bg: '#eff6ff', text: '#3b82f6' }
+                : { bg: '#f0fdf4', text: '#22c55e' };
+            return (
+              <div className="customer-row" key={cust.id}>
+                {/* Desktop-only Columns */}
+                <div className="desktop-columns">
+                  <div className="col-customer">
+                    <div className="cust-avatar-box">
+                      <div className="avatar" style={{ background: cust.color, color: cust.textColor }}>{cust.initial}</div>
+                      <div className="cust-name-box">
+                        <strong>{cust.name}</strong>
+                        {cust.type === 'VIP Customers' && <span className="vip-indicator">VIP</span>}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="col-email">{cust.email}</div>
+                  <div className="col-phone">{cust.phone}</div>
+                  <div className="col-orders">
+                    <span className="order-pill">{cust.orders}</span>
+                  </div>
+                  <div className="col-spent">
+                    <strong>${cust.spent.toFixed(2)}</strong>
+                  </div>
+                  <div className="col-last">
+                    <div className="last-order-box">
+                      <strong>{cust.lastOrder}</strong>
+                      {cust.lastOrder !== '-' && <span>10:30 AM</span>}
+                    </div>
+                  </div>
+                  <div className="col-actions">
+                    <div className="action-btns">
+                      <button className="row-btn view" onClick={() => setSelectedCustomer(cust)}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                        View History
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Mobile-only Card Wrapper */}
+                <div className="mobile-card-wrapper">
+                  <div className="mobile-card-top">
+                    <div className="mobile-card-left-group">
+                      <div className="avatar mobile-cust-avatar" style={{ background: cust.color, color: cust.textColor }}>
+                        {cust.initial}
+                      </div>
+                      <div className="mobile-cust-info">
+                        <div className="mobile-cust-name-row">
+                          <strong>{cust.name}</strong>
+                        </div>
+                        <div className="mobile-cust-email-row">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                          <span>{cust.email}</span>
+                        </div>
+                        {cust.phone && cust.phone !== '-' && (
+                          <div className="mobile-cust-phone-row">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                            <span>{cust.phone}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <span className="cust-type-badge" style={{ background: typeColors.bg, color: typeColors.text }}>
+                      {cust.type.replace(' Customers', '')}
+                    </span>
+                  </div>
+
+                  <div className="mobile-metrics-row">
+                    <div className="metric-box">
+                      <span className="metric-lbl">Orders</span>
+                      <strong>{cust.orders}</strong>
+                    </div>
+                    <div className="metric-box">
+                      <span className="metric-lbl">Total Spent</span>
+                      <strong>${cust.spent.toFixed(2)}</strong>
+                    </div>
+                    <div className="metric-box">
+                      <span className="metric-lbl">Last Order</span>
+                      <strong>{cust.lastOrder}</strong>
+                    </div>
+                  </div>
+
+                  <div className="mobile-card-footer">
+                    <button className="mobile-history-btn" onClick={() => setSelectedCustomer(cust)}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                      View History
+                    </button>
                   </div>
                 </div>
               </div>
-              <div className="col-email">{cust.email}</div>
-              <div className="col-phone">{cust.phone}</div>
-              <div className="col-orders">
-                <span className="order-pill">{cust.orders}</span>
-              </div>
-              <div className="col-spent">
-                <strong>${cust.spent.toFixed(2)}</strong>
-              </div>
-              <div className="col-last">
-                <div className="last-order-box">
-                  <strong>{cust.lastOrder}</strong>
-                  {cust.lastOrder !== '-' && <span>10:30 AM</span>}
-                </div>
-              </div>
-              <div className="col-actions">
-                <div className="action-btns">
-                  <button className="row-btn view" onClick={() => setSelectedCustomer(cust)}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                    View History
-                  </button>
-                  <button className="menu-btn">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle></svg>
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))
+            );
+          })
         )}
 
         <div className="list-footer">
@@ -577,28 +636,67 @@ export default function CustomersPage() {
 
                   return (
                     <div className="h-row" key={order.id}>
-                      <div className="h-col-id"><strong>{order.id.slice(0, 8).toUpperCase()}</strong></div>
-                      <div className="h-col-date">
-                        <div className="h-date-box">
-                          <strong>{formattedDate}</strong>
-                          <span>{formattedTime}</span>
+                      {/* Desktop Layout */}
+                      <div className="desktop-h-columns">
+                        <div className="h-col-id"><strong>{order.id.slice(0, 8).toUpperCase()}</strong></div>
+                        <div className="h-col-date">
+                          <div className="h-date-box">
+                            <strong>{formattedDate}</strong>
+                            <span>{formattedTime}</span>
+                          </div>
+                        </div>
+                        <div className="h-col-status">
+                          <span className="h-status" style={{ background: statusBg, color: statusColor }}>
+                            <span className="h-dot" style={{ background: statusColor }}></span>
+                            {order.status}
+                          </span>
+                        </div>
+                        <div className="h-col-total">
+                          <strong>${parseFloat(order.total_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                        </div>
+                        <div className="h-col-items">1 item</div>
+                        <div className="h-col-actions">
+                          <button className="row-btn view" onClick={() => setSelectedOrder(order)}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                            View Details
+                          </button>
                         </div>
                       </div>
-                      <div className="h-col-status">
-                        <span className="h-status" style={{ background: statusBg, color: statusColor }}>
-                          <span className="h-dot" style={{ background: statusColor }}></span>
-                          {order.status}
-                        </span>
-                      </div>
-                      <div className="h-col-total">
-                        <strong>${parseFloat(order.total_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
-                      </div>
-                      <div className="h-col-items">1 item</div>
-                      <div className="h-col-actions">
-                        <button className="row-btn view" onClick={() => setSelectedOrder(order)}>
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                          View Details
-                        </button>
+
+                      {/* Mobile Card Layout */}
+                      <div className="mobile-h-card">
+                        <div className="m-h-card-top">
+                          <div className="m-h-info">
+                            <strong>ID: {order.id.slice(0, 8).toUpperCase()}</strong>
+                            <div className="m-h-date-row">
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                              <span>{formattedDate} • {formattedTime}</span>
+                            </div>
+                          </div>
+                          
+                          <span className="h-status m-h-status" style={{ background: statusBg, color: statusColor }}>
+                            <span className="h-dot" style={{ background: statusColor }}></span>
+                            {order.status}
+                          </span>
+                        </div>
+
+                        <div className="m-h-card-middle">
+                          <div className="m-h-metric">
+                            <span className="m-h-lbl">Total</span>
+                            <strong>${parseFloat(order.total_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                          </div>
+                          <div className="m-h-metric">
+                            <span className="m-h-lbl">Items</span>
+                            <strong>1 item</strong>
+                          </div>
+                        </div>
+
+                        <div className="m-h-card-footer">
+                          <button className="mobile-details-btn" onClick={() => setSelectedOrder(order)}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                            View Details
+                          </button>
+                        </div>
                       </div>
                     </div>
                   );
@@ -1637,6 +1735,447 @@ export default function CustomersPage() {
           gap: 10px;
           cursor: pointer;
         }
+        .mobile-card-wrapper {
+          display: none;
+        }
+        .desktop-columns {
+          display: contents;
+        }
+
+        @media (max-width: 768px) {
+          .customers-page {
+            gap: 16px !important;
+          }
+          .header-row {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 12px !important;
+          }
+          .export-btn {
+            width: 100% !important;
+            justify-content: center !important;
+            margin-bottom: 8px !important;
+          }
+          .stats-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 12px !important;
+          }
+          .stat-card {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            padding: 14px !important;
+            gap: 10px !important;
+          }
+          .stat-icon-box {
+            width: 36px !important;
+            height: 36px !important;
+            border-radius: 8px !important;
+          }
+          .stat-icon-box svg {
+            width: 16px !important;
+            height: 16px !important;
+          }
+          .stat-info {
+            width: 100% !important;
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 4px !important;
+          }
+          .stat-val-row {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            flex-wrap: wrap !important;
+            gap: 4px !important;
+            width: 100% !important;
+          }
+          .stat-value {
+            font-size: 18px !important;
+          }
+          .stat-trend {
+            font-size: 10px !important;
+            padding: 2px 6px !important;
+          }
+          .stat-label {
+            font-size: 11px !important;
+            white-space: normal !important;
+            word-break: break-word !important;
+          }
+          .stat-sub {
+            font-size: 10px !important;
+            white-space: normal !important;
+            word-break: break-word !important;
+          }
+
+          .table-filters-bar {
+            flex-direction: column !important;
+            gap: 12px !important;
+            margin-top: 4px !important;
+          }
+          .search-box {
+            width: 100% !important;
+            height: 52px !important;
+            border-radius: 14px !important;
+            padding: 0 18px !important;
+          }
+          .search-box svg {
+            width: 22px !important;
+            height: 22px !important;
+          }
+          .search-box input {
+            font-size: 15px !important;
+            height: 100% !important;
+          }
+          .action-right-group {
+            display: flex !important;
+            gap: 8px !important;
+            width: 100% !important;
+          }
+          .filter-btn-toggle {
+            flex: 4 !important;
+            height: 44px !important;
+            border-radius: 12px !important;
+            justify-content: center !important;
+            font-size: 13px !important;
+          }
+          .sort-dropdown-container {
+            flex: 6 !important;
+            height: 44px !important;
+          }
+          .bar-select {
+            width: 100% !important;
+            height: 100% !important;
+            border-radius: 12px !important;
+            padding: 0 12px !important;
+            font-size: 13px !important;
+          }
+
+          .quick-filters-bar {
+            display: flex !important;
+            overflow-x: auto !important;
+            white-space: nowrap !important;
+            gap: 10px !important;
+            padding: 4px 0 12px 0 !important;
+            align-items: center !important;
+            -webkit-overflow-scrolling: touch;
+          }
+          .quick-chip {
+            flex-shrink: 0 !important;
+            padding: 8px 16px !important;
+            font-size: 13px !important;
+            height: 38px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            border-radius: 10px !important;
+          }
+
+          /* List layout to mobile card decks */
+          .list-header {
+            display: none !important;
+          }
+          .list-container {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+          }
+          .desktop-columns {
+            display: none !important;
+          }
+          
+          .customer-row {
+            background: #ffffff !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 20px !important;
+            padding: 16px !important;
+            margin-bottom: 12px !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02) !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 0 !important;
+          }
+          .customer-row:hover {
+            background: #ffffff !important;
+          }
+
+          .mobile-card-wrapper {
+            display: flex !important;
+            flex-direction: column !important;
+            width: 100% !important;
+            gap: 12px !important;
+          }
+          
+          .mobile-card-top {
+            display: flex !important;
+            align-items: flex-start !important;
+            justify-content: space-between !important;
+            width: 100% !important;
+            gap: 12px !important;
+          }
+          .mobile-card-left-group {
+            display: flex !important;
+            align-items: center !important;
+            gap: 12px !important;
+            flex: 1 !important;
+            min-width: 0 !important;
+          }
+          .mobile-cust-avatar {
+            width: 44px !important;
+            height: 44px !important;
+            border-radius: 50% !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            flex-shrink: 0 !important;
+          }
+          .mobile-cust-info {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 2px !important;
+            min-width: 0 !important;
+          }
+          .mobile-cust-name-row strong {
+            font-size: 15px !important;
+            color: #1e293b !important;
+            word-break: break-word !important;
+          }
+          .mobile-cust-email-row, .mobile-cust-phone-row {
+            display: flex !important;
+            align-items: center !important;
+            gap: 4px !important;
+            font-size: 12px !important;
+            color: #64748b !important;
+            min-width: 0 !important;
+          }
+          .mobile-cust-email-row svg, .mobile-cust-phone-row svg {
+            color: #6366f1 !important;
+            flex-shrink: 0 !important;
+          }
+          .mobile-cust-email-row span, .mobile-cust-phone-row span {
+            word-break: break-all !important;
+          }
+
+          .cust-type-badge {
+            padding: 4px 10px !important;
+            border-radius: 99px !important;
+            font-size: 11px !important;
+            font-weight: 700 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            flex-shrink: 0 !important;
+          }
+
+          .mobile-metrics-row {
+            display: grid !important;
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 8px !important;
+            background: #f8fafc !important;
+            padding: 12px !important;
+            border-radius: 12px !important;
+            border: 1px solid #f1f5f9 !important;
+            width: 100% !important;
+          }
+          .metric-box {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 2px !important;
+            align-items: center !important;
+          }
+          .metric-lbl {
+            font-size: 10.5px !important;
+            font-weight: 700 !important;
+            color: #94a3b8 !important;
+            text-transform: uppercase !important;
+          }
+          .metric-box strong {
+            font-size: 13px !important;
+            color: #1e293b !important;
+          }
+
+          .mobile-card-footer {
+            display: flex !important;
+            width: 100% !important;
+            border-top: 1px solid #f1f5f9 !important;
+            padding-top: 12px !important;
+          }
+          .mobile-history-btn {
+            flex: 1 !important;
+            height: 38px !important;
+            border-radius: 10px !important;
+            border: 1px solid #e2e8f0 !important;
+            background: #ffffff !important;
+            color: #475569 !important;
+            font-size: 12.5px !important;
+            font-weight: 700 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 6px !important;
+            cursor: pointer !important;
+            transition: all 0.2s;
+          }
+          .mobile-history-btn:hover {
+            background: #f8fafc;
+          }
+
+          .filter-drawer {
+            position: fixed !important;
+            top: 0 !important;
+            right: 0 !important;
+            width: 380px !important;
+            max-width: 100vw !important;
+            height: 100% !important;
+            transform: translateX(100%) !important;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+          }
+          .filter-drawer.open {
+            transform: translateX(0) !important;
+          }
+
+          .list-footer {
+            flex-direction: column !important;
+            gap: 12px !important;
+            align-items: center !important;
+            background: #ffffff !important;
+            padding: 16px !important;
+            border-radius: 16px !important;
+            border: 1px solid #e2e8f0 !important;
+            margin-top: 12px !important;
+          }
+          .footer-right {
+            width: 100% !important;
+            justify-content: center !important;
+            gap: 8px !important;
+          }
+          .num-btn, .nav-btn {
+            width: 40px !important;
+            height: 40px !important;
+            border-radius: 10px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 0 !important;
+            font-size: 13.5px !important;
+            font-weight: 700 !important;
+            flex-shrink: 0 !important;
+          }
+
+          /* Modal Order History Mobile Cards */
+          .h-head {
+            display: none !important;
+          }
+          .history-table {
+            background: transparent !important;
+            border: none !important;
+            overflow: visible !important;
+          }
+          .h-row {
+            background: #ffffff !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 16px !important;
+            padding: 14px !important;
+            margin-bottom: 10px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 0 !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.01) !important;
+          }
+          .desktop-h-columns {
+            display: none !important;
+          }
+          .mobile-h-card {
+            display: flex !important;
+            flex-direction: column !important;
+            width: 100% !important;
+            gap: 12px !important;
+          }
+
+          .m-h-card-top {
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: flex-start !important;
+            width: 100% !important;
+            gap: 8px !important;
+          }
+          .m-h-info {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 2px !important;
+          }
+          .m-h-info strong {
+            font-size: 14px !important;
+            color: #6366f1 !important;
+          }
+          .m-h-date-row {
+            display: flex !important;
+            align-items: center !important;
+            gap: 4px !important;
+            font-size: 11.5px !important;
+            color: #64748b !important;
+          }
+          .m-h-date-row svg {
+            color: #94a3b8 !important;
+          }
+
+          .m-h-status {
+            padding: 3px 8px !important;
+            font-size: 10px !important;
+            font-weight: 700 !important;
+          }
+
+          .m-h-card-middle {
+            display: grid !important;
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 8px !important;
+            background: #f8fafc !important;
+            padding: 10px !important;
+            border-radius: 10px !important;
+            border: 1px solid #f1f5f9 !important;
+            width: 100% !important;
+          }
+          .m-h-metric {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 2px !important;
+            align-items: center !important;
+          }
+          .m-h-lbl {
+            font-size: 9.5px !important;
+            font-weight: 700 !important;
+            color: #94a3b8 !important;
+            text-transform: uppercase !important;
+          }
+          .m-h-metric strong {
+            font-size: 13px !important;
+            color: #1e293b !important;
+          }
+
+          .m-h-card-footer {
+            display: flex !important;
+            width: 100% !important;
+            border-top: 1px solid #f1f5f9 !important;
+            padding-top: 10px !important;
+          }
+          .mobile-details-btn {
+            flex: 1 !important;
+            height: 34px !important;
+            border-radius: 8px !important;
+            border: 1px solid #e2e8f0 !important;
+            background: #ffffff !important;
+            color: #475569 !important;
+            font-size: 12px !important;
+            font-weight: 700 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 6px !important;
+            cursor: pointer !important;
+            transition: all 0.2s;
+          }
+        }
+
         @media print {
           /* Hide all sibling elements of the modal overlay within .customers-page to prevent extra pages */
           .customers-page > :not(.overlay) {

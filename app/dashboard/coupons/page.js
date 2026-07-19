@@ -9,6 +9,7 @@ export default function CouponsPage() {
   const { coupons = [], loading, addCoupon, updateCoupon, deleteCoupon } = useDashboard();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeMenuId, setActiveMenuId] = useState(null);
   
   // Filters
   const [typeFilter, setTypeFilter] = useState('all');
@@ -320,72 +321,191 @@ export default function CouponsPage() {
             
             return (
               <div key={coupon.id} className="coupon-row">
-                <div className="col-code">
-                  <div className="code-badge">{coupon.code}</div>
-                  <span className={`type-tag ${coupon.discount_type}`}>
-                    {coupon.discount_type === 'percentage' ? 'Percentage' : 'Fixed Flat'}
-                  </span>
-                </div>
-
-                <div className="col-value">
-                  <span className="value-label">
-                    {coupon.discount_type === 'percentage' ? `${coupon.discount_value}%` : `₹${coupon.discount_value.toLocaleString()}`}
-                  </span>
-                </div>
-
-                <div className="col-min">
-                  <span>
-                    {coupon.minimum_order_amount > 0 ? `₹${coupon.minimum_order_amount.toLocaleString()}` : '₹0 (None)'}
-                  </span>
-                </div>
-
-                <div className="col-uses">
-                  <div className="uses-info">
-                    <span className="uses-text">
-                      {current} / {max > 0 ? max : '∞'} uses
+                {/* Mobile Card Header */}
+                <div className="mobile-card-header">
+                  <div className="header-left-badges">
+                    <div className="code-badge">{coupon.code}</div>
+                    <span className={`type-tag ${coupon.discount_type}`}>
+                      {coupon.discount_type === 'percentage' ? 'Percentage' : coupon.code.toLowerCase().includes('ship') || coupon.discount_value === 0 ? 'Free Shipping' : 'Fixed Flat'}
                     </span>
-                    {max > 0 && (
-                      <div className="progress-bar-container">
-                        <div className="progress-bar-fill" style={{ width: `${usagePercent}%`, backgroundColor: usagePercent >= 100 ? '#ef4444' : '#8b5cf6' }}></div>
-                      </div>
-                    )}
+                  </div>
+                  <div className="header-right-toggle">
+                    <label className="switch-sm">
+                      <input 
+                        type="checkbox" 
+                        checked={coupon.is_active}
+                        onChange={(e) => handleStatusToggle(coupon, e.target.checked)}
+                      />
+                      <span className="slider-sm"></span>
+                    </label>
+                    <span className="status-text-lbl" style={{ color: coupon.is_active ? '#10b981' : '#64748b' }}>
+                      {coupon.is_active ? 'Active' : 'Inactive'}
+                    </span>
                   </div>
                 </div>
 
-                <div className="col-expiry">
-                  <span className={isExpired ? 'expired-text' : ''}>
-                    {coupon.expiry_date 
-                      ? new Date(coupon.expiry_date).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })
-                      : 'Never Expires'
-                    }
-                  </span>
-                  {isExpired && <span className="expired-badge">Expired</span>}
+                {/* Desktop columns */}
+                <div className="desktop-columns">
+                  <div className="col-code">
+                    <div className="code-badge">{coupon.code}</div>
+                    <span className={`type-tag ${coupon.discount_type}`}>
+                      {coupon.discount_type === 'percentage' ? 'Percentage' : 'Fixed Flat'}
+                    </span>
+                  </div>
+
+                  <div className="col-value">
+                    <span className="value-label">
+                      {coupon.discount_type === 'percentage' ? `${coupon.discount_value}%` : `₹${coupon.discount_value.toLocaleString()}`}
+                    </span>
+                    <span className="mobile-min-order-sub">
+                      Min. order ₹{(coupon.minimum_order_amount || 0).toLocaleString()}
+                    </span>
+                  </div>
+
+                  <div className="col-min">
+                    <span>
+                      {coupon.minimum_order_amount > 0 ? `₹${coupon.minimum_order_amount.toLocaleString()}` : '₹0 (None)'}
+                    </span>
+                  </div>
+
+                  <div className="col-uses">
+                    <div className="uses-info">
+                      <span className="uses-text">
+                        {current} / {max > 0 ? max : '∞'} uses
+                      </span>
+                      {max > 0 && (
+                        <div className="progress-bar-container">
+                          <div className="progress-bar-fill" style={{ width: `${usagePercent}%`, backgroundColor: usagePercent >= 100 ? '#ef4444' : '#8b5cf6' }}></div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="col-expiry">
+                    <span className="mobile-expiry-lbl">Expires on</span>
+                    <span className={isExpired ? 'expired-text' : ''}>
+                      {coupon.expiry_date 
+                        ? new Date(coupon.expiry_date).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })
+                        : 'Never Expires'
+                      }
+                    </span>
+                    {isExpired && <span className="expired-badge">Expired</span>}
+                  </div>
+
+                  <div className="col-status">
+                    <label className="switch-sm">
+                      <input 
+                        type="checkbox" 
+                        checked={coupon.is_active}
+                        onChange={(e) => handleStatusToggle(coupon, e.target.checked)}
+                      />
+                      <span className="slider-sm"></span>
+                    </label>
+                  </div>
+
+                  <div className="col-actions">
+                    <button className="row-btn edit" onClick={() => handleEditClick(coupon)}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                      </svg>
+                      Edit
+                    </button>
+                    <button className="row-btn delete" onClick={() => handleDeleteClick(coupon.id)}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                      </svg>
+                      Delete
+                    </button>
+                  </div>
                 </div>
 
-                <div className="col-status">
-                  <label className="switch-sm">
-                    <input 
-                      type="checkbox" 
-                      checked={coupon.is_active}
-                      onChange={(e) => handleStatusToggle(coupon, e.target.checked)}
-                    />
-                    <span className="slider-sm"></span>
-                  </label>
+                {/* Mobile Card Body */}
+                <div className="mobile-card-body">
+                  <div className="mobile-body-col">
+                    {/* Discount Value */}
+                    <div className="mobile-field-item">
+                      <div className="field-icon-label">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2.5"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+                        <span>Discount Value</span>
+                      </div>
+                      <div className="field-value">
+                        {coupon.code.toLowerCase().includes('ship') || coupon.discount_value === 0 
+                          ? 'Free Shipping' 
+                          : coupon.discount_type === 'percentage' 
+                            ? `${coupon.discount_value}% OFF` 
+                            : `₹${coupon.discount_value.toLocaleString()}`}
+                      </div>
+                    </div>
+
+                    {/* Minimum Order */}
+                    <div className="mobile-field-item">
+                      <div className="field-icon-label">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2.5"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+                        <span>Minimum Order</span>
+                      </div>
+                      <div className="field-value">
+                        ₹{(coupon.minimum_order_amount || 0).toLocaleString()}
+                      </div>
+                    </div>
+
+                    {/* Expiry Date */}
+                    <div className="mobile-field-item">
+                      <div className="field-icon-label">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                        <span>Expiry Date</span>
+                      </div>
+                      <div className="field-value">
+                        {coupon.expiry_date 
+                          ? new Date(coupon.expiry_date).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })
+                          : 'Never Expires'}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mobile-body-col">
+                    {/* Usage Count */}
+                    <div className="mobile-field-item">
+                      <div className="field-icon-label">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2.5"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                        <span>Usage Count</span>
+                      </div>
+                      <div className="field-value">
+                        {current} / {max > 0 ? max : '∞'} uses
+                      </div>
+                      {max > 0 && (
+                        <div className="progress-bar-container" style={{ width: '100%', marginTop: '6px' }}>
+                          <div className="progress-bar-fill" style={{ width: `${usagePercent}%`, backgroundColor: usagePercent >= 100 ? '#ef4444' : '#8b5cf6', height: '4px' }}></div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Coupon Type */}
+                    <div className="mobile-field-item">
+                      <div className="field-icon-label">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2.5"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+                        <span>Coupon Type</span>
+                      </div>
+                      <div className="field-value">
+                        {coupon.code.toLowerCase().includes('ship') || coupon.discount_value === 0 
+                          ? 'Free Shipping' 
+                          : coupon.discount_type === 'percentage' 
+                            ? 'Percentage' 
+                            : 'Fixed Flat'}
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="col-actions">
-                  <button className="row-btn edit" onClick={() => handleEditClick(coupon)}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                    </svg>
+                {/* Mobile Card Actions */}
+                <div className="mobile-card-actions">
+                  <button className="mobile-action-btn edit" onClick={() => handleEditClick(coupon)}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                     Edit
                   </button>
-                  <button className="row-btn delete" onClick={() => handleDeleteClick(coupon.id)}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <polyline points="3 6 5 6 21 6"></polyline>
-                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                    </svg>
+                  <button className="mobile-action-btn delete" onClick={() => handleDeleteClick(coupon.id)}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                     Delete
                   </button>
                 </div>
@@ -998,6 +1118,294 @@ export default function CouponsPage() {
           transition: all 0.15s;
         }
         .save-submit-btn:hover { background: #7c3aed; }
+
+        .col-menu {
+          display: none;
+        }
+
+        .menu-trigger-btn {
+          background: transparent;
+          border: none;
+          color: #64748b;
+          cursor: pointer;
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s;
+        }
+        .menu-trigger-btn:hover {
+          background: #f1f5f9;
+          color: #1e293b;
+        }
+
+        .dropdown-action-menu {
+          position: absolute;
+          right: 0;
+          top: 100%;
+          background: #ffffff;
+          border: 1px solid #cbd5e1;
+          border-radius: 10px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+          z-index: 100;
+          display: flex;
+          flex-direction: column;
+          padding: 6px;
+          min-width: 100px;
+          margin-top: 4px;
+        }
+
+        .dropdown-item {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 8px 12px;
+          font-size: 12px;
+          font-weight: 700;
+          color: #475569;
+          background: transparent;
+          border: none;
+          border-radius: 6px;
+          cursor: pointer;
+          text-align: left;
+          width: 100%;
+          transition: background 0.15s;
+        }
+        .dropdown-item:hover {
+          background: #f1f5f9;
+          color: #1e293b;
+        }
+        .dropdown-item.delete {
+          color: #ef4444;
+        }
+        .dropdown-item.delete:hover {
+          background: #fef2f2;
+        }
+
+        .mobile-min-order-sub, .mobile-expiry-lbl {
+          display: none;
+        }
+
+        .mobile-card-header, .mobile-card-body, .mobile-card-actions {
+          display: none;
+        }
+        .desktop-columns {
+          display: contents;
+        }
+
+        @media (max-width: 1024px) {
+          .summary-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .header-row {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 16px !important;
+          }
+          .add-btn {
+            width: 100% !important;
+            justify-content: center !important;
+            display: flex !important;
+            height: 44px !important;
+            font-size: 14px !important;
+            align-items: center;
+          }
+          .header-left h1 {
+            font-size: 24px !important;
+          }
+
+          .summary-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+          }
+          .summary-card {
+            padding: 12px !important;
+          }
+          .card-top {
+            gap: 12px !important;
+          }
+          .icon-wrapper {
+            width: 36px !important;
+            height: 36px !important;
+            border-radius: 8px !important;
+          }
+          .icon-wrapper svg {
+            width: 16px !important;
+            height: 16px !important;
+          }
+          .card-info .label {
+            font-size: 11px !important;
+          }
+          .card-info .value {
+            font-size: 18px !important;
+          }
+          .card-info .sub {
+            font-size: 10px !important;
+          }
+
+          .actions-bar {
+            flex-direction: column !important;
+            gap: 12px !important;
+            margin-top: 4px !important;
+          }
+          .filter-group {
+            width: 100% !important;
+            display: flex !important;
+            gap: 8px !important;
+          }
+          .filter-select {
+            flex: 1 !important;
+            height: 42px !important;
+            border-radius: 12px !important;
+            padding: 0 10px !important;
+            font-size: 12px !important;
+          }
+          .search-box {
+            height: 42px !important;
+            border-radius: 12px !important;
+          }
+
+          /* Mobile list deck styling */
+          .list-header {
+            display: none !important;
+          }
+          .list-container {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+          }
+          
+          .desktop-columns {
+            display: none !important;
+          }
+
+          .coupon-row {
+            display: flex !important;
+            flex-direction: column !important;
+            background: #ffffff !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 20px !important;
+            padding: 16px !important;
+            margin-bottom: 16px !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02) !important;
+            gap: 0 !important;
+          }
+          .coupon-row:hover {
+            background: #ffffff !important;
+          }
+
+          /* Mobile Card Header */
+          .mobile-card-header {
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            width: 100% !important;
+            padding-bottom: 12px !important;
+            border-bottom: 1px dashed #e2e8f0 !important;
+          }
+          .header-left-badges {
+            display: flex !important;
+            align-items: center !important;
+            gap: 8px !important;
+          }
+          .header-left-badges .code-badge {
+            margin-bottom: 0 !important;
+          }
+          .header-right-toggle {
+            display: flex !important;
+            align-items: center !important;
+            gap: 8px !important;
+            position: relative !important;
+          }
+          .status-text-lbl {
+            font-size: 12px !important;
+            font-weight: 700 !important;
+          }
+
+          /* Mobile Card Body */
+          .mobile-card-body {
+            display: grid !important;
+            grid-template-columns: 1.1fr 0.9fr !important;
+            gap: 16px !important;
+            width: 100% !important;
+            padding: 14px 0 !important;
+          }
+          .mobile-body-col {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 14px !important;
+          }
+          .mobile-field-item {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 4px !important;
+          }
+          .field-icon-label {
+            display: flex !important;
+            align-items: center !important;
+            gap: 6px !important;
+            font-size: 10px !important;
+            font-weight: 700 !important;
+            color: #64748b !important;
+            text-transform: uppercase !important;
+          }
+          .field-icon-label svg {
+            color: #6366f1 !important;
+            flex-shrink: 0 !important;
+          }
+          .field-value {
+            font-size: 13px !important;
+            font-weight: 700 !important;
+            color: #1e293b !important;
+          }
+
+          /* Mobile Actions */
+          .mobile-card-actions {
+            display: flex !important;
+            gap: 12px !important;
+            width: 100% !important;
+            padding-top: 12px !important;
+            border-top: 1px solid #f1f5f9 !important;
+          }
+          .mobile-action-btn {
+            flex: 1 !important;
+            height: 38px !important;
+            border-radius: 10px !important;
+            font-size: 13px !important;
+            font-weight: 700 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 8px !important;
+            border: 1px solid #cbd5e1 !important;
+            background: #ffffff !important;
+            color: #475569 !important;
+            cursor: pointer !important;
+            transition: all 0.2s;
+          }
+          .mobile-action-btn:hover {
+            background: #f8fafc;
+          }
+          .mobile-action-btn.delete {
+            color: #ef4444 !important;
+            border-color: #fca5a5 !important;
+          }
+          .mobile-action-btn.delete:hover {
+            background: #fef2f2 !important;
+          }
+
+          .form-row {
+            grid-template-columns: 1fr !important;
+            gap: 12px !important;
+          }
+        }
       `}</style>
     </div>
   );

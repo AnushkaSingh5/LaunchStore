@@ -205,14 +205,83 @@ export default function EarningsPage() {
           <div className="card-header">
             <h3>Recent Earnings Ledger</h3>
           </div>
-          <Table columns={earningColumns} data={earnings.slice(0, 10)} loading={loading} />
+          <div className="desktop-columns">
+            <Table columns={earningColumns} data={earnings.slice(0, 10)} loading={loading} />
+          </div>
+          <div className="mobile-card-wrapper">
+            {earnings.slice(0, 10).map((earn) => (
+              <div className="earning-card" key={earn.id}>
+                <div className="earn-card-top">
+                  <strong>#{earn.orderId}</strong>
+                  <span className={`status-badge status-${earn.status.toLowerCase()}`}>
+                    {earn.status}
+                  </span>
+                </div>
+                <div className="earn-card-middle">
+                  <div className="earn-metric">
+                    <span className="earn-lbl">Order Amt</span>
+                    <span>₹{parseFloat(earn.orderAmount).toLocaleString()}</span>
+                  </div>
+                  <div className="earn-metric font-bold" style={{ color: '#10b981' }}>
+                    <span className="earn-lbl">Seller Amt</span>
+                    <span>₹{parseFloat(earn.creatorAmount).toLocaleString()}</span>
+                  </div>
+                </div>
+                <div className="earn-card-footer">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                  <span>{earn.date}</span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="table-card">
           <div className="card-header">
             <h3>Payout Withdrawal Requests</h3>
           </div>
-          <Table columns={payoutColumns} data={payouts} loading={loading} />
+          <div className="desktop-columns">
+            <Table columns={payoutColumns} data={payouts} loading={loading} />
+          </div>
+          <div className="mobile-card-wrapper">
+            {payouts.length > 0 ? (
+              payouts.map((pay) => (
+                <div className="payout-card" key={pay.id}>
+                  <div className="pay-card-top">
+                    <div className="pay-id-box">
+                      <strong>#{pay.id.substring(0, 8).toUpperCase()}</strong>
+                      <span className="pay-method">{pay.method}</span>
+                    </div>
+                    <span className={`status-badge status-${pay.status.toLowerCase()}`}>
+                      {pay.status}
+                    </span>
+                  </div>
+                  <div className="pay-card-middle">
+                    <div className="pay-metric">
+                      <span className="pay-lbl">Amount</span>
+                      <strong>₹{pay.amount.toLocaleString()}</strong>
+                    </div>
+                    <div className="pay-metric">
+                      <span className="pay-lbl">Requested On</span>
+                      <span>{pay.requestedAt}</span>
+                    </div>
+                  </div>
+                  <div className="pay-details-row">
+                    <span className="pay-lbl">Account Details</span>
+                    <p className="pay-acc-details">{pay.accountDetails}</p>
+                  </div>
+                  {pay.adminNotes && (
+                    <div className="pay-notes-row" style={{ color: pay.status === 'rejected' ? '#ef4444' : '#64748b' }}>
+                      <span className="pay-lbl">Admin Notes</span>
+                      <p className="pay-notes-val">{pay.adminNotes}</p>
+                    </div>
+                  )}
+                </div>
+              ))
+            ) : (
+              <div className="empty-state-payout">No payout requests found.</div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -592,6 +661,195 @@ export default function EarningsPage() {
           text-align: center;
           color: #94a3b8;
           font-size: 16px;
+        }
+
+        .mobile-card-wrapper {
+          display: none;
+        }
+        .desktop-columns {
+          display: contents;
+        }
+
+        @media (max-width: 768px) {
+          .creator-earnings-page {
+            gap: 16px !important;
+          }
+          .page-header {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 12px !important;
+          }
+          .btn-payout-trigger {
+            width: 100% !important;
+            justify-content: center !important;
+          }
+          
+          .summary-cards {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 12px !important;
+          }
+          .summary-card {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            padding: 14px !important;
+            gap: 10px !important;
+          }
+          .summary-card .icon-wrapper {
+            width: 36px !important;
+            height: 36px !important;
+            border-radius: 8px !important;
+          }
+          .summary-card .icon-wrapper svg {
+            width: 16px !important;
+            height: 16px !important;
+          }
+          .card-data {
+            width: 100% !important;
+          }
+          .card-label {
+            font-size: 11px !important;
+            white-space: normal !important;
+            word-break: break-word !important;
+          }
+          .card-value {
+            font-size: 18px !important;
+          }
+          .card-hint {
+            font-size: 10px !important;
+            white-space: normal !important;
+            word-break: break-word !important;
+          }
+
+          .tables-grid {
+            gap: 20px !important;
+          }
+          .table-card {
+            padding: 0 !important;
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+          }
+          .card-header h3 {
+            font-size: 16px !important;
+            margin-bottom: 12px !important;
+          }
+
+          .desktop-columns {
+            display: none !important;
+          }
+          .mobile-card-wrapper {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 12px !important;
+            width: 100% !important;
+          }
+
+          /* Earning Card mobile styles */
+          .earning-card, .payout-card {
+            background: #ffffff !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 16px !important;
+            padding: 14px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 10px !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.01) !important;
+            width: 100% !important;
+          }
+
+          .earn-card-top, .pay-card-top {
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            width: 100% !important;
+          }
+          .earn-card-top strong {
+            font-size: 14px !important;
+            font-family: monospace !important;
+            color: #6366f1 !important;
+          }
+          .pay-id-box {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 2px !important;
+            align-items: flex-start !important;
+          }
+          .pay-id-box strong {
+            font-size: 14px !important;
+            font-family: monospace !important;
+            color: #6366f1 !important;
+          }
+          .pay-method {
+            font-size: 11px !important;
+            color: #64748b !important;
+            font-weight: 600 !important;
+          }
+
+          .earn-card-middle, .pay-card-middle {
+            display: grid !important;
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 8px !important;
+            background: #f8fafc !important;
+            padding: 10px !important;
+            border-radius: 10px !important;
+            border: 1px solid #f1f5f9 !important;
+            width: 100% !important;
+          }
+          .earn-metric, .pay-metric {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 2px !important;
+            align-items: center !important;
+          }
+          .earn-lbl, .pay-lbl {
+            font-size: 9.5px !important;
+            font-weight: 700 !important;
+            color: #94a3b8 !important;
+            text-transform: uppercase !important;
+          }
+          .earn-metric span, .pay-metric strong, .pay-metric span {
+            font-size: 13px !important;
+            color: #1e293b !important;
+          }
+
+          .earn-card-footer {
+            display: flex !important;
+            align-items: center !important;
+            gap: 4px !important;
+            font-size: 11.5px !important;
+            color: #64748b !important;
+            border-top: 1px solid #f1f5f9 !important;
+            padding-top: 10px !important;
+          }
+          .earn-card-footer svg {
+            color: #94a3b8 !important;
+          }
+
+          .pay-details-row, .pay-notes-row {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 4px !important;
+            width: 100% !important;
+            border-top: 1px solid #f1f5f9 !important;
+            padding-top: 10px !important;
+            align-items: flex-start !important;
+          }
+          .pay-acc-details, .pay-notes-val {
+            font-size: 12px !important;
+            color: #475569 !important;
+            margin: 0 !important;
+            word-break: break-all !important;
+            text-align: left !important;
+          }
+          .pay-notes-val {
+            font-style: italic !important;
+          }
+          .empty-state-payout {
+            padding: 24px !important;
+            text-align: center !important;
+            color: #94a3b8 !important;
+            font-size: 14px !important;
+          }
         }
       `}</style>
     </div>

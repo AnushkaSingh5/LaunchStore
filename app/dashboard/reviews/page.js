@@ -774,7 +774,73 @@ export default function SellerReviewsPage() {
             gap: 20px;
           }
           .feedback-actions-col {
-            justify-content: flex-start;
+            width: 100%;
+            justify-content: stretch;
+          }
+          .post-reply-btn-trigger {
+            width: 100% !important;
+            display: block;
+            text-align: center;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .page-header-section {
+            margin-bottom: 20px;
+          }
+          .stats-dashboard-grid {
+            gap: 16px;
+            margin-bottom: 24px;
+          }
+          .dashboard-metric-card {
+            padding: 16px;
+          }
+          .summary-card {
+            grid-template-columns: 90px 1fr;
+            gap: 12px;
+          }
+          .avg-metric-val {
+            font-size: 32px;
+          }
+           .reviews-manager-card {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+          }
+          .card-header-filters {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+            padding-bottom: 0 !important;
+            margin-bottom: 20px !important;
+            border-bottom: none !important;
+          }
+          .card-section-title {
+            font-size: 20px !important;
+            margin: 0;
+          }
+          .filters-dropdown-wrapper {
+            width: 100%;
+            justify-content: space-between;
+          }
+          .filter-select-input {
+            flex: 1;
+            max-width: 200px;
+          }
+          .feedback-item-card {
+            padding: 16px;
+          }
+          .reply-submit-form {
+            width: 100%;
+          }
+          .reply-form-actions {
+            width: 100%;
+            justify-content: space-between;
+          }
+          .reply-cancel-btn, .reply-save-btn {
+            flex: 1;
+            text-align: center;
           }
         }
       `}</style>

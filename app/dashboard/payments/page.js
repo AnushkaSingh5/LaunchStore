@@ -380,6 +380,74 @@ export default function PaymentsPage() {
         .loading { padding: 40px; text-align: center; color: #94a3b8; }
 
         @media (max-width: 768px) {
+          .payments-page {
+            gap: 16px !important;
+          }
+          .header-row {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 12px !important;
+          }
+          .header-row > div:last-child {
+            width: 100% !important;
+            justify-content: center !important;
+          }
+
+          .settings-section {
+            padding: 20px !important;
+            border-radius: 20px !important;
+            gap: 16px !important;
+          }
+          .section-header h3 {
+            font-size: 16px !important;
+          }
+          .section-header p {
+            font-size: 12.5px !important;
+          }
+
+          .gateway-list {
+            gap: 12px !important;
+          }
+          .gateway-item {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            padding: 16px !important;
+            gap: 16px !important;
+          }
+          .gateway-left {
+            align-items: center !important;
+            gap: 12px !important;
+          }
+          .gateway-icon {
+            width: 48px !important;
+            height: 36px !important;
+            flex-shrink: 0 !important;
+            border-radius: 8px !important;
+          }
+          .gateway-info strong {
+            font-size: 14.5px !important;
+          }
+          .gateway-info p {
+            font-size: 12px !important;
+            white-space: normal !important;
+            word-break: break-word !important;
+          }
+          .gateway-right {
+            justify-content: space-between !important;
+            width: 100% !important;
+            border-top: 1px dashed #e2e8f0 !important;
+            padding-top: 14px !important;
+            gap: 12px !important;
+          }
+          .gateway-right svg {
+            display: none !important;
+          }
+          .status-badge {
+            padding: 4px 10px !important;
+            font-size: 11px !important;
+            min-width: 70px !important;
+          }
+
           .shipping-form { grid-template-columns: 1fr; }
         }
       `}</style>

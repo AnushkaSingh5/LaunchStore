@@ -642,6 +642,10 @@
     z-index: 95;
     backdrop-filter: blur(2px);
   }
+
+  .desktopToggleBtn {
+    display: none !important;
+  }
 }
 
 @media (max-width: 768px) {
@@ -658,77 +662,76 @@
   }
 
   .sidebar {
-    width: 100% !important;
-    height: 65px;
-    top: auto !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    transform: translateY(0) !important;
-    flex-direction: row !important;
-    border-right: none !important;
-    border-top: 1px solid var(--secondary) !important;
-    box-shadow: 0 -4px 12px rgba(0,0,0,0.05) !important;
-    background: rgba(255, 255, 255, 0.95) !important;
-    backdrop-filter: blur(10px) !important;
+    width: 220px !important;
   }
 
-  .logo, .sidebarFooter, .closeBtn, .desktopToggleBtn, .overlay, .viewStoreContainer {
-    display: none !important;
+  .logo {
+    height: clamp(48px, 8vh, 65px) !important;
+    padding: 0 12px !important;
+  }
+
+  .logo h2 {
+    font-size: clamp(14px, 2vh, 18px) !important;
+  }
+
+  .closeBtn {
+    font-size: clamp(20px, 2.2vh, 24px) !important;
+  }
+
+  .viewStoreContainer {
+    padding: clamp(4px, 0.8vh, 8px) 0 0 0 !important;
+  }
+
+  .viewStoreContainer a {
+    padding: clamp(6px, 1vh, 12px) 12px !important;
+    font-size: clamp(11px, 1.6vh, 14px) !important;
+    border-radius: 8px !important;
+    margin-bottom: 2px !important;
+    width: calc(100% - 24px) !important;
   }
 
   .nav {
-    padding: 0 10px !important;
-    height: 100% !important;
-    display: flex !important;
-    align-items: center !important;
-    width: 100% !important;
+    padding: clamp(4px, 1vh, 12px) 8px !important;
   }
 
   .nav ul {
-    flex-direction: row !important;
-    justify-content: space-around !important;
-    width: 100% !important;
-    gap: 0 !important;
-    height: 100% !important;
-  }
-
-  .nav li {
-    flex: 1 !important;
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
-    height: 100% !important;
+    gap: clamp(2px, 0.8vh, 10px) !important;
   }
 
   .navLink {
-    flex-direction: column !important;
-    padding: 0 !important;
-    gap: 4px !important;
-    border-radius: 0 !important;
-    background: none !important;
-    box-shadow: none !important;
-    width: 100% !important;
-    height: 100% !important;
-    justify-content: center !important;
-    align-items: center !important;
-  }
-
-  .linkLabel {
-    display: none !important;
+    padding: clamp(5px, 1.1vh, 14px) 12px !important;
+    border-radius: 8px !important;
+    font-size: clamp(12px, 1.6vh, 15px) !important;
+    gap: 8px !important;
   }
 
   .icon {
-    font-size: 22px !important;
-    transition: transform 0.2s ease !important;
+    font-size: clamp(14px, 1.8vh, 18px) !important;
   }
 
-  .navLink.active .icon {
-    color: #6366f1 !important;
-    transform: translateY(-2px) scale(1.1) !important;
+  .icon svg {
+    width: clamp(14px, 1.8vh, 18px) !important;
+    height: clamp(14px, 1.8vh, 18px) !important;
   }
 
-  .mainWrapper {
-    padding-bottom: 65px !important;
+  .sidebarFooter {
+    padding: clamp(8px, 1.5vh, 20px) 12px !important;
+  }
+
+  .logoutBtn {
+    font-size: clamp(12px, 1.7vh, 15px) !important;
+    padding: 4px 6px !important;
+    gap: 6px !important;
+  }
+
+  .logoutBtn .icon svg {
+    width: clamp(14px, 1.8vh, 18px) !important;
+    height: clamp(14px, 1.8vh, 18px) !important;
+  }
+
+  .dropdownMenu {
+    width: calc(100vw - 40px) !important;
+    max-width: 320px !important;
+    right: -50px !important;
   }
 }
