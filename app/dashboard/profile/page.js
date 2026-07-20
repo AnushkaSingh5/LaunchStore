@@ -7,7 +7,8 @@ import { profileService } from '@/services/profileService';
 export default function CreatorProfile() {
   const { user, profile, setProfile } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [savingPersonal, setSavingPersonal] = useState(false);
+  const [savingBusiness, setSavingBusiness] = useState(false);
   const [uploadingDoc, setUploadingDoc] = useState('');
 
   // Extended Profile fields state
@@ -70,17 +71,41 @@ export default function CreatorProfile() {
     }
   };
 
-  const handleProfileSubmit = async (e) => {
+  const handlePersonalInfoSubmit = async (e) => {
     e.preventDefault();
     if (!user) return;
-    setSaving(true);
+    setSavingPersonal(true);
     
     const profileData = {
       full_name: fullName,
       phone,
       date_of_birth: dob || null,
       gender,
-      bio,
+      bio
+    };
+
+    try {
+      const res = await profileService.updateProfile(user.id, profileData);
+      if (res.success) {
+        alert('Personal profile updated successfully!');
+        if (setProfile) setProfile(res.profile); // Sync auth state
+      } else {
+        alert('Failed to update personal profile: ' + res.error);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error updating personal profile: ' + err.message);
+    } finally {
+      setSavingPersonal(false);
+    }
+  };
+
+  const handleBusinessProfileSubmit = async (e) => {
+    e.preventDefault();
+    if (!user) return;
+    setSavingBusiness(true);
+    
+    const businessData = {
       business_name: businessName,
       business_type: businessType,
       address,
@@ -91,18 +116,18 @@ export default function CreatorProfile() {
     };
 
     try {
-      const res = await profileService.updateProfile(user.id, profileData);
+      const res = await profileService.updateProfile(user.id, businessData);
       if (res.success) {
-        alert('Profile updated successfully!');
+        alert('Business profile updated successfully!');
         if (setProfile) setProfile(res.profile); // Sync auth state
       } else {
-        alert('Failed to update profile: ' + res.error);
+        alert('Failed to update business profile: ' + res.error);
       }
     } catch (err) {
       console.error(err);
-      alert('Error updating profile: ' + err.message);
+      alert('Error updating business profile: ' + err.message);
     } finally {
-      setSaving(false);
+      setSavingBusiness(false);
     }
   };
 
@@ -196,7 +221,7 @@ export default function CreatorProfile() {
     <div className="profile-container">
       <div className="profile-header">
         <div className="header-info">
-          <h2>Seller Profile Settings</h2>
+          <h2>Profile Settings</h2>
           <p>Update your personal bio, business info, and verification documents.</p>
         </div>
         <div 
@@ -211,7 +236,7 @@ export default function CreatorProfile() {
       <div className="profile-content-grid">
         {/* Left Side: Avatar & Basic Information Form */}
         <div className="form-card main-form">
-          <form onSubmit={handleProfileSubmit}>
+          <form onSubmit={handlePersonalInfoSubmit}>
             <div className="avatar-section">
               <div className="avatar-wrapper">
                 {profileImage ? (
@@ -289,7 +314,7 @@ export default function CreatorProfile() {
               </div>
 
               <div className="form-group full-width">
-                <label htmlFor="bio">Bio / About Seller</label>
+                <label htmlFor="bio">Bio / About Yourself</label>
                 <textarea
                   id="bio"
                   rows={4}
@@ -301,8 +326,8 @@ export default function CreatorProfile() {
             </div>
 
             <div className="form-submit-row">
-              <button type="submit" className="btn-save-profile" disabled={saving}>
-                {saving ? 'Saving changes...' : 'Save Profile Changes'}
+              <button type="submit" className="btn-save-profile" disabled={savingPersonal}>
+                {savingPersonal ? 'Saving changes...' : 'Save Profile Changes'}
               </button>
             </div>
           </form>
@@ -311,7 +336,7 @@ export default function CreatorProfile() {
         {/* Right Side: Business & Verification Documents */}
         <div className="right-panel">
           <div className="form-card business-card">
-            <form onSubmit={handleProfileSubmit}>
+            <form onSubmit={handleBusinessProfileSubmit}>
               <h3 className="section-title">Business Profile</h3>
               <div className="form-grid">
                 <div className="form-group">
@@ -400,8 +425,8 @@ export default function CreatorProfile() {
               </div>
 
               <div className="form-submit-row" style={{ marginTop: '24px' }}>
-                <button type="submit" className="btn-save-profile" disabled={saving}>
-                  {saving ? 'Saving changes...' : 'Save Business Profile'}
+                <button type="submit" className="btn-save-profile" disabled={savingBusiness}>
+                  {savingBusiness ? 'Saving changes...' : 'Save Business Profile'}
                 </button>
               </div>
             </form>

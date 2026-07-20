@@ -138,9 +138,9 @@ export default function AdminCreators() {
   };
 
   const columns = [
-    { field: 'name', label: 'Seller Name', render: (row) => <span style={{ fontWeight: 700 }}>{row.name}</span> },
+    { field: 'name', label: 'Full Name', render: (row) => <span style={{ fontWeight: 700 }}>{row.name}</span> },
     { field: 'email', label: 'Email' },
-    { field: 'storeName', label: 'Primary Store' },
+    { field: 'storeName', label: 'Store Name' },
     { field: 'revenue', label: 'Total Revenue', render: (row) => `₹${(row.revenue || 0).toLocaleString()}` },
     { field: 'status', label: 'Status', render: (row) => (
       <span className={`status-badge ${row.status.toLowerCase()}`}>{row.status}</span>
