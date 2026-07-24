@@ -155,13 +155,13 @@ export default function DashboardOverview() {
       if (completedCount === 4 && profile && !profile.onboarding_completed) {
         const completeOnboarding = async () => {
           try {
-            console.log('🔄 [LaunchCart - Dashboard]: Auto-completing onboarding...');
+            console.log('🔄 [KreateStore - Dashboard]: Auto-completing onboarding...');
             await authService.updateProfile(profile.id, {
               onboarding_completed: true,
               onboarding_step: 5
             });
             await refreshProfile();
-            console.log('✅ [LaunchCart - Dashboard]: Onboarding complete.');
+            console.log('✅ [KreateStore - Dashboard]: Onboarding complete.');
           } catch (e) {
             console.error('Error auto-completing onboarding:', e);
           }
@@ -360,7 +360,7 @@ export default function DashboardOverview() {
         <div className="onboarding-checklist-card">
           <div className="checklist-header">
             <div>
-              <h3>Setup your LaunchCart store</h3>
+              <h3>Setup your KreateStore store</h3>
               <p>Complete these steps to launch your business and start selling.</p>
             </div>
             <div className="checklist-progress">

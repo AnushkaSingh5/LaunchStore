@@ -6,7 +6,7 @@ export async function generateMetadata({ params }) {
   const store = demoStores[slug];
   if (!store) {
     return {
-      title: 'Store Not Found | LaunchCart',
+      title: 'Store Not Found | KreateStore',
     };
   }
   const product = store.products?.find(p => p.id === id);
@@ -18,7 +18,7 @@ export async function generateMetadata({ params }) {
   return {
     title: `${product.name} | ${store.name}`,
     description: product.description || `Buy ${product.name} at ${store.name}.`,
-    keywords: [product.name, product.category, store.name, 'LaunchCart', 'live demo'],
+    keywords: [product.name, product.category, store.name, 'KreateStore', 'live demo'],
   };
 }
 

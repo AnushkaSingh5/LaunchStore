@@ -29,6 +29,34 @@ export default function AdminCreators() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCreator, setSelectedCreator] = useState(null);
 
+  const isProfileIncomplete = (profile, docs) => {
+    if (!profile) return true;
+    
+    // Check required fields
+    const requiredFields = [
+      profile.name,
+      profile.phone,
+      profile.date_of_birth,
+      profile.gender,
+      profile.bio,
+      profile.business_name,
+      profile.business_type,
+      profile.address,
+      profile.city,
+      profile.state,
+      profile.country,
+      profile.postal_code
+    ];
+    
+    const hasEmptyField = requiredFields.some(val => !val || String(val).trim() === '');
+    
+    // Check mandatory documents: Government ID Proof and Address Proof
+    const hasGovId = docs.some(d => d.document_type === 'Government ID Proof' && d.document_url);
+    const hasAddressProof = docs.some(d => d.document_type === 'Address Proof' && d.document_url);
+    
+    return hasEmptyField || !hasGovId || !hasAddressProof;
+  };
+
   // Dynamic Metrics
   const activeSellers = loading ? 0 : stores.filter(s => s.status === 'Active').length;
   const pendingSellers = loading ? 0 : stores.filter(s => s.status === 'Pending').length;
@@ -56,7 +84,8 @@ export default function AdminCreators() {
   })).filter(c => {
     // Search filter
     const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          c.storeName.toLowerCase().includes(searchQuery.toLowerCase());
+                          c.storeName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          c.email.toLowerCase().includes(searchQuery.toLowerCase());
     if (!matchesSearch) return false;
 
     // Date range filter
@@ -65,6 +94,26 @@ export default function AdminCreators() {
 
     return true;
   });
+
+  // Read query params for automatic pre-selection or filtering
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const searchParam = params.get('search');
+      const creatorIdParam = params.get('creatorId');
+      
+      if (searchParam) {
+        setSearchQuery(searchParam);
+      }
+      
+      if (creatorIdParam && creators.length > 0) {
+        const matched = creators.find(c => c.creatorId === creatorIdParam);
+        if (matched) {
+          setSelectedCreator(matched);
+        }
+      }
+    }
+  }, [loading, stores]);
 
   // Fetch extended details when creator is selected
   useEffect(() => {
@@ -345,7 +394,15 @@ export default function AdminCreators() {
           <div className="modal-footer-actions">
             {extendedProfile && (extendedProfile.verification_status === 'Under Review' || extendedProfile.verification_status === 'Not Submitted') && (
               <>
-                <button className="btn-moderate verify" onClick={handleVerifyCreator} disabled={actionLoading}>
+                <button 
+                  className="btn-moderate verify" 
+                  onClick={handleVerifyCreator} 
+                  disabled={actionLoading || isProfileIncomplete(extendedProfile, documents)}
+                  style={{
+                    opacity: (actionLoading || isProfileIncomplete(extendedProfile, documents)) ? 0.5 : 1,
+                    cursor: (actionLoading || isProfileIncomplete(extendedProfile, documents)) ? 'not-allowed' : 'pointer'
+                  }}
+                >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ marginRight: '6px' }}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
                   Verify Seller
                 </button>
@@ -361,6 +418,31 @@ export default function AdminCreators() {
       >
         {selectedCreator && (
           <div className="creator-details">
+            {isProfileIncomplete(extendedProfile, documents) && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                backgroundColor: '#fff7ed',
+                border: '1px solid #ffedd5',
+                borderRadius: '8px',
+                padding: '16px',
+                marginBottom: '24px',
+                color: '#9a3412',
+                fontFamily: "'Inter', sans-serif"
+              }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ea580c" strokeWidth="2.5" style={{ marginRight: '12px', flexShrink: 0, marginTop: '2px' }}>
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                  <line x1="12" y1="9" x2="12" y2="13"></line>
+                  <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+                <div style={{ fontSize: '14px' }}>
+                  <strong style={{ display: 'block', marginBottom: '4px' }}>Verification Disabled</strong>
+                  <span style={{ color: '#c2410c', lineHeight: '1.5' }}>
+                    This creator has not completed all profile details or is missing mandatory KYC documents (Government ID Proof & Address Proof).
+                  </span>
+                </div>
+              </div>
+            )}
             <div className="profile-main">
               <div className="avatar">
                 {extendedProfile?.profile_image ? (

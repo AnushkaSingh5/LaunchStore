@@ -67,7 +67,7 @@ export default function ProductsClient({ slug, initialStoreDetails, initialProdu
             ...safeCatData
           ]);
         } catch (e) {
-          console.error('[LaunchCart - ProductsClient] Failed to load preview data:', e);
+          console.error('[KreateStore - ProductsClient] Failed to load preview data:', e);
         }
       };
       loadPreviewData();

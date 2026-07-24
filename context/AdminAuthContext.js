@@ -30,8 +30,8 @@ export function AdminAuthProvider({ children }) {
     try {
       if (!supabaseClient) {
         // Mock fallback if Supabase is completely unavailable
-        if (email.toLowerCase() === 'admin@launchcart.com' && password === 'admin123') {
-          const mockUser = { id: 'admin-mock-uuid', email: 'admin@launchcart.com', full_name: 'Local Administrator' };
+        if (email.toLowerCase() === 'admin@kreatestore.com' && password === 'admin123') {
+          const mockUser = { id: 'admin-mock-uuid', email: 'admin@kreatestore.com', full_name: 'Local Administrator' };
           setAdminUser(mockUser);
           sessionStorage.setItem('admin_session', JSON.stringify(mockUser));
           return { success: true };
@@ -68,7 +68,7 @@ export function AdminAuthProvider({ children }) {
           throw new Error(rpcError.message);
         }
       } catch (rpcErr) {
-        console.warn('⚠️ [LaunchCart - AdminAuth]: RPC verification failed or function missing, trying select fallback:', rpcErr.message);
+        console.warn('⚠️ [KreateStore - AdminAuth]: RPC verification failed or function missing, trying select fallback:', rpcErr.message);
       }
 
       // 2. Select fallback: direct query from admin_users table (runs if RPC doesn't exist or failed)
@@ -92,12 +92,12 @@ export function AdminAuthProvider({ children }) {
           }
         }
       } catch (dbErr) {
-        console.warn('⚠️ [LaunchCart - AdminAuth]: Direct select query failed or table missing:', dbErr.message);
+        console.warn('⚠️ [KreateStore - AdminAuth]: Direct select query failed or table missing:', dbErr.message);
       }
 
       // 3. Fallback credentials for system setup/development (ensures system is ALWAYS accessible)
-      if (email.toLowerCase() === 'admin@launchcart.com' && password === 'admin123') {
-        const fallbackAdmin = { id: 'admin-fallback-uuid', email: 'admin@launchcart.com', full_name: 'Fallback Administrator' };
+      if (email.toLowerCase() === 'admin@kreatestore.com' && password === 'admin123') {
+        const fallbackAdmin = { id: 'admin-fallback-uuid', email: 'admin@kreatestore.com', full_name: 'Fallback Administrator' };
         setAdminUser(fallbackAdmin);
         sessionStorage.setItem('admin_session', JSON.stringify(fallbackAdmin));
         return { success: true };

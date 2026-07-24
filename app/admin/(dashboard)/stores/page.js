@@ -3,7 +3,8 @@
 import { useAdmin } from '@/context/AdminContext';
 import Table from '@/components/UI/Table';
 import Modal from '@/components/UI/Modal';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { supabaseClient } from '@/lib/supabase';
 
 // Helper for dynamic store avatar colors
 const getAvatarColor = (name) => {
@@ -29,6 +30,56 @@ export default function StoresManagement() {
   const [rejectReason, setRejectReason] = useState('');
   const [disablingStoreId, setDisablingStoreId] = useState(null);
   const [disableReason, setDisableReason] = useState('');
+
+  const [creatorVerificationStatus, setCreatorVerificationStatus] = useState(null);
+
+  useEffect(() => {
+    if (selectedStore && selectedStore.creatorId && supabaseClient) {
+      setCreatorVerificationStatus('Loading...');
+      supabaseClient
+        .from('sellers')
+        .select('verification_status')
+        .eq('id', selectedStore.creatorId)
+        .single()
+        .then(({ data, error }) => {
+          if (!error && data) {
+            setCreatorVerificationStatus(data.verification_status);
+          } else {
+            setCreatorVerificationStatus('Unknown');
+          }
+        });
+    } else {
+      setCreatorVerificationStatus(null);
+    }
+  }, [selectedStore]);
+
+  // Read query params for store pre-selection
+  useEffect(() => {
+    if (typeof window !== 'undefined' && stores.length > 0) {
+      const params = new URLSearchParams(window.location.search);
+      const storeIdParam = params.get('storeId');
+      const actionParam = params.get('action');
+      
+      if (storeIdParam) {
+        const matched = stores.find(s => s.id === storeIdParam);
+        if (matched) {
+          setSelectedStore(matched);
+          if (actionParam === 'reject') {
+            setRejectingStoreId(storeIdParam);
+          }
+        }
+      }
+    }
+  }, [loading, stores]);
+
+  const getVerificationStatusColor = (status) => {
+    switch (status) {
+      case 'Verified': return '#10b981';
+      case 'Under Review': return '#f59e0b';
+      case 'Rejected': return '#ef4444';
+      default: return '#64748b';
+    }
+  };
 
   // Dynamic Metrics
   const totalStores = loading ? 0 : stores.length;
@@ -105,26 +156,62 @@ export default function StoresManagement() {
     },
   ];
 
-  const actions = (row) => (
-    <div className="action-buttons">
-      <button className="btn-action btn-details" onClick={() => setSelectedStore(row)}>Details</button>
-      {row.status === 'Pending' && (
-        <>
-          <button className="btn-action btn-approve" onClick={() => approveStore(row.id)}>Approve</button>
-          <button className="btn-action btn-reject" onClick={() => setRejectingStoreId(row.id)}>Reject</button>
-        </>
-      )}
-      {row.status === 'Active' && (
-        <button className="btn-action btn-disable" onClick={() => setDisablingStoreId(row.id)}>Disable</button>
-      )}
-      {row.status === 'Disabled' && (
-        <button className="btn-action btn-enable" onClick={() => approveStore(row.id)}>Enable</button>
-      )}
-      {row.status === 'Rejected' && (
-        <button className="btn-action btn-enable" onClick={() => approveStore(row.id)}>Approve</button>
-      )}
-    </div>
-  );
+  const actions = (row) => {
+    const isVerified = row.ownerVerificationStatus === 'Verified';
+    return (
+      <div className="action-buttons">
+        <button className="btn-action btn-details" onClick={() => setSelectedStore(row)}>Details</button>
+        {row.status === 'Pending' && (
+          <>
+            <button 
+              className="btn-action btn-approve" 
+              onClick={() => isVerified && approveStore(row.id)}
+              disabled={!isVerified}
+              title={!isVerified ? "Profile verification pending" : ""}
+              style={{
+                opacity: !isVerified ? 0.5 : 1,
+                cursor: !isVerified ? 'not-allowed' : 'pointer'
+              }}
+            >
+              Approve
+            </button>
+            <button className="btn-action btn-reject" onClick={() => setRejectingStoreId(row.id)}>Reject</button>
+          </>
+        )}
+        {row.status === 'Active' && (
+          <button className="btn-action btn-disable" onClick={() => setDisablingStoreId(row.id)}>Disable</button>
+        )}
+        {row.status === 'Disabled' && (
+          <button 
+            className="btn-action btn-enable" 
+            onClick={() => isVerified && approveStore(row.id)}
+            disabled={!isVerified}
+            title={!isVerified ? "Profile verification pending" : ""}
+            style={{
+              opacity: !isVerified ? 0.5 : 1,
+              cursor: !isVerified ? 'not-allowed' : 'pointer'
+            }}
+          >
+            Enable
+          </button>
+        )}
+        {row.status === 'Rejected' && (
+          <button 
+            className="btn-action btn-enable" 
+            onClick={() => isVerified && approveStore(row.id)}
+            disabled={!isVerified}
+            title={!isVerified ? "Profile verification pending" : ""}
+            style={{
+              opacity: !isVerified ? 0.5 : 1,
+              cursor: !isVerified ? 'not-allowed' : 'pointer'
+            }}
+          >
+            Approve
+          </button>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="admin-stores-page">
@@ -257,7 +344,18 @@ export default function StoresManagement() {
                     <button className="btn-action btn-details" onClick={() => setSelectedStore(store)}>Details</button>
                     {store.status === 'Pending' && (
                       <>
-                        <button className="btn-action btn-approve" onClick={() => approveStore(store.id)}>Approve</button>
+                        <button 
+                          className="btn-action btn-approve" 
+                          onClick={() => store.ownerVerificationStatus === 'Verified' && approveStore(store.id)}
+                          disabled={store.ownerVerificationStatus !== 'Verified'}
+                          title={store.ownerVerificationStatus !== 'Verified' ? "Profile verification pending" : ""}
+                          style={{
+                            opacity: store.ownerVerificationStatus !== 'Verified' ? 0.5 : 1,
+                            cursor: store.ownerVerificationStatus !== 'Verified' ? 'not-allowed' : 'pointer'
+                          }}
+                        >
+                          Approve
+                        </button>
                         <button className="btn-action btn-reject" onClick={() => setRejectingStoreId(store.id)}>Reject</button>
                       </>
                     )}
@@ -265,10 +363,32 @@ export default function StoresManagement() {
                       <button className="btn-action btn-disable" onClick={() => setDisablingStoreId(store.id)}>Disable</button>
                     )}
                     {store.status === 'Disabled' && (
-                      <button className="btn-action btn-enable" onClick={() => approveStore(store.id)}>Enable</button>
+                      <button 
+                        className="btn-action btn-enable" 
+                        onClick={() => store.ownerVerificationStatus === 'Verified' && approveStore(store.id)}
+                        disabled={store.ownerVerificationStatus !== 'Verified'}
+                        title={store.ownerVerificationStatus !== 'Verified' ? "Profile verification pending" : ""}
+                        style={{
+                          opacity: store.ownerVerificationStatus !== 'Verified' ? 0.5 : 1,
+                          cursor: store.ownerVerificationStatus !== 'Verified' ? 'not-allowed' : 'pointer'
+                        }}
+                      >
+                        Enable
+                      </button>
                     )}
                     {store.status === 'Rejected' && (
-                      <button className="btn-action btn-enable" onClick={() => approveStore(store.id)}>Approve</button>
+                      <button 
+                        className="btn-action btn-enable" 
+                        onClick={() => store.ownerVerificationStatus === 'Verified' && approveStore(store.id)}
+                        disabled={store.ownerVerificationStatus !== 'Verified'}
+                        title={store.ownerVerificationStatus !== 'Verified' ? "Profile verification pending" : ""}
+                        style={{
+                          opacity: store.ownerVerificationStatus !== 'Verified' ? 0.5 : 1,
+                          cursor: store.ownerVerificationStatus !== 'Verified' ? 'not-allowed' : 'pointer'
+                        }}
+                      >
+                        Approve
+                      </button>
                     )}
                   </div>
                 </div>
@@ -360,6 +480,17 @@ export default function StoresManagement() {
                      <span className="info-label">Registered</span>
                      <span className="info-val">{selectedStore.createdDate}</span>
                    </div>
+                   {creatorVerificationStatus && (
+                     <div className="info-row">
+                       <span className="info-label">Profile Verification</span>
+                       <span 
+                         className="info-val font-bold"
+                         style={{ color: getVerificationStatusColor(creatorVerificationStatus) }}
+                       >
+                         {creatorVerificationStatus}
+                       </span>
+                     </div>
+                   )}
                  </div>
 
                  <div className="info-section">
@@ -391,8 +522,16 @@ export default function StoresManagement() {
                      <button 
                        className="btn-action btn-approve" 
                        onClick={async () => {
-                         await approveStore(selectedStore.id);
-                         setSelectedStore(null);
+                         if (creatorVerificationStatus === 'Verified') {
+                           await approveStore(selectedStore.id);
+                           setSelectedStore(null);
+                         }
+                       }}
+                       disabled={creatorVerificationStatus !== 'Verified'}
+                       title={creatorVerificationStatus !== 'Verified' ? "Profile verification pending" : ""}
+                       style={{
+                         opacity: creatorVerificationStatus !== 'Verified' ? 0.5 : 1,
+                         cursor: creatorVerificationStatus !== 'Verified' ? 'not-allowed' : 'pointer'
                        }}
                      >
                        Approve Store
@@ -417,8 +556,16 @@ export default function StoresManagement() {
                    <button 
                      className="btn-action btn-enable" 
                      onClick={async () => {
-                       await approveStore(selectedStore.id);
-                       setSelectedStore(null);
+                       if (creatorVerificationStatus === 'Verified') {
+                         await approveStore(selectedStore.id);
+                         setSelectedStore(null);
+                       }
+                     }}
+                     disabled={creatorVerificationStatus !== 'Verified'}
+                     title={creatorVerificationStatus !== 'Verified' ? "Profile verification pending" : ""}
+                     style={{
+                       opacity: creatorVerificationStatus !== 'Verified' ? 0.5 : 1,
+                       cursor: creatorVerificationStatus !== 'Verified' ? 'not-allowed' : 'pointer'
                      }}
                    >
                      Enable Store
@@ -428,8 +575,16 @@ export default function StoresManagement() {
                    <button 
                      className="btn-action btn-approve" 
                      onClick={async () => {
-                       await approveStore(selectedStore.id);
-                       setSelectedStore(null);
+                       if (creatorVerificationStatus === 'Verified') {
+                         await approveStore(selectedStore.id);
+                         setSelectedStore(null);
+                       }
+                     }}
+                     disabled={creatorVerificationStatus !== 'Verified'}
+                     title={creatorVerificationStatus !== 'Verified' ? "Profile verification pending" : ""}
+                     style={{
+                       opacity: creatorVerificationStatus !== 'Verified' ? 0.5 : 1,
+                       cursor: creatorVerificationStatus !== 'Verified' ? 'not-allowed' : 'pointer'
                      }}
                    >
                      Approve Store

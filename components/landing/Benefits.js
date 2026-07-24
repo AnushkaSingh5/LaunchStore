@@ -34,7 +34,7 @@ export default function Benefits() {
       <div className={`${styles.container} container`}>
         {/* Left column: Grid of benefits */}
         <div className={styles.leftCol}>
-          <span className={styles.sub}>Why LaunchCart?</span>
+          <span className={styles.sub}>Why KreateStore?</span>
           <h2 className={styles.title}>The Smartest Way to Sell Online</h2>
           <p className={styles.description}>
             Traditional web builders are slow, bloated, and complicated. We built a streamlined e-commerce engine that takes care of the technical heavy lifting so you can focus on building your brand.

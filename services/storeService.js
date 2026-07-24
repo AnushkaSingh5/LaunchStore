@@ -4,7 +4,7 @@ import { products, categories, storeData } from '@/data/mockData';
 const compressImage = (file, maxWidth = 800, maxHeight = 600) => {
   return new Promise((resolve) => {
     const timeout = setTimeout(() => {
-      console.warn('[LaunchCart - Image Compression] Timeout reached. Returning empty string.');
+      console.warn('[KreateStore - Image Compression] Timeout reached. Returning empty string.');
       resolve('');
     }, 4000);
 
@@ -77,7 +77,7 @@ const runWithTimeoutAndRetry = async (queryFn, maxRetries = 3, timeoutMs = 30000
       ]);
       return result;
     } catch (err) {
-      console.warn(`⚠️ [LaunchCart - Query] Attempt ${attempt} failed:`, err.message || err);
+      console.warn(`⚠️ [KreateStore - Query] Attempt ${attempt} failed:`, err.message || err);
       
       const isJwtFuture = err.message?.includes('JWT issued at future') || 
                            err.message?.includes('issued at future') ||
@@ -85,7 +85,7 @@ const runWithTimeoutAndRetry = async (queryFn, maxRetries = 3, timeoutMs = 30000
                            String(err.code) === 'PGRST301';
 
       if (attempt < maxRetries) {
-        console.log(`🔄 [LaunchCart - Query] Retrying query in 1.5s (Attempt ${attempt + 1}/${maxRetries})...`);
+        console.log(`🔄 [KreateStore - Query] Retrying query in 1.5s (Attempt ${attempt + 1}/${maxRetries})...`);
         await new Promise(resolve => setTimeout(resolve, 1500));
         continue;
       }
@@ -116,12 +116,12 @@ export const storeService = {
         }
       });
       if (!response.ok) {
-        console.warn(`[LaunchCart] Store with slug "${slug}" not found in Supabase.`);
+        console.warn(`[KreateStore] Store with slug "${slug}" not found in Supabase.`);
         return null;
       }
       const data = await response.json();
       if (!data || data.length === 0) {
-        console.warn(`[LaunchCart] Store with slug "${slug}" not found in Supabase.`);
+        console.warn(`[KreateStore] Store with slug "${slug}" not found in Supabase.`);
         return null;
       }
       const store = data[0];
@@ -225,7 +225,7 @@ export const storeService = {
     while (attempt < maxAttempts) {
       attempt++;
       try {
-        console.log(`[LaunchCart - Storage] Uploading logo (Attempt ${attempt}/${maxAttempts})...`);
+        console.log(`[KreateStore - Storage] Uploading logo (Attempt ${attempt}/${maxAttempts})...`);
         const uploadPromise = supabaseClient.storage
           .from('store-assets')
           .upload(filePath, file, { upsert: true });
@@ -240,7 +240,7 @@ export const storeService = {
         ]);
           
         if (error) {
-          console.warn(`[LaunchCart - Storage] Logo upload attempt ${attempt} error:`, error.message || error);
+          console.warn(`[KreateStore - Storage] Logo upload attempt ${attempt} error:`, error.message || error);
           
           const isBucketErr = error.message?.includes('Bucket not found') || 
                               error.message?.includes('bucket_not_found') || 
@@ -250,7 +250,7 @@ export const storeService = {
                               error.statusCode === 403;
           
           if (isBucketErr) {
-            console.warn('[LaunchCart - Storage] Storage bucket error/not found. Falling back to compressed Base64 data URL immediately.');
+            console.warn('[KreateStore - Storage] Storage bucket error/not found. Falling back to compressed Base64 data URL immediately.');
             const base64Url = await compressImage(file, 200, 200);
             console.log("Upload Success:", base64Url);
             return base64Url;
@@ -270,7 +270,7 @@ export const storeService = {
         console.log("Upload Success:", publicUrl);
         return publicUrl;
       } catch (err) {
-        console.warn(`[LaunchCart - Storage] Exception on logo upload attempt ${attempt}:`, err.message || err);
+        console.warn(`[KreateStore - Storage] Exception on logo upload attempt ${attempt}:`, err.message || err);
         
         const isBucketErr = err.message?.includes('Bucket not found') || 
                             err.message?.includes('bucket_not_found') || 
@@ -282,7 +282,7 @@ export const storeService = {
         const isTimeout = err.message?.includes('timed out') || err.message?.includes('timeout');
 
         if (isBucketErr || isTimeout) {
-          console.warn('[LaunchCart - Storage] Storage bucket exception/timeout. Falling back to compressed Base64 data URL immediately.');
+          console.warn('[KreateStore - Storage] Storage bucket exception/timeout. Falling back to compressed Base64 data URL immediately.');
           const base64Url = await compressImage(file, 200, 200);
           console.log("Upload Success:", base64Url);
           return base64Url;
@@ -292,7 +292,7 @@ export const storeService = {
           await new Promise(resolve => setTimeout(resolve, 1500));
           continue;
         }
-        console.warn('[LaunchCart - Storage] Falling back to compressed Base64 data URL for logo.');
+        console.warn('[KreateStore - Storage] Falling back to compressed Base64 data URL for logo.');
         const base64Url = await compressImage(file, 200, 200);
         console.log("Upload Success:", base64Url);
         return base64Url;
@@ -314,7 +314,7 @@ export const storeService = {
     while (attempt < maxAttempts) {
       attempt++;
       try {
-        console.log(`[LaunchCart - Storage] Uploading banner (Attempt ${attempt}/${maxAttempts})...`);
+        console.log(`[KreateStore - Storage] Uploading banner (Attempt ${attempt}/${maxAttempts})...`);
         const uploadPromise = supabaseClient.storage
           .from('store-assets')
           .upload(filePath, file, { upsert: true });
@@ -329,7 +329,7 @@ export const storeService = {
         ]);
           
         if (error) {
-          console.warn(`[LaunchCart - Storage] Banner upload attempt ${attempt} error:`, error.message || error);
+          console.warn(`[KreateStore - Storage] Banner upload attempt ${attempt} error:`, error.message || error);
           
           const isBucketErr = error.message?.includes('Bucket not found') || 
                               error.message?.includes('bucket_not_found') || 
@@ -339,7 +339,7 @@ export const storeService = {
                               error.statusCode === 403;
           
           if (isBucketErr) {
-            console.warn('[LaunchCart - Storage] Storage bucket error/not found. Falling back to compressed Base64 data URL immediately.');
+            console.warn('[KreateStore - Storage] Storage bucket error/not found. Falling back to compressed Base64 data URL immediately.');
             const base64Url = await compressImage(file, 800, 500);
             console.log("Upload Success:", base64Url);
             return base64Url;
@@ -359,7 +359,7 @@ export const storeService = {
         console.log("Upload Success:", publicUrl);
         return publicUrl;
       } catch (err) {
-        console.warn(`[LaunchCart - Storage] Exception on banner upload attempt ${attempt}:`, err.message || err);
+        console.warn(`[KreateStore - Storage] Exception on banner upload attempt ${attempt}:`, err.message || err);
         
         const isBucketErr = err.message?.includes('Bucket not found') || 
                             err.message?.includes('bucket_not_found') || 
@@ -371,7 +371,7 @@ export const storeService = {
         const isTimeout = err.message?.includes('timed out') || err.message?.includes('timeout');
 
         if (isBucketErr || isTimeout) {
-          console.warn('[LaunchCart - Storage] Storage bucket exception/timeout. Falling back to compressed Base64 data URL immediately.');
+          console.warn('[KreateStore - Storage] Storage bucket exception/timeout. Falling back to compressed Base64 data URL immediately.');
           const base64Url = await compressImage(file, 800, 500);
           console.log("Upload Success:", base64Url);
           return base64Url;
@@ -381,7 +381,7 @@ export const storeService = {
           await new Promise(resolve => setTimeout(resolve, 1500));
           continue;
         }
-        console.warn('[LaunchCart - Storage] Falling back to compressed Base64 data URL for banner.');
+        console.warn('[KreateStore - Storage] Falling back to compressed Base64 data URL for banner.');
         const base64Url = await compressImage(file, 800, 500);
         console.log("Upload Success:", base64Url);
         return base64Url;

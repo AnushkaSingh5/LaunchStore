@@ -50,7 +50,7 @@ export default function StoreSignupPage({ params }) {
     setSuccessMsg('');
     startLoading();
     try {
-      console.log('🔄 [LaunchCart - StoreSignupPage]: Triggering signUp for customer:', email);
+      console.log('🔄 [KreateStore - StoreSignupPage]: Triggering signUp for customer:', email);
       // SignUp options structure matches the schema setup to map role and metadata
       const result = await authService.signUp(email, password, name, 'customer', phone);
       if (result && result.error) throw result.error;
@@ -58,19 +58,19 @@ export default function StoreSignupPage({ params }) {
       // Auto-authenticate: check if a session is returned, otherwise login explicitly
       let session = result.data?.session;
       if (!session) {
-        console.log('🔄 [LaunchCart - StoreSignupPage]: No session in signUp response, performing explicit signIn...');
+        console.log('🔄 [KreateStore - StoreSignupPage]: No session in signUp response, performing explicit signIn...');
         const loginRes = await authService.signIn(email, password);
         if (loginRes.error) throw loginRes.error;
         session = loginRes.data?.session;
       }
       
-      console.log('✅ [LaunchCart - StoreSignupPage]: Customer signup and auto-login successful.');
+      console.log('✅ [KreateStore - StoreSignupPage]: Customer signup and auto-login successful.');
       setSuccessMsg('Account created successfully! Redirecting...');
       setTimeout(() => {
         router.push(redirect);
       }, 1000);
     } catch (err) {
-      console.error('❌ [LaunchCart - StoreSignupPage]: Signup error:', err);
+      console.error('❌ [KreateStore - StoreSignupPage]: Signup error:', err);
       setErrorMsg(err.message || 'Failed to register account. Please try again.');
     } finally {
       setLoading(false);
@@ -83,7 +83,7 @@ export default function StoreSignupPage({ params }) {
     setSuccessMsg('');
     try {
       const callbackUrl = `${window.location.origin}${redirect}`;
-      console.log(`🔄 [LaunchCart - StoreSignupPage]: Triggering OAuth signup for ${provider} with callback ${callbackUrl}`);
+      console.log(`🔄 [KreateStore - StoreSignupPage]: Triggering OAuth signup for ${provider} with callback ${callbackUrl}`);
       const { error } = await supabaseClient.auth.signInWithOAuth({
         provider,
         options: {
@@ -95,7 +95,7 @@ export default function StoreSignupPage({ params }) {
       });
       if (error) throw error;
     } catch (err) {
-      console.error(`❌ [LaunchCart - StoreSignupPage]: ${provider} OAuth error:`, err);
+      console.error(`❌ [KreateStore - StoreSignupPage]: ${provider} OAuth error:`, err);
       setErrorMsg(err.message || `Failed to sign up with ${provider}.`);
     }
   };

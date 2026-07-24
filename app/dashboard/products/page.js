@@ -11,7 +11,7 @@ export default function ProductsPage() {
   const router = useRouter();
   const { products, categories, loading, deleteProduct } = useDashboard();
   
-  console.log('[LaunchCart - ProductsPage] render values:', { 
+  console.log('[KreateStore - ProductsPage] render values:', { 
     productsCount: products?.length, 
     categoriesCount: categories?.length, 
     loading 

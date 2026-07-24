@@ -115,7 +115,7 @@ export const profileService = {
 
       if (error) {
         if (error.message?.includes('Bucket not found') || error.message?.includes('bucket_not_found')) {
-          console.warn('[LaunchCart - Storage] Bucket "profile-photos" not found. Creating it...');
+          console.warn('[KreateStore - Storage] Bucket "profile-photos" not found. Creating it...');
           try {
             await supabaseClient.storage.createBucket('profile-photos', { public: true });
             const { error: retryError } = await supabaseClient.storage
@@ -195,7 +195,7 @@ export const profileService = {
           .getPublicUrl(filePath);
         publicUrl = url;
       } catch (storageErr) {
-        console.warn('⚠️ [LaunchCart - Storage] Storage upload failed, falling back to database base64 storage:', storageErr.message);
+        console.warn('⚠️ [KreateStore - Storage] Storage upload failed, falling back to database base64 storage:', storageErr.message);
         const reader = new FileReader();
         const p = new Promise((resolve) => {
           reader.onloadend = () => resolve(reader.result);

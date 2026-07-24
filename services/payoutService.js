@@ -267,7 +267,7 @@ export const payoutService = {
         .order('requested_at', { ascending: false });
 
       if (error) {
-        console.warn('[LaunchCart - PayoutService] Fallback to mock mode due to DB error:', error);
+        console.warn('[KreateStore - PayoutService] Fallback to mock mode due to DB error:', error);
         forceMockMode = true;
         return payoutService.getPayoutRequests(creatorId);
       }
@@ -410,7 +410,7 @@ export const payoutService = {
         .order('requested_at', { ascending: false });
 
       if (error) {
-        console.warn('[LaunchCart - PayoutService] Fallback to mock mode due to DB error:', error);
+        console.warn('[KreateStore - PayoutService] Fallback to mock mode due to DB error:', error);
         forceMockMode = true;
         return payoutService.adminGetPayoutRequests();
       }
@@ -438,7 +438,7 @@ export const payoutService = {
    * Update payout request status (Approved, Rejected, Completed).
    */
   adminUpdatePayoutStatus: async (requestId, status, notes = '') => {
-    const adminEmail = 'admin@launchcart.com'; // Admin seeded identifier
+    const adminEmail = 'admin@kreatestore.com'; // Admin seeded identifier
 
     if (!supabaseClient || forceMockMode) {
       const req = mockPayoutRequests.find(r => r.id === requestId);

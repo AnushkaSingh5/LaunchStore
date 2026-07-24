@@ -22,7 +22,7 @@ export default function CTA() {
                   <polyline points="12 5 19 12 12 19"></polyline>
                 </svg>
               </Link>
-              <a href="mailto:support@launchcart.com" className={styles.secondaryCta}>
+              <a href="mailto:support@kreatestore.com" className={styles.secondaryCta}>
                 Contact Us
               </a>
             </div>

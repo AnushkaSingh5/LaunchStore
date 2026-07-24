@@ -96,7 +96,7 @@ export const categoryService = {
       .select();
 
     if (error) {
-      console.error('[LaunchCart - CategoryService] Error creating category:', error);
+      console.error('[KreateStore - CategoryService] Error creating category:', error);
       throw new Error(error.message || 'Failed to create category');
     }
 
@@ -139,7 +139,7 @@ export const categoryService = {
       .select();
 
     if (error) {
-      console.error('[LaunchCart - CategoryService] Error updating category:', error);
+      console.error('[KreateStore - CategoryService] Error updating category:', error);
       throw new Error(error.message || 'Failed to update category');
     }
 
@@ -167,7 +167,7 @@ export const categoryService = {
       .eq('id', categoryId);
 
     if (error) {
-      console.error('[LaunchCart - CategoryService] Error deleting category:', error);
+      console.error('[KreateStore - CategoryService] Error deleting category:', error);
       throw new Error(error.message || 'Failed to delete category');
     }
     return true;
@@ -188,7 +188,7 @@ export const categoryService = {
       await Promise.all(promises);
       return true;
     } catch (e) {
-      console.error('[LaunchCart - CategoryService] Error updating categories sort order:', e);
+      console.error('[KreateStore - CategoryService] Error updating categories sort order:', e);
       throw e;
     }
   }

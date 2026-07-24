@@ -6,14 +6,14 @@ export async function generateMetadata({ params }) {
   const store = demoStores[slug];
   if (!store) {
     return {
-      title: 'Demo Store Not Found | LaunchCart',
+      title: 'Demo Store Not Found | KreateStore',
       description: 'The requested demo store does not exist.',
     };
   }
   return {
-    title: `${store.name} | Live Demo | LaunchCart`,
+    title: `${store.name} | Live Demo | KreateStore`,
     description: store.description || `Explore the beautiful ${store.name} demo store storefront.`,
-    keywords: [store.name, 'demo store', 'LaunchCart', store.type, 'e-commerce demo'],
+    keywords: [store.name, 'demo store', 'KreateStore', store.type, 'e-commerce demo'],
   };
 }
 

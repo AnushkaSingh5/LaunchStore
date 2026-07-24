@@ -2,7 +2,7 @@ import { storeService } from '@/services/storeService';
 import { productService } from '@/services/productService';
 
 export default async function sitemap() {
-  const baseUrl = 'https://launchcart.com';
+  const baseUrl = 'https://kreatestore.com';
   
   const routes = [
     {
@@ -51,11 +51,11 @@ export default async function sitemap() {
           });
         }
       } catch (prodErr) {
-        console.error(`[LaunchCart - Sitemap] Error fetching products for store ${store.id}:`, prodErr);
+        console.error(`[KreateStore - Sitemap] Error fetching products for store ${store.id}:`, prodErr);
       }
     }
   } catch (storeErr) {
-    console.error('[LaunchCart - Sitemap] Error fetching stores for sitemap:', storeErr);
+    console.error('[KreateStore - Sitemap] Error fetching stores for sitemap:', storeErr);
   }
 
   return routes;

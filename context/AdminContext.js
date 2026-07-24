@@ -2,10 +2,12 @@
 
 import { createContext, useContext, useState, useEffect } from 'react';
 import { adminService } from '@/services/adminService';
+import { useRouter } from 'next/navigation';
 
 const AdminContext = createContext();
 
 export function AdminProvider({ children }) {
+  const router = useRouter();
   const [stores, setStores] = useState([]);
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
@@ -155,7 +157,7 @@ export function AdminProvider({ children }) {
       setAiInsights(derivedAI);
 
     } catch (error) {
-      console.error('[LaunchCart - AdminContext] Error loading platform data:', error);
+      console.error('[KreateStore - AdminContext] Error loading platform data:', error);
     } finally {
       setLoading(false);
     }
@@ -171,6 +173,9 @@ export function AdminProvider({ children }) {
       const res = await adminService.approveStore(id);
       if (res.success) {
         await loadPlatformData();
+      } else if (res.isUnverifiedCreator) {
+        alert(res.error);
+        router.push(`/admin/creators?search=${encodeURIComponent(res.creatorEmail || '')}&creatorId=${res.creatorId}`);
       } else {
         alert('Failed to approve store: ' + res.error);
       }

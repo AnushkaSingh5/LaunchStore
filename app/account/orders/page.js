@@ -128,7 +128,7 @@ export default function CustomerOrdersHistoryPage() {
                       <div key={order.id} className="order-card dashboard-card fade-in">
                         <div className="order-header" onClick={() => handleToggleExpand(order.id)}>
                           <div className="header-left">
-                            <div className="store-badge">🏪 {order.store?.name || 'LaunchCart Shop'}</div>
+                            <div className="store-badge">🏪 {order.store?.name || 'KreateStore Shop'}</div>
                             <span className="order-date">Placed on {new Date(order.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
                           </div>
                           

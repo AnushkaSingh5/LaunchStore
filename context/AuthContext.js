@@ -14,7 +14,7 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null);
   const [store, setStore] = useState(null);
   const [loading, setLoading] = useState(() => !supabaseClient ? false : true);
-  const [storeLoading, setStoreLoading] = useState(false);
+  const [storeLoading, setStoreLoading] = useState(true);
   const [authTimeoutError, setAuthTimeoutError] = useState(false);
   
   const initialSessionLoadedRef = useRef(false);
@@ -74,15 +74,15 @@ export function AuthProvider({ children }) {
             return;
           }
         } else {
-          console.warn(`❌ [LaunchCart - Auth]: Profile HTTP Error ${response.status}:`, response.statusText);
+          console.warn(`❌ [KreateStore - Auth]: Profile HTTP Error ${response.status}:`, response.statusText);
           if (response.status === 401 && attempt < maxAttempts) {
-            console.warn(`⚠️ [LaunchCart - Auth]: Auth unauthorized error (possibly JWT clock skew). Retrying in 1.5s (Attempt ${attempt + 1}/${maxAttempts})...`);
+            console.warn(`⚠️ [KreateStore - Auth]: Auth unauthorized error (possibly JWT clock skew). Retrying in 1.5s (Attempt ${attempt + 1}/${maxAttempts})...`);
             await new Promise(resolve => setTimeout(resolve, 1500));
             continue;
           }
         }
       } catch (err) {
-        console.warn(`❌ [LaunchCart - Auth]: Profile fetch error/timeout (Attempt ${attempt}/${maxAttempts}):`, err.message || err);
+        console.warn(`❌ [KreateStore - Auth]: Profile fetch error/timeout (Attempt ${attempt}/${maxAttempts}):`, err.message || err);
         if (err.name === 'AbortError' || err.message?.includes('Timeout') || err.message?.includes('abort')) {
           setAuthTimeoutError(true);
         }
@@ -94,7 +94,7 @@ export function AuthProvider({ children }) {
     }
 
     // Fallback if profile not found or fetch failed
-    console.warn('⚠️ [LaunchCart - Auth]: No profile matched or fetch failed. Attempting manual insert fallback...');
+    console.warn('⚠️ [KreateStore - Auth]: No profile matched or fetch failed. Attempting manual insert fallback...');
     try {
       const { data: newProf, error: insertErr } = await supabaseClient
         .from('profiles')
@@ -110,14 +110,14 @@ export function AuthProvider({ children }) {
       if (insertErr) throw insertErr;
 
       if (newProf) {
-        console.log('✅ [LaunchCart - Auth]: Manually created missing profile:', newProf);
+        console.log('✅ [KreateStore - Auth]: Manually created missing profile:', newProf);
         setProfile(newProf);
         setRole(newProf.role);
         console.log("Profile fetch complete");
         return;
       }
     } catch (err) {
-      console.warn('⚠️ [LaunchCart - Auth]: Manual profile insert failed:', err.message);
+      console.warn('⚠️ [KreateStore - Auth]: Manual profile insert failed:', err.message);
       setProfile({ id: userId, email, role: 'creator', name: 'New Merchant' });
       setRole('creator');
     }
@@ -163,15 +163,15 @@ export function AuthProvider({ children }) {
           }
           return;
         } else {
-          console.warn(`❌ [LaunchCart - Auth]: Store HTTP Error ${response.status}:`, response.statusText);
+          console.warn(`❌ [KreateStore - Auth]: Store HTTP Error ${response.status}:`, response.statusText);
           if (response.status === 401 && attempt < maxAttempts) {
-            console.warn(`⚠️ [LaunchCart - Auth]: Store fetch auth error (possibly JWT clock skew). Retrying in 1.5s...`);
+            console.warn(`⚠️ [KreateStore - Auth]: Store fetch auth error (possibly JWT clock skew). Retrying in 1.5s...`);
             await new Promise(resolve => setTimeout(resolve, 1500));
             continue;
           }
         }
       } catch (err) {
-        console.warn(`❌ [LaunchCart - Auth]: Store fetch error/timeout (Attempt ${attempt}/${maxAttempts}):`, err.message || err);
+        console.warn(`❌ [KreateStore - Auth]: Store fetch error/timeout (Attempt ${attempt}/${maxAttempts}):`, err.message || err);
         if (attempt < maxAttempts) {
           await new Promise(resolve => setTimeout(resolve, 1500));
           continue;
@@ -189,7 +189,7 @@ export function AuthProvider({ children }) {
   const refreshStore = async (userId) => {
     const activeUserId = userId || user?.id;
     if (!supabaseClient || !activeUserId) {
-      console.warn('⚠️ [LaunchCart - Auth]: Cannot refreshStore. No active user ID available.');
+      console.warn('⚠️ [KreateStore - Auth]: Cannot refreshStore. No active user ID available.');
       return;
     }
     await fetchStoreOnly(activeUserId, null, true);
@@ -214,7 +214,7 @@ export function AuthProvider({ children }) {
       const { data: { session: activeSession }, error: sessionError } = await supabaseClient.auth.getSession();
       
       if (sessionError) {
-        console.warn('⚠️ [LaunchCart - Auth]: Session retry restoration warning:', sessionError.message);
+        console.warn('⚠️ [KreateStore - Auth]: Session retry restoration warning:', sessionError.message);
       }
 
       setSession(activeSession);
@@ -227,7 +227,7 @@ export function AuthProvider({ children }) {
         });
       }
     } catch (error) {
-      console.warn('[LaunchCart - Auth]: Error in retryAuth:', error);
+      console.warn('[KreateStore - Auth]: Error in retryAuth:', error);
     } finally {
       setLoading(false);
       completeLoading();
@@ -247,7 +247,7 @@ export function AuthProvider({ children }) {
       startLoading();
       const getSessionTimeout = new Promise((resolve) => {
         setTimeout(() => {
-          console.warn('⚠️ [LaunchCart - Auth]: Initial getSession check timed out after 10s.');
+          console.warn('⚠️ [KreateStore - Auth]: Initial getSession check timed out after 10s.');
           resolve({ data: { session: null } });
         }, 10000);
       });
@@ -259,7 +259,7 @@ export function AuthProvider({ children }) {
         const rememberMe = localStorage.getItem('remember_me');
         const sessionActive = sessionStorage.getItem('session_active');
         if (rememberMe === 'false' && !sessionActive) {
-          console.log("🧹 [LaunchCart - Auth]: Remember Me was false and browser restarted. Clearing session.");
+          console.log("🧹 [KreateStore - Auth]: Remember Me was false and browser restarted. Clearing session.");
           await supabaseClient.auth.signOut();
           localStorage.removeItem('remember_me');
         } else {
@@ -276,11 +276,12 @@ export function AuthProvider({ children }) {
 
         if (activeSession) {
           if (activeSession.user && !activeSession.user.email_confirmed_at) {
-            console.log("🧹 [LaunchCart - Auth]: Clearing unverified session on load.");
+            console.log("🧹 [KreateStore - Auth]: Clearing unverified session on load.");
             await supabaseClient.auth.signOut();
             setSession(null);
             setUser(null);
             setProfile(null);
+            setStoreLoading(false);
           } else {
             setSession(activeSession);
             setUser(activeSession.user);
@@ -293,12 +294,14 @@ export function AuthProvider({ children }) {
         } else {
           setSession(null);
           setUser(null);
+          setStoreLoading(false);
         }
       } catch (err) {
-        console.warn('❌ [LaunchCart - Auth]: Error during initial session restore. Resetting state:', err);
+        console.warn('❌ [KreateStore - Auth]: Error during initial session restore. Resetting state:', err);
         setSession(null);
         setUser(null);
         setProfile(null);
+        setStoreLoading(false);
       } finally {
         if (isSubscribed) {
           initialSessionLoadedRef.current = true;
@@ -313,7 +316,7 @@ export function AuthProvider({ children }) {
     // 2. Set up auth state change listener
     const { data: { subscription } } = supabaseClient.auth.onAuthStateChange((event, activeSession) => {
       setTimeout(async () => {
-        console.log(`🔔 [LaunchCart - Auth]: auth state changes: event="${event}"`);
+        console.log(`🔔 [KreateStore - Auth]: auth state changes: event="${event}"`);
 
         if (event === 'INITIAL_SESSION') {
           // Skip since loadInitialSession is handling it
@@ -321,7 +324,7 @@ export function AuthProvider({ children }) {
         }
 
         if (!initialSessionLoadedRef.current) {
-          console.log(`🔔 [LaunchCart - Auth]: onAuthStateChange event "${event}" ignored during initial session load.`);
+          console.log(`🔔 [KreateStore - Auth]: onAuthStateChange event "${event}" ignored during initial session load.`);
           return;
         }
 
@@ -331,7 +334,7 @@ export function AuthProvider({ children }) {
           const currentUser = activeSession?.user ?? null;
           
           if (currentUser && !currentUser.email_confirmed_at) {
-            console.log("🔔 [LaunchCart - Auth]: onAuthStateChange ignored profile fetch because email is unverified.");
+            console.log("🔔 [KreateStore - Auth]: onAuthStateChange ignored profile fetch because email is unverified.");
             setSession(null);
             setUser(null);
             setProfile(null);
@@ -345,7 +348,7 @@ export function AuthProvider({ children }) {
 
           if (currentUser) {
             await fetchProfileOnly(currentUser.id, currentUser.email, activeSession?.access_token);
-            fetchStoreOnly(currentUser.id, activeSession?.access_token, true).catch(e => {
+            fetchStoreOnly(currentUser.id, activeSession?.access_token, false).catch(e => {
               console.warn("Background store fetch failed:", e);
             });
           } else {
@@ -354,13 +357,13 @@ export function AuthProvider({ children }) {
             setRole('creator');
           }
         } catch (err) {
-          console.warn('❌ [LaunchCart - Auth]: Error handling onAuthStateChange:', err);
+          console.warn('❌ [KreateStore - Auth]: Error handling onAuthStateChange:', err);
         }
       }, 0);
     });
 
     return () => {
-      console.log('🧹 [LaunchCart - Auth]: Cleaning up auth listeners...');
+      console.log('🧹 [KreateStore - Auth]: Cleaning up auth listeners...');
       isSubscribed = false;
       if (subscription) {
         subscription.unsubscribe();
@@ -370,7 +373,7 @@ export function AuthProvider({ children }) {
 
   const signUp = async (email, password, options = {}) => {
     if (!supabaseClient) throw new Error('Supabase client is not initialized.');
-    console.log('🔄 [LaunchCart - Auth]: signUp start for:', email);
+    console.log('🔄 [KreateStore - Auth]: signUp start for:', email);
     startLoading();
     try {
       const res = await supabaseClient.auth.signUp({
@@ -378,10 +381,10 @@ export function AuthProvider({ children }) {
         password,
         options,
       });
-      console.log('✅ [LaunchCart - Auth]: signUp complete.');
+      console.log('✅ [KreateStore - Auth]: signUp complete.');
       return res;
     } catch (err) {
-      console.warn('❌ [LaunchCart - Auth]: signUp error:', err);
+      console.warn('❌ [KreateStore - Auth]: signUp error:', err);
       throw err;
     } finally {
       completeLoading();
@@ -390,17 +393,17 @@ export function AuthProvider({ children }) {
 
   const signIn = async (email, password) => {
     if (!supabaseClient) throw new Error('Supabase client is not initialized.');
-    console.log('🔄 [LaunchCart - Auth]: signIn start for:', email);
+    console.log('🔄 [KreateStore - Auth]: signIn start for:', email);
     startLoading();
     try {
       const res = await supabaseClient.auth.signInWithPassword({
         email,
         password,
       });
-      console.log('✅ [LaunchCart - Auth]: signIn success.');
+      console.log('✅ [KreateStore - Auth]: signIn success.');
       return res;
     } catch (err) {
-      console.warn('❌ [LaunchCart - Auth]: signIn error:', err);
+      console.warn('❌ [KreateStore - Auth]: signIn error:', err);
       throw err;
     } finally {
       completeLoading();
@@ -409,16 +412,16 @@ export function AuthProvider({ children }) {
 
   const signOut = async () => {
     if (!supabaseClient) throw new Error('Supabase client is not initialized.');
-    console.log('🔄 [LaunchCart - Auth]: Logging out active session...');
+    console.log('🔄 [KreateStore - Auth]: Logging out active session...');
     setLoading(true);
     startLoading();
     try {
       localStorage.removeItem('remember_me');
       sessionStorage.removeItem('session_active');
       await supabaseClient.auth.signOut();
-      console.log('✅ [LaunchCart - Auth]: Supabase signOut completed.');
+      console.log('✅ [KreateStore - Auth]: Supabase signOut completed.');
     } catch (err) {
-      console.warn('❌ [LaunchCart - Auth]: Error during Supabase signOut:', err);
+      console.warn('❌ [KreateStore - Auth]: Error during Supabase signOut:', err);
     } finally {
       setUser(null);
       setSession(null);
@@ -427,7 +430,7 @@ export function AuthProvider({ children }) {
       setRole('creator');
       setLoading(false);
       completeLoading();
-      console.log('✅ [LaunchCart - Auth]: Logout complete. Cleared all local state.');
+      console.log('✅ [KreateStore - Auth]: Logout complete. Cleared all local state.');
     }
   };
 

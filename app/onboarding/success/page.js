@@ -21,7 +21,7 @@ export default function OnboardingSuccessPage() {
   useEffect(() => {
     if (!loading && !storeLoading && profile) {
       if (!profile.onboarding_completed) {
-        console.log('🔄 [LaunchCart - OnboardingSuccess]: Onboarding not complete, redirecting to onboarding wizard...');
+        console.log('🔄 [KreateStore - OnboardingSuccess]: Onboarding not complete, redirecting to onboarding wizard...');
         router.push('/onboarding');
       }
     }

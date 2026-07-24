@@ -59,17 +59,8 @@ export default function OnboardingPage() {
   useEffect(() => {
     if (!loading && !storeLoading && profile) {
       if (profile.onboarding_completed && store && !isNavigatingToSuccess) {
-        console.log('🔄 [LaunchCart - Onboarding]: Onboarding complete and store exists, redirecting to dashboard...');
+        console.log('🔄 [KreateStore - Onboarding]: Onboarding complete and store exists, redirecting to dashboard...');
         router.push('/dashboard');
-        return;
-      }
-      
-      // If profile says onboarding is completed but we have no store, reset it in DB
-      if (profile.onboarding_completed && !store) {
-        console.log('🔄 [LaunchCart - Onboarding]: Profile completed onboarding but no store exists. Resetting database state...');
-        authService.updateProfile(user.id, { onboarding_completed: false, onboarding_step: 1 })
-          .then(() => refreshProfile())
-          .catch(err => console.error('Failed to reset onboarding state:', err));
         return;
       }
       
@@ -185,7 +176,7 @@ export default function OnboardingPage() {
       }
     } catch (err) {
       const errMsg = err?.message || err?.error_description || (typeof err === 'object' ? JSON.stringify(err) : String(err));
-      console.error('❌ [LaunchCart - updateOnboardingStep] Error updating onboarding step in DB:', errMsg);
+      console.error('❌ [KreateStore - updateOnboardingStep] Error updating onboarding step in DB:', errMsg);
       if (err && typeof err === 'object') {
         console.error('Error details:', {
           message: err.message,
@@ -201,6 +192,16 @@ export default function OnboardingPage() {
   const handleSubmitStore = async (e) => {
     e.preventDefault();
     if (!storeName || !slug) return;
+
+    // Check if logo and banner exist (either as uploaded files or already saved in DB)
+    const hasLogo = logoFile || (store && store.logo_url);
+    const hasBanner = bannerFile || (store && store.banner_url);
+
+    if (!hasLogo || !hasBanner) {
+      alert('Please upload both a store logo and a store banner/wallpaper to proceed.');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       let activeStore = store;
@@ -341,7 +342,7 @@ export default function OnboardingPage() {
     }
   };
 
-  if (loading || !user) {
+  if (loading || storeLoading || !user) {
     return <PageLoader />;
   }
 
@@ -367,7 +368,7 @@ export default function OnboardingPage() {
         <div className="stepper-header">
           <div className="logo-section">
             <span className="logo-icon">🚀</span>
-            <h3>LaunchCart</h3>
+            <h3>KreateStore</h3>
           </div>
           <span className="step-indicator-text">Step {currentStep} of 5</span>
         </div>
@@ -397,7 +398,7 @@ export default function OnboardingPage() {
         {/* STEP 1: Welcome Screen */}
         {currentStep === 1 && (
           <div className="wizard-step fade-in">
-            <h2>Welcome to LaunchCart!</h2>
+            <h2>Welcome to KreateStore!</h2>
             <p className="step-subtitle text-center">
               Let&apos;s build your online business together. In just 5 simple steps, we&apos;ll configure your store details, add categories, create your first product, and publish your storefront.
             </p>
@@ -452,7 +453,7 @@ export default function OnboardingPage() {
                   required
                 />
                 <span className="live-preview-url">
-                  Live URL Preview: <strong>launchcart.com/store/{slug || '...'}</strong>
+                  Live URL Preview: <strong>kreatestore.com/store/{slug || '...'}</strong>
                 </span>
               </div>
 

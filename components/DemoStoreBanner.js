@@ -7,7 +7,7 @@ export default function DemoStoreBanner() {
     <div className="demo-banner">
       <div className="banner-content">
         <span className="badge">DEMO MODE</span>
-        <span className="text">This is a Demo Store built using <strong>LaunchCart</strong></span>
+        <span className="text">This is a Demo Store built using <strong>KreateStore</strong></span>
       </div>
       <div className="banner-actions">
         <Link href="/signup" className="btn primary-btn">

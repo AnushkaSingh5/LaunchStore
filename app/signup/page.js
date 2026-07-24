@@ -88,12 +88,12 @@ export default function SignupPage() {
     setLoading(true);
     startLoading();
     try {
-      console.log('🔄 [LaunchCart - MerchantSignup]: Calling signUp service for email:', email);
+      console.log('🔄 [KreateStore - MerchantSignup]: Calling signUp service for email:', email);
       
       const { data, error } = await authService.signUp(email, password, storeName);
       if (error) throw error;
 
-      console.log('✅ [LaunchCart - MerchantSignup]: Signup successful, verification pending.', data);
+      console.log('✅ [KreateStore - MerchantSignup]: Signup successful, verification pending.', data);
       setIsSignedUp(true);
       setSuccessMsg('Account created successfully! Please verify your email before logging in.');
     } catch (err) {
@@ -130,7 +130,7 @@ export default function SignupPage() {
     setSuccessMsg('');
     try {
       const callbackUrl = `${window.location.origin}/onboarding`;
-      console.log(`🔄 [LaunchCart - MerchantSignup]: Triggering OAuth signup for ${provider} with callback ${callbackUrl}`);
+      console.log(`🔄 [KreateStore - MerchantSignup]: Triggering OAuth signup for ${provider} with callback ${callbackUrl}`);
       const { error } = await supabaseClient.auth.signInWithOAuth({
         provider,
         options: {
@@ -142,7 +142,7 @@ export default function SignupPage() {
       });
       if (error) throw error;
     } catch (err) {
-      console.error(`❌ [LaunchCart - MerchantSignup]: ${provider} OAuth error:`, err);
+      console.error(`❌ [KreateStore - MerchantSignup]: ${provider} OAuth error:`, err);
       setErrorMsg(err.message || `Failed to sign up with ${provider}.`);
     }
   };
@@ -273,7 +273,7 @@ export default function SignupPage() {
                   placeholder="e.g. Luxe Apparel"
                   required
                 />
-                <span className="field-hint">Your store URL will be: launchcart.com/store/{storeName.toLowerCase().replace(/\s+/g, '-')}</span>
+                <span className="field-hint">Your store URL will be: kreatestore.com/store/{storeName.toLowerCase().replace(/\s+/g, '-')}</span>
               </div>
 
               <div className="form-group">

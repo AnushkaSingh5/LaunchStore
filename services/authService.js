@@ -74,7 +74,7 @@ export const authService = {
       .select()
       .single();
     if (error) {
-      console.error('❌ [LaunchCart - authService.updateProfile] Supabase update profile error:', {
+      console.error('❌ [KreateStore - authService.updateProfile] Supabase update profile error:', {
         message: error.message,
         details: error.details,
         code: error.code,

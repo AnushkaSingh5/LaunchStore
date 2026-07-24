@@ -57,7 +57,7 @@ try {
     console.log('admin_users:', adminUsers);
 
     console.log('\nTesting RPC verify_admin_credentials...');
-    const rpcRes = await callRpc('verify_admin_credentials', { p_email: 'admin@launchcart.com', p_password: 'admin123' });
+    const rpcRes = await callRpc('verify_admin_credentials', { p_email: 'admin@kreatestore.com', p_password: 'admin123' });
     console.log('verify_admin_credentials RPC result:', rpcRes);
   }
 

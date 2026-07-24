@@ -62,7 +62,7 @@ export default function Hero() {
                 <span></span>
                 <span></span>
               </div>
-              <div className={styles.mockupSearch}>launchcart.com/dashboard</div>
+              <div className={styles.mockupSearch}>kreatestore.com/dashboard</div>
             </div>
 
             {/* Dashboard Workspace */}

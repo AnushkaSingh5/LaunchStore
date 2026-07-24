@@ -431,7 +431,7 @@ export default function SettingsPage() {
             <h4>Google Search Preview</h4>
             <div className="google-preview-box">
               <div className="google-url">
-                {settings.canonicalUrl || `https://launchcart.com/store/${store?.slug || 'store-slug'}`}
+                {settings.canonicalUrl || `https://kreatestore.com/store/${store?.slug || 'store-slug'}`}
               </div>
               <div className="google-title">
                 {settings.seoTitle || settings.storeName || 'Store Name'}

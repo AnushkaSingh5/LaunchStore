@@ -15,7 +15,7 @@ export async function generateMetadata({ params }) {
 
   if (!store) {
     return {
-      title: 'Store Not Found | LaunchCart',
+      title: 'Store Not Found | KreateStore',
       description: 'The requested store could not be found.'
     };
   }
@@ -29,7 +29,7 @@ export async function generateMetadata({ params }) {
 
   if (!product) {
     return {
-      title: 'Product Not Found | LaunchCart',
+      title: 'Product Not Found | KreateStore',
       description: 'The requested product could not be found.'
     };
   }
@@ -39,7 +39,7 @@ export async function generateMetadata({ params }) {
   const ogTitle = product.og_title || title;
   const ogDescription = product.og_description || description;
   const ogImage = product.image_url || product.image || '';
-  const canonical = product.canonical_url || `https://launchcart.com/store/${slug}/product/${product.slug || product.id}`;
+  const canonical = product.canonical_url || `https://kreatestore.com/store/${slug}/product/${product.slug || product.id}`;
 
   return {
     title,
@@ -85,7 +85,7 @@ export default async function ProductDetailsPage({ params }) {
       }
     }
   } catch (error) {
-    console.error('[LaunchCart - ProductDetails Server] Failed to prefetch data:', error);
+    console.error('[KreateStore - ProductDetails Server] Failed to prefetch data:', error);
   }
 
   return (

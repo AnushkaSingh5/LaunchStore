@@ -54,7 +54,7 @@ export default function DashboardShowcase() {
               <span></span>
               <span></span>
             </div>
-            <div className={styles.windowAddress}>launchcart.com/dashboard/{activeTab}</div>
+            <div className={styles.windowAddress}>kreatestore.com/dashboard/{activeTab}</div>
           </div>
 
           {/* Simulated Content Area */}

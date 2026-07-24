@@ -18,7 +18,7 @@ function CreatorDashboardGuard({ children }) {
         console.log("Navigation triggered");
         router.push('/login');
       } else if (role !== 'creator') {
-        console.log("🔄 [LaunchCart - Guard]: Non-creator role detected in dashboard layout, redirecting...");
+        console.log("🔄 [KreateStore - Guard]: Non-creator role detected in dashboard layout, redirecting...");
         router.push('/login');
       }
     }
@@ -26,7 +26,7 @@ function CreatorDashboardGuard({ children }) {
 
   useEffect(() => {
     if (!loading && !storeLoading && user && role === 'creator' && !store) {
-      console.log('🔄 [LaunchCart - Guard]: No store found for creator, redirecting to onboarding...');
+      console.log('🔄 [KreateStore - Guard]: No store found for creator, redirecting to onboarding...');
       router.push('/onboarding');
     }
   }, [loading, storeLoading, user, role, store, router]);

@@ -227,7 +227,7 @@ export const productService = {
   createProduct: async (productInput) => {
     if (!supabaseClient) throw new Error('Supabase client is not initialized.');
 
-    console.log('[LaunchCart - ProductService] createProduct input:', productInput);
+    console.log('[KreateStore - ProductService] createProduct input:', productInput);
 
     let mainImage = productInput.image || productInput.image_url || '';
     if (typeof mainImage === 'string' && mainImage.startsWith('data:')) {
@@ -273,7 +273,7 @@ export const productService = {
       return_policy: productInput.return_policy !== undefined ? productInput.return_policy : undefined,
     };
 
-    console.log('[LaunchCart - ProductService] dbInput mapped:', dbInput);
+    console.log('[KreateStore - ProductService] dbInput mapped:', dbInput);
 
     const { data, error } = await supabaseClient
       .from('products')
@@ -281,7 +281,7 @@ export const productService = {
       .select();
 
     if (error) {
-      console.error('[LaunchCart - ProductService] Error creating product:', error);
+      console.error('[KreateStore - ProductService] Error creating product:', error);
       throw new Error(error.message || 'Failed to create product');
     }
 
@@ -303,7 +303,7 @@ export const productService = {
   updateProduct: async (productId, updateInput) => {
     if (!supabaseClient) throw new Error('Supabase client is not initialized.');
 
-    console.log('[LaunchCart - ProductService] updateProduct input:', { productId, updateInput });
+    console.log('[KreateStore - ProductService] updateProduct input:', { productId, updateInput });
 
     let mainImage = updateInput.image || updateInput.image_url;
     if (typeof mainImage === 'string' && mainImage.startsWith('data:')) {
@@ -361,7 +361,7 @@ export const productService = {
     // Filter undefined keys
     Object.keys(dbInput).forEach(key => dbInput[key] === undefined && delete dbInput[key]);
 
-    console.log('[LaunchCart - ProductService] dbInput mapped:', dbInput);
+    console.log('[KreateStore - ProductService] dbInput mapped:', dbInput);
 
     const { data, error } = await supabaseClient
       .from('products')
@@ -370,7 +370,7 @@ export const productService = {
       .select();
 
     if (error) {
-      console.error('[LaunchCart - ProductService] Error updating product:', error);
+      console.error('[KreateStore - ProductService] Error updating product:', error);
       throw new Error(error.message || 'Failed to update product');
     }
 
@@ -396,7 +396,7 @@ export const productService = {
       .eq('id', productId);
 
     if (error) {
-      console.error('[LaunchCart - ProductService] Error deleting product:', error);
+      console.error('[KreateStore - ProductService] Error deleting product:', error);
       throw new Error(error.message || 'Failed to delete product');
     }
     return true;
@@ -417,7 +417,7 @@ export const productService = {
         
       if (error) {
         if (error.message?.includes('Bucket not found') || error.message?.includes('bucket_not_found')) {
-          console.warn('[LaunchCart - Storage] Bucket "product-images" not found. Attempting to create it...');
+          console.warn('[KreateStore - Storage] Bucket "product-images" not found. Attempting to create it...');
           try {
             await supabaseClient.storage.createBucket('product-images', { public: true });
             const { data: retryData, error: retryError } = await supabaseClient.storage
@@ -430,10 +430,10 @@ export const productService = {
               return publicUrl;
             }
           } catch (createErr) {
-            console.error('[LaunchCart - Storage] Failed to create bucket programmatically:', createErr.message);
+            console.error('[KreateStore - Storage] Failed to create bucket programmatically:', createErr.message);
           }
         }
-        console.warn('[LaunchCart - Storage] Falling back to compressed Base64 data URL for product image.');
+        console.warn('[KreateStore - Storage] Falling back to compressed Base64 data URL for product image.');
         return await compressImage(file, 800, 800);
       }
       
@@ -443,7 +443,7 @@ export const productService = {
         
       return publicUrl;
     } catch (err) {
-      console.warn('[LaunchCart - Storage] Error uploading product image, falling back to Base64:', err.message);
+      console.warn('[KreateStore - Storage] Error uploading product image, falling back to Base64:', err.message);
       return await compressImage(file, 800, 800);
     }
   },

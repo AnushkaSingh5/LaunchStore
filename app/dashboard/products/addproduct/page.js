@@ -473,7 +473,7 @@ function AddProductFormContent() {
             <h4>Google Search Preview</h4>
             <div className="google-preview-box">
               <div className="google-url">
-                {formData.canonical_url || `https://launchcart.com/store/store-slug/product/${productId || 'product-slug'}`}
+                {formData.canonical_url || `https://kreatestore.com/store/store-slug/product/${productId || 'product-slug'}`}
               </div>
               <div className="google-title">
                 {formData.seo_title || formData.name || 'Product Name'}

@@ -75,7 +75,7 @@ export default function StoreClient({ slug, initialStoreDetails, initialProducts
             ...safeCatData
           ]);
         } catch (e) {
-          console.error('[LaunchCart - StoreClient] Failed to load preview data:', e);
+          console.error('[KreateStore - StoreClient] Failed to load preview data:', e);
         }
       };
       loadPreviewData();
@@ -147,8 +147,13 @@ export default function StoreClient({ slug, initialStoreDetails, initialProducts
     );
   }
 
-  // For visitors, block access to non-approved stores
-  if (storeDetails && storeDetails.status !== 'approved' && !isCreator) {
+  // For visitors, block access to non-approved stores (allow creators and admins)
+  let isAdmin = false;
+  if (typeof window !== 'undefined') {
+    isAdmin = !!sessionStorage.getItem('admin_session');
+  }
+
+  if (storeDetails && storeDetails.status !== 'approved' && !isCreator && !isAdmin) {
     return (
       <StoreUnderReview 
         storeName={storeDetails.name} 

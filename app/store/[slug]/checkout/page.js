@@ -312,7 +312,12 @@ export default function StoreCheckoutPage({ params }) {
   const currentUserId = creatorUser?.id;
   const isCreator = currentUserId && currentUserId === storeDetails?.creator_id;
 
-  if (storeDetails && storeDetails.status !== 'approved' && !isCreator) {
+  let isAdmin = false;
+  if (typeof window !== 'undefined') {
+    isAdmin = !!sessionStorage.getItem('admin_session');
+  }
+
+  if (storeDetails && storeDetails.status !== 'approved' && !isCreator && !isAdmin) {
     return (
       <StoreUnderReview 
         storeName={storeDetails.name} 

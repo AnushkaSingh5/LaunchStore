@@ -9,7 +9,7 @@ fetch(url, {
     'Content-Type': 'application/json'
   },
   body: JSON.stringify({
-    p_admin_email: 'admin@launchcart.com'
+    p_admin_email: 'admin@kreatestore.com'
   })
 })
 .then(res => res.json())

@@ -1,13 +1,15 @@
 'use client';
 
 import Button from '@/components/UI/Button';
+import { useRouter } from 'next/navigation';
 
 export default function PendingApprovals({ stores = [], onManage }) {
+  const router = useRouter();
   return (
     <div className="approvals-card">
       <div className="card-header">
         <h3>Pending Store Approvals</h3>
-        <button className="view-all">View All</button>
+        <button className="view-all" onClick={() => router.push('/admin/stores')}>View All</button>
       </div>
       <div className="approvals-list">
         {stores.length > 0 ? (
@@ -23,9 +25,20 @@ export default function PendingApprovals({ stores = [], onManage }) {
                 </div>
               </div>
               <div className="actions">
-                <button className="action-btn approve" onClick={() => onManage(store.id)}>Approve</button>
-                <button className="action-btn reject">Reject</button>
-                <button className="action-btn view">View</button>
+                <button 
+                  className="action-btn approve" 
+                  onClick={() => store.ownerVerificationStatus === 'Verified' && onManage(store.id)}
+                  disabled={store.ownerVerificationStatus !== 'Verified'}
+                  title={store.ownerVerificationStatus !== 'Verified' ? "Profile verification pending" : ""}
+                  style={{
+                    opacity: store.ownerVerificationStatus !== 'Verified' ? 0.5 : 1,
+                    cursor: store.ownerVerificationStatus !== 'Verified' ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  Approve
+                </button>
+                <button className="action-btn reject" onClick={() => router.push(`/admin/stores?storeId=${store.id}&action=reject`)}>Reject</button>
+                <button className="action-btn view" onClick={() => router.push(`/store/${store.slug}`)}>View</button>
               </div>
             </div>
           ))

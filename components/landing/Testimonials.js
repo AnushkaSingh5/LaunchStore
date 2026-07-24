@@ -6,7 +6,7 @@ export default function Testimonials() {
       name: 'Sarah K.',
       role: 'Fashion Designer & Founder',
       avatar: '👩‍🎨',
-      review: 'I launched Luxe Apparel in just one evening. LaunchCart handles the checkout, shipping rates, and product variations flawlessly. My weekly sales have doubled since moving off WordPress.'
+      review: 'I launched Luxe Apparel in just one evening. KreateStore handles the checkout, shipping rates, and product variations flawlessly. My weekly sales have doubled since moving off WordPress.'
     },
     {
       name: 'David L.',

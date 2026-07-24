@@ -66,7 +66,7 @@ function LoginContent() {
   // Auto-redirect if already logged in (essential for OAuth callback landing)
   useEffect(() => {
     if (isAuthenticated) {
-      console.log('✅ [LaunchCart - CustomerLogin]: Customer is already authenticated. Redirecting to:', redirect);
+      console.log('✅ [KreateStore - CustomerLogin]: Customer is already authenticated. Redirecting to:', redirect);
       router.push(redirect);
     }
   }, [isAuthenticated, redirect, router]);
@@ -93,14 +93,14 @@ function LoginContent() {
     setErrorMsg('');
     setSuccessMsg('');
     try {
-      console.log('🔄 [LaunchCart - CustomerLogin]: Logging in:', email);
+      console.log('🔄 [KreateStore - CustomerLogin]: Logging in:', email);
       const res = await login(email, password);
       if (res && res.success) {
-        console.log('✅ [LaunchCart - CustomerLogin]: Login success. Redirecting to:', redirect);
+        console.log('✅ [KreateStore - CustomerLogin]: Login success. Redirecting to:', redirect);
         router.push(redirect);
       }
     } catch (err) {
-      console.error('❌ [LaunchCart - CustomerLogin]: Login error:', err);
+      console.error('❌ [KreateStore - CustomerLogin]: Login error:', err);
       setErrorMsg(err.message || 'Invalid email or password.');
     } finally {
       setLoading(false);
@@ -119,12 +119,12 @@ function LoginContent() {
     setSuccessMsg('');
     try {
       const cleanPhone = phone.trim();
-      console.log('🔄 [LaunchCart - CustomerLogin]: Sending OTP to:', cleanPhone);
+      console.log('🔄 [KreateStore - CustomerLogin]: Sending OTP to:', cleanPhone);
       await loginWithPhone(cleanPhone);
       setOtpSent(true);
       setSuccessMsg('OTP code sent successfully to your mobile number!');
     } catch (err) {
-      console.error('❌ [LaunchCart - CustomerLogin]: Send OTP error:', err);
+      console.error('❌ [KreateStore - CustomerLogin]: Send OTP error:', err);
       setErrorMsg(err.message || 'Failed to send OTP. Please confirm format e.g. +1234567890.');
     } finally {
       setOtpLoading(false);
@@ -144,15 +144,15 @@ function LoginContent() {
     try {
       const cleanPhone = phone.trim();
       const cleanOtp = otp.trim();
-      console.log('🔄 [LaunchCart - CustomerLogin]: Verifying OTP:', cleanOtp, 'for phone:', cleanPhone);
+      console.log('🔄 [KreateStore - CustomerLogin]: Verifying OTP:', cleanOtp, 'for phone:', cleanPhone);
       const res = await verifyPhoneOtp(cleanPhone, cleanOtp);
       if (res && res.success) {
         setSuccessMsg('Verification successful! Logging in...');
-        console.log('✅ [LaunchCart - CustomerLogin]: OTP Login success. Redirecting to:', redirect);
+        console.log('✅ [KreateStore - CustomerLogin]: OTP Login success. Redirecting to:', redirect);
         router.push(redirect);
       }
     } catch (err) {
-      console.error('❌ [LaunchCart - CustomerLogin]: Verify OTP error:', err);
+      console.error('❌ [KreateStore - CustomerLogin]: Verify OTP error:', err);
       setErrorMsg(err.message || 'Verification failed. Invalid or expired code.');
     } finally {
       setLoading(false);
@@ -164,10 +164,10 @@ function LoginContent() {
     setSuccessMsg('');
     try {
       const callbackUrl = `${window.location.origin}/customer/login?redirect=${encodeURIComponent(redirect)}`;
-      console.log(`🔄 [LaunchCart - CustomerLogin]: Triggering OAuth login for ${provider} with callback ${callbackUrl}`);
+      console.log(`🔄 [KreateStore - CustomerLogin]: Triggering OAuth login for ${provider} with callback ${callbackUrl}`);
       await loginWithProvider(provider, callbackUrl);
     } catch (err) {
-      console.error(`❌ [LaunchCart - CustomerLogin]: ${provider} OAuth error:`, err);
+      console.error(`❌ [KreateStore - CustomerLogin]: ${provider} OAuth error:`, err);
       setErrorMsg(err.message || `Failed to sign in with ${provider}.`);
     }
   };

@@ -11,7 +11,7 @@ const getAdminEmail = () => {
   } catch (e) {
     console.error('Error getting admin email:', e);
   }
-  return 'admin@launchcart.com'; // Safe seeded fallback
+  return 'admin@kreatestore.com'; // Safe seeded fallback
 };
 
 const toLocalDateString = (isoString) => {
@@ -40,20 +40,23 @@ export const adminService = {
 
         if (!storesError && storesData) {
           // Fetch products, orders, and categories in parallel
-          const [prodRes, ordRes, catRes] = await Promise.all([
+          const [prodRes, ordRes, catRes, selRes] = await Promise.all([
             supabaseClient.rpc('admin_get_products', { p_admin_email: email }),
             supabaseClient.rpc('admin_get_orders', { p_admin_email: email }),
-            supabaseClient.from('categories').select('id, store_id')
+            supabaseClient.from('categories').select('id, store_id'),
+            supabaseClient.from('sellers').select('id, verification_status')
           ]);
 
           const productsList = prodRes.data || [];
           const ordersList = ordRes.data || [];
           const categoriesList = catRes.data || [];
+          const sellersList = selRes.data || [];
 
           return storesData.map(store => {
             const storeProds = productsList.filter(p => p.store_id === store.id);
             const storeOrds = ordersList.filter(o => o.store_id === store.id);
             const storeCats = categoriesList.filter(c => c.store_id === store.id);
+            const seller = sellersList.find(s => s.id === store.creator_id);
             const totalRevenue = storeOrds.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
 
             let uiStatus = 'Pending';
@@ -78,18 +81,19 @@ export const adminService = {
               categoriesCount: storeCats.length,
               ordersCount: storeOrds.length,
               revenue: totalRevenue,
-              growth: 0
+              growth: 0,
+              ownerVerificationStatus: seller ? seller.verification_status : 'Not Submitted'
             };
           });
         }
       } catch (rpcErr) {
-        console.warn('⚠️ [LaunchCart - AdminService]: admin_get_stores RPC failed, trying select fallback:', rpcErr.message);
+        console.warn('⚠️ [KreateStore - AdminService]: admin_get_stores RPC failed, trying select fallback:', rpcErr.message);
       }
 
       // 2. Direct fallback (original direct query for local testing/bootstrap)
       const { data: storesData, error: storesError } = await supabaseClient
         .from('stores')
-        .select('*, creator:creator_id(name, email)')
+        .select('*, creator:creator_id(name, email, verification_status)')
         .order('created_at', { ascending: false });
 
       if (storesError) throw storesError;
@@ -132,11 +136,12 @@ export const adminService = {
           categoriesCount: storeCats.length,
           ordersCount: storeOrds.length,
           revenue: totalRevenue,
-          growth: 0
+          growth: 0,
+          ownerVerificationStatus: store.creator?.verification_status || 'Not Submitted'
         };
       });
     } catch (e) {
-      console.error('[LaunchCart - AdminService] Error fetching stores:', e);
+      console.error('[KreateStore - AdminService] Error fetching stores:', e);
       return [];
     }
   },
@@ -147,6 +152,34 @@ export const adminService = {
   approveStore: async (id) => {
     if (!supabaseClient) throw new Error('Supabase client is not initialized.');
     try {
+      // 1. Fetch store creator details
+      const { data: store, error: storeErr } = await supabaseClient
+        .from('stores')
+        .select('creator_id')
+        .eq('id', id)
+        .single();
+      if (storeErr || !store) throw new Error('Store not found.');
+      
+      const creatorId = store.creator_id;
+      
+      // 2. Fetch creator profile verification status and email
+      const { data: profile, error: profileErr } = await supabaseClient
+        .from('profiles')
+        .select('verification_status, email')
+        .eq('id', creatorId)
+        .single();
+      if (profileErr || !profile) throw new Error('Creator profile not found.');
+
+      if (profile.verification_status !== 'Verified') {
+        return { 
+          success: false, 
+          isUnverifiedCreator: true,
+          creatorId: creatorId,
+          creatorEmail: profile.email,
+          error: 'The creator profile must be verified before their store can be approved. Redirecting you to verify their credentials first...' 
+        };
+      }
+
       const email = getAdminEmail();
 
       // 1. Try secure admin RPC first
@@ -158,7 +191,7 @@ export const adminService = {
           return { success: true };
         }
       } catch (rpcErr) {
-        console.warn('⚠️ [LaunchCart - AdminService]: admin_approve_store RPC failed, trying update fallback:', rpcErr.message);
+        console.warn('⚠️ [KreateStore - AdminService]: admin_approve_store RPC failed, trying update fallback:', rpcErr.message);
       }
 
       // 2. Direct fallback
@@ -191,7 +224,7 @@ export const adminService = {
 
       return { success: true };
     } catch (e) {
-      console.error('[LaunchCart - AdminService] Error approving store:', e);
+      console.error('[KreateStore - AdminService] Error approving store:', e);
       return { success: false, error: e.message };
     }
   },
@@ -214,7 +247,7 @@ export const adminService = {
           return { success: true };
         }
       } catch (rpcErr) {
-        console.warn('⚠️ [LaunchCart - AdminService]: admin_reject_store RPC failed, trying update fallback:', rpcErr.message);
+        console.warn('⚠️ [KreateStore - AdminService]: admin_reject_store RPC failed, trying update fallback:', rpcErr.message);
       }
 
       // 2. Direct fallback
@@ -247,7 +280,7 @@ export const adminService = {
 
       return { success: true };
     } catch (e) {
-      console.error('[LaunchCart - AdminService] Error rejecting store:', e);
+      console.error('[KreateStore - AdminService] Error rejecting store:', e);
       return { success: false, error: e.message };
     }
   },
@@ -270,7 +303,7 @@ export const adminService = {
           return { success: true };
         }
       } catch (rpcErr) {
-        console.warn('⚠️ [LaunchCart - AdminService]: admin_disable_store RPC failed, trying update fallback:', rpcErr.message);
+        console.warn('⚠️ [KreateStore - AdminService]: admin_disable_store RPC failed, trying update fallback:', rpcErr.message);
       }
 
       // 2. Direct fallback
@@ -303,7 +336,7 @@ export const adminService = {
 
       return { success: true };
     } catch (e) {
-      console.error('[LaunchCart - AdminService] Error disabling store:', e);
+      console.error('[KreateStore - AdminService] Error disabling store:', e);
       return { success: false, error: e.message };
     }
   },
@@ -334,7 +367,7 @@ export const adminService = {
           }));
         }
       } catch (rpcErr) {
-        console.warn('⚠️ [LaunchCart - AdminService]: admin_get_products RPC failed, trying select fallback:', rpcErr.message);
+        console.warn('⚠️ [KreateStore - AdminService]: admin_get_products RPC failed, trying select fallback:', rpcErr.message);
       }
 
       // 2. Direct fallback
@@ -356,7 +389,7 @@ export const adminService = {
         image: p.image_url || 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=800'
       }));
     } catch (e) {
-      console.error('[LaunchCart - AdminService] Error fetching products:', e);
+      console.error('[KreateStore - AdminService] Error fetching products:', e);
       return [];
     }
   },
@@ -378,7 +411,7 @@ export const adminService = {
           return { success: true };
         }
       } catch (rpcErr) {
-        console.warn('⚠️ [LaunchCart - AdminService]: admin_remove_product RPC failed, trying delete fallback:', rpcErr.message);
+        console.warn('⚠️ [KreateStore - AdminService]: admin_remove_product RPC failed, trying delete fallback:', rpcErr.message);
       }
 
       // 2. Direct fallback
@@ -390,7 +423,7 @@ export const adminService = {
       if (error) throw error;
       return { success: true };
     } catch (e) {
-      console.error('[LaunchCart - AdminService] Error removing product:', e);
+      console.error('[KreateStore - AdminService] Error removing product:', e);
       return { success: false, error: e.message };
     }
   },
@@ -424,7 +457,7 @@ export const adminService = {
           }));
         }
       } catch (rpcErr) {
-        console.warn('⚠️ [LaunchCart - AdminService]: admin_get_orders RPC failed, trying select fallback:', rpcErr.message);
+        console.warn('⚠️ [KreateStore - AdminService]: admin_get_orders RPC failed, trying select fallback:', rpcErr.message);
       }
 
       // 2. Direct fallback
@@ -449,7 +482,7 @@ export const adminService = {
         address: o.shipping_address || 'Standard Shipping'
       }));
     } catch (e) {
-      console.error('[LaunchCart - AdminService] Error fetching orders:', e);
+      console.error('[KreateStore - AdminService] Error fetching orders:', e);
       return [];
     }
   },
@@ -472,7 +505,7 @@ export const adminService = {
           ordersData = data;
         }
       } catch (rpcErr) {
-        console.warn('⚠️ [LaunchCart - AdminService]: admin_get_orders RPC failed inside getCustomers, trying select fallback:', rpcErr.message);
+        console.warn('⚠️ [KreateStore - AdminService]: admin_get_orders RPC failed inside getCustomers, trying select fallback:', rpcErr.message);
       }
 
       // 2. Direct fallback
@@ -508,7 +541,7 @@ export const adminService = {
 
       return Object.values(customerMap);
     } catch (e) {
-      console.error('[LaunchCart - AdminService] Error generating customer list:', e);
+      console.error('[KreateStore - AdminService] Error generating customer list:', e);
       return [];
     }
   }

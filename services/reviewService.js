@@ -180,7 +180,7 @@ export const reviewService = {
 
       if (error) {
         if (error.message?.includes('Bucket not found') || error.message?.includes('bucket_not_found')) {
-          console.warn('[LaunchCart - Storage] Bucket "review-images" not found. Attempting to create it...');
+          console.warn('[KreateStore - Storage] Bucket "review-images" not found. Attempting to create it...');
           try {
             await supabaseClient.storage.createBucket('review-images', { public: true });
             const { data: retryData, error: retryError } = await supabaseClient.storage
@@ -194,7 +194,7 @@ export const reviewService = {
               return publicUrl;
             }
           } catch (createErr) {
-            console.error('[LaunchCart - Storage] Failed to create bucket programmatically:', createErr.message);
+            console.error('[KreateStore - Storage] Failed to create bucket programmatically:', createErr.message);
           }
         }
         // Fallback to base64 compression if upload fails
