@@ -1,70 +1,127 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { authService } from '@/services/authService';
 import { supabaseClient } from '@/lib/supabase';
+import { useAuth } from '@/context/AuthContext';
 import { useLoading } from '@/components/TopLoader';
 
 export default function SignupPage() {
   const { startLoading, completeLoading } = useLoading();
+  const { user, loading: authLoading, role } = useAuth();
   const [storeName, setStoreName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  const [isSignedUp, setIsSignedUp] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
   const router = useRouter();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!authLoading && user) {
+      if (role === 'creator') {
+        router.push('/dashboard');
+      } else if (role === 'admin') {
+        router.push('/admin');
+      }
+    }
+  }, [user, authLoading, role, router]);
+
+  // Cooldown countdown effect
+  useEffect(() => {
+    let timer;
+    if (cooldown > 0) {
+      timer = setInterval(() => {
+        setCooldown((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [cooldown]);
+
+  // Live password validation helper
+  const validatePassword = (pwd) => {
+    const requirements = {
+      length: pwd.length >= 8,
+      upper: /[A-Z]/.test(pwd),
+      lower: /[a-z]/.test(pwd),
+      number: /[0-9]/.test(pwd),
+      special: /[^A-Za-z0-9]/.test(pwd)
+    };
+    const count = Object.values(requirements).filter(Boolean).length;
+    let strength = 'Weak';
+    let color = '#ef4444';
+    if (count >= 5) {
+      strength = 'Strong';
+      color = '#10b981';
+    } else if (count >= 3) {
+      strength = 'Medium';
+      color = '#f59e0b';
+    }
+    return { strength, color, requirements, isValid: count === 5 };
+  };
+
+  const passwordStrength = validatePassword(password);
+  const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   const handleSignup = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setErrorMsg('');
     setSuccessMsg('');
+
+    // Validate email format
+    if (!isEmailValid) {
+      setErrorMsg('Please enter a valid email address (e.g. name@example.com).');
+      return;
+    }
+
+    // Validate password strength
+    if (!passwordStrength.isValid) {
+      setErrorMsg('Password does not meet the required security requirements.');
+      return;
+    }
+
+    setLoading(true);
     startLoading();
     try {
       console.log('🔄 [LaunchCart - MerchantSignup]: Calling signUp service for email:', email);
       
-      let result;
-      let session;
-      try {
-        result = await authService.signUp(email, password, storeName);
-        if (result && result.error) throw result.error;
-        session = result.data?.session;
-      } catch (signUpErr) {
-        const isAlreadyRegistered = signUpErr.message?.toLowerCase().includes('already registered') || 
-                                     signUpErr.message?.toLowerCase().includes('already exists') ||
-                                     signUpErr.status === 400;
-        if (isAlreadyRegistered) {
-          console.log('🔄 [LaunchCart - MerchantSignup]: User already registered, attempting auto-login instead...');
-          const loginRes = await authService.signIn(email, password);
-          if (loginRes.error) throw loginRes.error;
-          session = loginRes.data?.session;
-        } else {
-          throw signUpErr;
-        }
-      }
+      const { data, error } = await authService.signUp(email, password, storeName);
+      if (error) throw error;
 
-      // Auto-authenticate: check if a session is returned, otherwise login explicitly
-      if (!session) {
-        console.log('🔄 [LaunchCart - MerchantSignup]: No session in signUp/signIn response, performing explicit signIn...');
-        const loginRes = await authService.signIn(email, password);
-        if (loginRes.error) throw loginRes.error;
-        session = loginRes.data?.session;
-      }
-
-      console.log('✅ [LaunchCart - MerchantSignup]: Signup and auto-login successful.');
-      setSuccessMsg('Account verified successfully! Starting onboarding...');
-      setTimeout(() => {
-        router.push('/onboarding');
-      }, 1000);
+      console.log('✅ [LaunchCart - MerchantSignup]: Signup successful, verification pending.', data);
+      setIsSignedUp(true);
+      setSuccessMsg('Account created successfully! Please verify your email before logging in.');
     } catch (err) {
       console.error(err);
       setErrorMsg(err.message || 'Error signing up. Please try again.');
     } finally {
       setLoading(false);
       completeLoading();
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (cooldown > 0) return;
+    setErrorMsg('');
+    setSuccessMsg('');
+    try {
+      const { error } = await supabaseClient.auth.resend({
+        type: 'signup',
+        email: email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/dashboard`
+        }
+      });
+      if (error) throw error;
+      setSuccessMsg('Verification email resent successfully!');
+      setCooldown(60);
+    } catch (err) {
+      setErrorMsg(err.message || 'Failed to resend verification email.');
     }
   };
 
@@ -101,114 +158,210 @@ export default function SignupPage() {
           ← Back to homepage
         </Link>
 
-        {/* Brand Header */}
-        <div className="brand-header">
-          <div className="logo-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-            </svg>
-          </div>
-          <h2>Create Your Store</h2>
-          <p>Get started with your 14-day free trial</p>
-        </div>
+        {isSignedUp ? (
+          <div className="verification-success-view" style={{ textAlign: 'center', marginTop: '16px' }}>
+            <div className="success-icon" style={{ fontSize: '48px', marginBottom: '16px' }}>✉️</div>
+            <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#1e293b', marginBottom: '12px' }}>Verify your email</h3>
+            <p style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.6', marginBottom: '24px' }}>
+              We've sent a verification link to <strong style={{ color: '#0f172a' }}>{email}</strong>. Please check your inbox and click the link to confirm your account.
+            </p>
+            
+            <button
+              onClick={handleResendVerification}
+              className="submit-btn"
+              disabled={cooldown > 0}
+              style={{
+                background: cooldown > 0 ? '#cbd5e1' : 'linear-gradient(135deg, var(--accent) 0%, #1e40af 100%)',
+                cursor: cooldown > 0 ? 'not-allowed' : 'pointer'
+              }}
+            >
+              {cooldown > 0 ? `Resend in ${cooldown}s` : 'Resend Verification Email'}
+            </button>
+            
+            {successMsg && (
+              <div style={{
+                padding: '12px 16px',
+                background: '#ecfdf5',
+                color: '#10b981',
+                borderRadius: '12px',
+                fontSize: '13px',
+                fontWeight: '600',
+                marginTop: '16px',
+                border: '1px solid rgba(16, 185, 129, 0.1)',
+                textAlign: 'center'
+              }}>
+                {successMsg}
+              </div>
+            )}
+            
+            {errorMsg && (
+              <div style={{
+                padding: '12px 16px',
+                background: '#fef2f2',
+                color: '#ef4444',
+                borderRadius: '12px',
+                fontSize: '13px',
+                fontWeight: '600',
+                marginTop: '16px',
+                border: '1px solid rgba(239, 68, 68, 0.1)',
+                textAlign: 'center'
+              }}>
+                {errorMsg}
+              </div>
+            )}
 
-        {errorMsg && (
-          <div style={{
-            padding: '12px 16px',
-            background: '#fef2f2',
-            color: '#ef4444',
-            borderRadius: '12px',
-            fontSize: '13px',
-            fontWeight: '600',
-            marginBottom: '24px',
-            border: '1px solid rgba(239, 68, 68, 0.1)',
-            textAlign: 'center'
-          }}>
-            {errorMsg}
+            <div style={{ marginTop: '24px' }}>
+              <Link href="/login" style={{ fontSize: '13px', fontWeight: '700', color: 'var(--accent)', textDecoration: 'none' }}>
+                Go to Sign In page
+              </Link>
+            </div>
           </div>
+        ) : (
+          <>
+            {/* Brand Header */}
+            <div className="brand-header">
+              <div className="logo-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                </svg>
+              </div>
+              <h2>Create Your Store</h2>
+              <p>Get started with your 14-day free trial</p>
+            </div>
+
+            {errorMsg && (
+              <div style={{
+                padding: '12px 16px',
+                background: '#fef2f2',
+                color: '#ef4444',
+                borderRadius: '12px',
+                fontSize: '13px',
+                fontWeight: '600',
+                marginBottom: '24px',
+                border: '1px solid rgba(239, 68, 68, 0.1)',
+                textAlign: 'center'
+              }}>
+                {errorMsg}
+              </div>
+            )}
+
+            {successMsg && (
+              <div style={{
+                padding: '12px 16px',
+                background: '#ecfdf5',
+                color: '#10b981',
+                borderRadius: '12px',
+                fontSize: '13px',
+                fontWeight: '600',
+                marginBottom: '24px',
+                border: '1px solid rgba(16, 185, 129, 0.1)',
+                textAlign: 'center'
+              }}>
+                {successMsg}
+              </div>
+            )}
+
+            {/* Standard Signup Form */}
+            <form onSubmit={handleSignup} className="login-form">
+              <div className="form-group">
+                <label htmlFor="storeName">Online Store Name</label>
+                <input
+                  type="text"
+                  id="storeName"
+                  value={storeName}
+                  onChange={(e) => setStoreName(e.target.value)}
+                  placeholder="e.g. Luxe Apparel"
+                  required
+                />
+                <span className="field-hint">Your store URL will be: launchcart.com/store/{storeName.toLowerCase().replace(/\s+/g, '-')}</span>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="email">Email Address</label>
+                <input
+                  type="email"
+                  id="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@example.com"
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="password">Password</label>
+                <input
+                  type="password"
+                  id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                />
+                {password && (
+                  <div className="strength-container" style={{ marginTop: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                      <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '600' }}>Password Strength:</span>
+                      <span style={{ fontSize: '11px', fontWeight: 'bold', color: passwordStrength.color }}>
+                        {passwordStrength.strength}
+                      </span>
+                    </div>
+                    <div className="strength-bar-bg" style={{ height: '4px', background: '#e2e8f0', borderRadius: '2px', overflow: 'hidden' }}>
+                      <div className="strength-bar-fill" style={{
+                        height: '100%',
+                        background: passwordStrength.color,
+                        width: passwordStrength.strength === 'Weak' ? '33.3%' : passwordStrength.strength === 'Medium' ? '66.6%' : '100%',
+                        transition: 'width 0.3s ease'
+                      }}></div>
+                    </div>
+                    <div className="requirements-list" style={{ marginTop: '8px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
+                      <span style={{ fontSize: '10px', color: passwordStrength.requirements.length ? '#10b981' : '#94a3b8' }}>
+                        {passwordStrength.requirements.length ? '✓' : '•'} Min 8 characters
+                      </span>
+                      <span style={{ fontSize: '10px', color: passwordStrength.requirements.upper ? '#10b981' : '#94a3b8' }}>
+                        {passwordStrength.requirements.upper ? '✓' : '•'} 1 uppercase letter
+                      </span>
+                      <span style={{ fontSize: '10px', color: passwordStrength.requirements.lower ? '#10b981' : '#94a3b8' }}>
+                        {passwordStrength.requirements.lower ? '✓' : '•'} 1 lowercase letter
+                      </span>
+                      <span style={{ fontSize: '10px', color: passwordStrength.requirements.number ? '#10b981' : '#94a3b8' }}>
+                        {passwordStrength.requirements.number ? '✓' : '•'} 1 number
+                      </span>
+                      <span style={{ fontSize: '10px', color: passwordStrength.requirements.special ? '#10b981' : '#94a3b8' }}>
+                        {passwordStrength.requirements.special ? '✓' : '•'} 1 special character
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <button type="submit" className="submit-btn" disabled={loading}>
+                {loading ? 'Creating Your Store...' : 'Create Store'}
+              </button>
+            </form>
+
+            <div className="divider">
+              <span>or register with social</span>
+            </div>
+
+            {/* Social Authentication */}
+            <div className="social-auth">
+              <button className="social-btn" onClick={() => handleSocialLogin('google')}>
+                <span className="social-icon">🌐</span>
+                Sign Up with Google
+              </button>
+            </div>
+
+            {/* Form Footer */}
+            <div className="login-footer">
+              <span>Already have a store account? </span>
+              <Link href="/login" className="register-link">
+                Sign In
+              </Link>
+            </div>
+          </>
         )}
-
-        {successMsg && (
-          <div style={{
-            padding: '12px 16px',
-            background: '#ecfdf5',
-            color: '#10b981',
-            borderRadius: '12px',
-            fontSize: '13px',
-            fontWeight: '600',
-            marginBottom: '24px',
-            border: '1px solid rgba(16, 185, 129, 0.1)',
-            textAlign: 'center'
-          }}>
-            {successMsg}
-          </div>
-        )}
-
-        {/* Standard Signup Form */}
-        <form onSubmit={handleSignup} className="login-form">
-          <div className="form-group">
-            <label htmlFor="storeName">Online Store Name</label>
-            <input
-              type="text"
-              id="storeName"
-              value={storeName}
-              onChange={(e) => setStoreName(e.target.value)}
-              placeholder="e.g. Luxe Apparel"
-              required
-            />
-            <span className="field-hint">Your store URL will be: launchcart.com/store/{storeName.toLowerCase().replace(/\s+/g, '-')}</span>
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="email">Email Address</label>
-            <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="name@example.com"
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              required
-            />
-          </div>
-
-          <button type="submit" className="submit-btn" disabled={loading}>
-            {loading ? 'Creating Your Store...' : 'Create Store'}
-          </button>
-        </form>
-
-        <div className="divider">
-          <span>or register with social</span>
-        </div>
-
-        {/* Social Authentication */}
-        <div className="social-auth">
-          <button className="social-btn" onClick={() => handleSocialLogin('google')}>
-            <span className="social-icon">🌐</span>
-            Sign Up with Google
-          </button>
-        </div>
-
-        {/* Form Footer */}
-        <div className="login-footer">
-          <span>Already have a store account? </span>
-          <Link href="/login" className="register-link">
-            Sign In
-          </Link>
-        </div>
       </div>
-
       <style jsx>{`
         .login-container {
           min-height: 100vh;

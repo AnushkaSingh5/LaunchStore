@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useAuth } from '@/context/AuthContext';
 import styles from './Navbar.module.css';
 
 export default function Navbar() {
+  const { user } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
@@ -49,8 +51,14 @@ export default function Navbar() {
 
         {/* Desktop CTA */}
         <div className={styles.ctaGroup}>
-          <Link href="/login" className={styles.loginBtn}>Sign In</Link>
-          <Link href="/signup" className={styles.getStartedBtn}>Get Started</Link>
+          {user ? (
+            <Link href="/dashboard" className={styles.getStartedBtn}>Go to Dashboard</Link>
+          ) : (
+            <>
+              <Link href="/login" className={styles.loginBtn}>Sign In</Link>
+              <Link href="/signup" className={styles.getStartedBtn}>Get Started</Link>
+            </>
+          )}
         </div>
 
         {/* Mobile Toggle Button */}
@@ -74,8 +82,14 @@ export default function Navbar() {
           <a href="#pricing" className={styles.mobileNavLink} onClick={toggleMobileMenu}>Pricing</a>
           <a href="#faq" className={styles.mobileNavLink} onClick={toggleMobileMenu}>FAQ</a>
           <div className={styles.mobileDivider}></div>
-          <Link href="/login" className={styles.mobileLoginBtn} onClick={toggleMobileMenu}>Sign In</Link>
-          <Link href="/signup" className={styles.mobileGetStartedBtn} onClick={toggleMobileMenu}>Get Started</Link>
+          {user ? (
+            <Link href="/dashboard" className={styles.mobileGetStartedBtn} onClick={toggleMobileMenu}>Go to Dashboard</Link>
+          ) : (
+            <>
+              <Link href="/login" className={styles.mobileLoginBtn} onClick={toggleMobileMenu}>Sign In</Link>
+              <Link href="/signup" className={styles.mobileGetStartedBtn} onClick={toggleMobileMenu}>Get Started</Link>
+            </>
+          )}
         </nav>
       </div>
     </header>

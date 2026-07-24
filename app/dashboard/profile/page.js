@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { supabaseClient } from '@/lib/supabase';
 import { profileService } from '@/services/profileService';
 
 export default function CreatorProfile() {
@@ -31,6 +32,14 @@ export default function CreatorProfile() {
 
   // Documents state
   const [documents, setDocuments] = useState([]);
+
+  // Change Password & Email States
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+  const [savingPassword, setSavingPassword] = useState(false);
+  const [savingEmail, setSavingEmail] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -128,6 +137,99 @@ export default function CreatorProfile() {
       alert('Error updating business profile: ' + err.message);
     } finally {
       setSavingBusiness(false);
+    }
+  };
+
+  // Live password validation helper
+  const validateNewPassword = (pwd) => {
+    const requirements = {
+      length: pwd.length >= 8,
+      upper: /[A-Z]/.test(pwd),
+      lower: /[a-z]/.test(pwd),
+      number: /[0-9]/.test(pwd),
+      special: /[^A-Za-z0-9]/.test(pwd)
+    };
+    const count = Object.values(requirements).filter(Boolean).length;
+    let strength = 'Weak';
+    let color = '#ef4444';
+    if (count >= 5) {
+      strength = 'Strong';
+      color = '#10b981';
+    } else if (count >= 3) {
+      strength = 'Medium';
+      color = '#f59e0b';
+    }
+    return { strength, color, requirements, isValid: count === 5 };
+  };
+
+  const newPasswordStrength = validateNewPassword(newPassword);
+
+  const handlePasswordChange = async (e) => {
+    e.preventDefault();
+    if (!user) return;
+    setSavingPassword(true);
+    
+    try {
+      // 1. Re-authenticate to verify current password
+      const { error: signInErr } = await supabaseClient.auth.signInWithPassword({
+        email: user.email,
+        password: currentPassword
+      });
+      if (signInErr) {
+        throw new Error('Current password is incorrect.');
+      }
+      
+      // 2. Validate passwords match
+      if (newPassword !== confirmNewPassword) {
+        throw new Error('New passwords do not match.');
+      }
+      
+      // 3. Validate new password strength
+      if (!newPasswordStrength.isValid) {
+        throw new Error('New password does not meet security requirements.');
+      }
+      
+      // 4. Update password
+      const { error: updateErr } = await supabaseClient.auth.updateUser({
+        password: newPassword
+      });
+      if (updateErr) throw updateErr;
+      
+      alert('Password updated successfully!');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmNewPassword('');
+    } catch (err) {
+      alert(err.message || 'Failed to update password.');
+    } finally {
+      setSavingPassword(false);
+    }
+  };
+
+  const handleEmailChange = async (e) => {
+    e.preventDefault();
+    if (!user) return;
+    setSavingEmail(true);
+    
+    try {
+      const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail);
+      if (!isEmailValid) {
+        throw new Error('Please enter a valid email address.');
+      }
+      
+      const { error } = await supabaseClient.auth.updateUser({
+        email: newEmail
+      }, {
+        emailRedirectTo: `${window.location.origin}/dashboard/profile`
+      });
+      if (error) throw error;
+      
+      alert('A verification link has been sent to your new email. Please click the link to confirm and complete the change.');
+      setNewEmail('');
+    } catch (err) {
+      alert(err.message || 'Failed to request email change.');
+    } finally {
+      setSavingEmail(false);
     }
   };
 

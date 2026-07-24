@@ -13,11 +13,16 @@ function CreatorDashboardGuard({ children }) {
   const router = useRouter();
   
   useEffect(() => {
-    if (!loading && !user) {
-      console.log("Navigation triggered");
-      router.push('/login');
+    if (!loading) {
+      if (!user) {
+        console.log("Navigation triggered");
+        router.push('/login');
+      } else if (role !== 'creator') {
+        console.log("🔄 [LaunchCart - Guard]: Non-creator role detected in dashboard layout, redirecting...");
+        router.push('/login');
+      }
     }
-  }, [user, loading, router]);
+  }, [user, role, loading, router]);
 
   useEffect(() => {
     if (!loading && !storeLoading && user && role === 'creator' && !store) {
@@ -140,7 +145,11 @@ function CreatorDashboardGuard({ children }) {
     );
   }
 
-  if ((loading || storeLoading) && !profile) {
+  if (loading) {
+    return <PageLoader />;
+  }
+
+  if (storeLoading && !profile) {
     return <PageLoader />;
   }
 

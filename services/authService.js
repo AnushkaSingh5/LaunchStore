@@ -17,10 +17,12 @@ export const authService = {
    */
   signUp: async (email, password, name, role = 'creator', phone = null) => {
     if (!supabaseClient) throw new Error('Supabase client is not initialized.');
+    const redirectToUrl = typeof window !== 'undefined' ? `${window.location.origin}/dashboard` : undefined;
     return await supabaseClient.auth.signUp({
       email,
       password,
       options: {
+        emailRedirectTo: redirectToUrl,
         data: {
           name,
           role,
@@ -71,7 +73,15 @@ export const authService = {
       .eq('id', userId)
       .select()
       .single();
-    if (error) throw error;
+    if (error) {
+      console.error('❌ [LaunchCart - authService.updateProfile] Supabase update profile error:', {
+        message: error.message,
+        details: error.details,
+        code: error.code,
+        hint: error.hint
+      });
+      throw error;
+    }
     return {
       ...data,
       full_name: data ? data.name : ''

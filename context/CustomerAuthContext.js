@@ -331,10 +331,10 @@ export function CustomerAuthProvider({ children }) {
     setLoading(true);
     startLoading();
     try {
-      supabaseClient.auth.signOut().catch(err => {
-        console.warn('⚠️ [LaunchCart - CustomerAuth]: Background Supabase signOut warning:', err.message || err);
-      });
-      console.log('✅ [LaunchCart - CustomerAuth]: Supabase signOut triggered in background.');
+      localStorage.removeItem('remember_me');
+      sessionStorage.removeItem('session_active');
+      await supabaseClient.auth.signOut();
+      console.log('✅ [LaunchCart - CustomerAuth]: Supabase signOut completed.');
     } catch (err) {
       console.warn('❌ [LaunchCart - CustomerAuth]: Logout failed:', err);
     } finally {

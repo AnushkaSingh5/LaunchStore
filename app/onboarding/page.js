@@ -184,7 +184,16 @@ export default function OnboardingPage() {
         await refreshProfile();
       }
     } catch (err) {
-      console.error('Error updating onboarding step in DB:', err);
+      const errMsg = err?.message || err?.error_description || (typeof err === 'object' ? JSON.stringify(err) : String(err));
+      console.error('❌ [LaunchCart - updateOnboardingStep] Error updating onboarding step in DB:', errMsg);
+      if (err && typeof err === 'object') {
+        console.error('Error details:', {
+          message: err.message,
+          details: err.details,
+          code: err.code,
+          hint: err.hint
+        });
+      }
     }
   };
 

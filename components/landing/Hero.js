@@ -1,9 +1,11 @@
 'use client';
 
 import Link from 'next/link';
+import { useAuth } from '@/context/AuthContext';
 import styles from './Hero.module.css';
 
 export default function Hero() {
+  const { user } = useAuth();
   return (
     <section className={styles.heroSection}>
       <div className={styles.glowBg}></div>
@@ -21,8 +23,8 @@ export default function Hero() {
             The ultimate multi-store e-commerce builder for creators, brand builders, and modern merchants. No coding required. Beautiful designs, lightning fast loading, and complete control over your brand.
           </p>
           <div className={styles.ctaGroup}>
-            <Link href="/signup" className={styles.primaryCta}>
-              Create Your Store
+            <Link href={user ? "/dashboard" : "/signup"} className={styles.primaryCta}>
+              {user ? "Go to Dashboard" : "Create Your Store"}
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="5" y1="12" x2="19" y2="12"></line>
                 <polyline points="12 5 19 12 12 19"></polyline>

@@ -254,6 +254,18 @@ export function AuthProvider({ children }) {
 
       try {
         console.log("Session restore started");
+        
+        // Remember Me session check: if rememberMe is 'false' and session_active is not set, clear session
+        const rememberMe = localStorage.getItem('remember_me');
+        const sessionActive = sessionStorage.getItem('session_active');
+        if (rememberMe === 'false' && !sessionActive) {
+          console.log("🧹 [LaunchCart - Auth]: Remember Me was false and browser restarted. Clearing session.");
+          await supabaseClient.auth.signOut();
+          localStorage.removeItem('remember_me');
+        } else {
+          sessionStorage.setItem('session_active', 'true');
+        }
+
         const { data: { session: activeSession } } = await Promise.race([
           supabaseClient.auth.getSession(),
           getSessionTimeout
@@ -263,19 +275,30 @@ export function AuthProvider({ children }) {
         if (!isSubscribed) return;
 
         if (activeSession) {
-          setSession(activeSession);
-          setUser(activeSession.user);
-          await fetchProfileOnly(activeSession.user.id, activeSession.user.email, activeSession.access_token);
-          // Fetch store details in background (non-blocking)
-          fetchStoreOnly(activeSession.user.id, activeSession.access_token).catch(e => {
-            console.warn("Background store fetch failed:", e);
-          });
+          if (activeSession.user && !activeSession.user.email_confirmed_at) {
+            console.log("🧹 [LaunchCart - Auth]: Clearing unverified session on load.");
+            await supabaseClient.auth.signOut();
+            setSession(null);
+            setUser(null);
+            setProfile(null);
+          } else {
+            setSession(activeSession);
+            setUser(activeSession.user);
+            await fetchProfileOnly(activeSession.user.id, activeSession.user.email, activeSession.access_token);
+            // Fetch store details in background (non-blocking)
+            fetchStoreOnly(activeSession.user.id, activeSession.access_token).catch(e => {
+              console.warn("Background store fetch failed:", e);
+            });
+          }
         } else {
           setSession(null);
           setUser(null);
         }
       } catch (err) {
-        console.warn('❌ [LaunchCart - Auth]: Error during initial session restore:', err);
+        console.warn('❌ [LaunchCart - Auth]: Error during initial session restore. Resetting state:', err);
+        setSession(null);
+        setUser(null);
+        setProfile(null);
       } finally {
         if (isSubscribed) {
           initialSessionLoadedRef.current = true;
@@ -305,8 +328,19 @@ export function AuthProvider({ children }) {
         if (!isSubscribed) return;
 
         try {
-          setSession(activeSession);
           const currentUser = activeSession?.user ?? null;
+          
+          if (currentUser && !currentUser.email_confirmed_at) {
+            console.log("🔔 [LaunchCart - Auth]: onAuthStateChange ignored profile fetch because email is unverified.");
+            setSession(null);
+            setUser(null);
+            setProfile(null);
+            setStore(null);
+            setRole('creator');
+            return;
+          }
+
+          setSession(activeSession);
           setUser(currentUser);
 
           if (currentUser) {
@@ -379,10 +413,10 @@ export function AuthProvider({ children }) {
     setLoading(true);
     startLoading();
     try {
-      supabaseClient.auth.signOut().catch(err => {
-        console.warn('⚠️ [LaunchCart - Auth]: Background Supabase signOut warning:', err.message || err);
-      });
-      console.log('✅ [LaunchCart - Auth]: Supabase signOut triggered in background.');
+      localStorage.removeItem('remember_me');
+      sessionStorage.removeItem('session_active');
+      await supabaseClient.auth.signOut();
+      console.log('✅ [LaunchCart - Auth]: Supabase signOut completed.');
     } catch (err) {
       console.warn('❌ [LaunchCart - Auth]: Error during Supabase signOut:', err);
     } finally {
