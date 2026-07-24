@@ -27,6 +27,7 @@ const getInitials = (name) => {
 export default function AdminCreators() {
   const { stores = [], approveStore, rejectStore, disableStore, loading } = useAdmin();
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState('All');
   const [selectedCreator, setSelectedCreator] = useState(null);
 
   const isProfileIncomplete = (profile, docs) => {
@@ -91,6 +92,9 @@ export default function AdminCreators() {
     // Date range filter
     if (startDate && c.joinedDate < startDate) return false;
     if (endDate && c.joinedDate > endDate) return false;
+
+    // Status filter
+    if (selectedStatusFilter !== 'All' && c.status !== selectedStatusFilter) return false;
 
     return true;
   });
@@ -289,16 +293,22 @@ export default function AdminCreators() {
       <div className="overview-section">
         <h4>Overview</h4>
         <div className="summary-cards">
-          <div className="summary-card">
+          <div 
+            className={`summary-card ${selectedStatusFilter === 'All' ? 'active-purple' : ''}`}
+            onClick={() => setSelectedStatusFilter('All')}
+          >
             <div className="icon-wrap purple-bg">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
             </div>
             <div className="card-data">
               <p className="card-label">Total Sellers</p>
-              <h3 className="card-val">{creators.length}</h3>
+              <h3 className="card-val">{loading ? 0 : stores.length}</h3>
             </div>
           </div>
-          <div className="summary-card">
+          <div 
+            className={`summary-card ${selectedStatusFilter === 'Active' ? 'active-green' : ''}`}
+            onClick={() => setSelectedStatusFilter('Active')}
+          >
             <div className="icon-wrap green-bg">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
             </div>
@@ -307,7 +317,10 @@ export default function AdminCreators() {
               <h3 className="card-val">{activeSellers}</h3>
             </div>
           </div>
-          <div className="summary-card">
+          <div 
+            className={`summary-card ${selectedStatusFilter === 'Pending' ? 'active-orange' : ''}`}
+            onClick={() => setSelectedStatusFilter('Pending')}
+          >
             <div className="icon-wrap orange-bg">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
             </div>
@@ -316,7 +329,10 @@ export default function AdminCreators() {
               <h3 className="card-val">{pendingSellers}</h3>
             </div>
           </div>
-          <div className="summary-card">
+          <div 
+            className={`summary-card ${selectedStatusFilter === 'Rejected' ? 'active-red' : ''}`}
+            onClick={() => setSelectedStatusFilter('Rejected')}
+          >
             <div className="icon-wrap red-bg">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
             </div>
@@ -750,7 +766,33 @@ export default function AdminCreators() {
           align-items: flex-start;
           gap: 16px;
           box-shadow: 0 10px 25px -5px rgba(0,0,0,0.02), 0 8px 10px -6px rgba(0,0,0,0.02);
-          border: 1px solid #f8fafc;
+          border: 2px solid #f8fafc;
+          cursor: pointer;
+          transition: all 0.2s ease-in-out;
+        }
+        .summary-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 12px 30px -5px rgba(0,0,0,0.05), 0 8px 15px -6px rgba(0,0,0,0.05);
+        }
+        .summary-card.active-purple {
+          border: 2px solid #8b5cf6;
+          box-shadow: 0 12px 30px -5px rgba(139, 92, 246, 0.15);
+          background: #fafafa;
+        }
+        .summary-card.active-green {
+          border: 2px solid #10b981;
+          box-shadow: 0 12px 30px -5px rgba(16, 185, 129, 0.15);
+          background: #fafafa;
+        }
+        .summary-card.active-orange {
+          border: 2px solid #f59e0b;
+          box-shadow: 0 12px 30px -5px rgba(245, 158, 11, 0.15);
+          background: #fafafa;
+        }
+        .summary-card.active-red {
+          border: 2px solid #ef4444;
+          box-shadow: 0 12px 30px -5px rgba(239, 68, 68, 0.15);
+          background: #fafafa;
         }
         .icon-wrap {
           width: 48px;
@@ -871,7 +913,8 @@ export default function AdminCreators() {
             align-items: flex-start;
             gap: 10px;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
-            border: 1px solid #f1f5f9;
+            border: 2px solid #f1f5f9;
+            cursor: pointer;
           }
           .icon-wrap {
             width: 36px;

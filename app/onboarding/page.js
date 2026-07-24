@@ -7,6 +7,7 @@ import { storeService } from '@/services/storeService';
 import { categoryService } from '@/services/categoryService';
 import { productService } from '@/services/productService';
 import { authService } from '@/services/authService';
+import { profileService } from '@/services/profileService';
 import PageLoader from '@/components/PageLoader';
 import ImageCropperModal from '@/components/ImageCropperModal';
 
@@ -32,6 +33,22 @@ export default function OnboardingPage() {
   const [cropperOpen, setCropperOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [cropType, setCropType] = useState('banner');
+
+  // Step 3: Profile & KYC Details State
+  const [profileFullName, setProfileFullName] = useState('');
+  const [profilePhone, setProfilePhone] = useState('');
+  const [profileDob, setProfileDob] = useState('');
+  const [profileGender, setProfileGender] = useState('Male');
+  const [profileBio, setProfileBio] = useState('');
+  const [profileBusinessName, setProfileBusinessName] = useState('');
+  const [profileBusinessType, setProfileBusinessType] = useState('Individual');
+  const [profileAddress, setProfileAddress] = useState('');
+  const [profileCity, setProfileCity] = useState('');
+  const [profileState, setProfileState] = useState('');
+  const [profileCountry, setProfileCountry] = useState('India');
+  const [profilePostalCode, setProfilePostalCode] = useState('');
+  const [uploadingDoc, setUploadingDoc] = useState('');
+  const [documents, setDocuments] = useState([]);
 
   // Step 3: Category Setup State
   const [categoryName, setCategoryName] = useState('');
@@ -69,7 +86,7 @@ export default function OnboardingPage() {
         // If no store exists yet, force start from Step 1 (Welcome) to configure details
         if (!store) {
           setCurrentStep(1);
-        } else if (profile.onboarding_step > 0 && profile.onboarding_step <= 5) {
+        } else if (profile.onboarding_step > 0 && profile.onboarding_step <= 6) {
           setCurrentStep(profile.onboarding_step);
         }
       }
@@ -88,7 +105,28 @@ export default function OnboardingPage() {
       setStoreName(profile.name);
       setSlug(profile.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''));
     }
-  }, [store, profile]);
+
+    if (profile) {
+      setProfileFullName(profile.name || '');
+      setProfilePhone(profile.phone || '');
+      setProfileDob(profile.date_of_birth || '');
+      setProfileGender(profile.gender || 'Male');
+      setProfileBio(profile.bio || '');
+      setProfileBusinessName(profile.business_name || '');
+      setProfileBusinessType(profile.business_type || 'Individual');
+      setProfileAddress(profile.address || '');
+      setProfileCity(profile.city || '');
+      setProfileState(profile.state || '');
+      setProfileCountry(profile.country || 'India');
+      setProfilePostalCode(profile.postal_code || '');
+    }
+
+    if (user?.id) {
+      profileService.getCreatorDocuments(user.id).then(res => {
+        if (res.success) setDocuments(res.documents || []);
+      });
+    }
+  }, [store, profile, user]);
 
   const handleNameChange = (e) => {
     const val = e.target.value;
@@ -256,7 +294,84 @@ export default function OnboardingPage() {
     }
   };
 
-  // Submit Step 3: Create Category
+  // Submit Step 3: Profile & KYC Details
+  const handleSubmitProfileKyc = async (e) => {
+    e.preventDefault();
+    
+    // Check if required KYC documents have been uploaded
+    const hasGovId = documents.some(d => d.document_type === 'Government ID Proof' && d.document_url);
+    const hasAddressProof = documents.some(d => d.document_type === 'Address Proof' && d.document_url);
+    
+    if (!profileFullName || !profilePhone || !profileDob || !profileGender || !profileBio ||
+        !profileBusinessName || !profileBusinessType || !profileAddress || !profileCity ||
+        !profileState || !profileCountry || !profilePostalCode) {
+      alert('Please fill out all personal and business profile details.');
+      return;
+    }
+
+    if (!hasGovId || !hasAddressProof) {
+      alert('Please upload both Government ID Proof and Address Proof documents.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await authService.updateProfile(user.id, {
+        name: profileFullName,
+        phone: profilePhone,
+        date_of_birth: profileDob,
+        gender: profileGender,
+        bio: profileBio,
+        business_name: profileBusinessName,
+        business_type: profileBusinessType,
+        address: profileAddress,
+        city: profileCity,
+        state: profileState,
+        country: profileCountry,
+        postal_code: profilePostalCode,
+        verification_status: 'Under Review' // Auto-submit for verification review
+      });
+      
+      await refreshProfile();
+      await updateOnboardingStep(4);
+    } catch (err) {
+      console.error('Failed to save profile details:', err);
+      alert('Failed to save profile details. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleKycUpload = async (e, docType) => {
+    const file = e.target.files[0];
+    if (!file || !user) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File size must be less than 5MB.');
+      return;
+    }
+
+    setUploadingDoc(docType);
+    try {
+      const res = await profileService.uploadVerificationDocument(file, docType, user.id);
+      if (res.success) {
+        alert(`${docType} uploaded successfully!`);
+        // Reload documents list
+        const docsRes = await profileService.getCreatorDocuments(user.id);
+        if (docsRes.success) {
+          setDocuments(docsRes.documents || []);
+        }
+      } else {
+        alert('Failed to upload document: ' + res.error);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setUploadingDoc('');
+    }
+  };
+
+  // Submit Step 4: Create Category
   const handleSubmitCategory = async (e) => {
     e.preventDefault();
     if (!categoryName) return;
@@ -274,7 +389,7 @@ export default function OnboardingPage() {
       });
 
       setCreatedCategory(cat);
-      await updateOnboardingStep(4);
+      await updateOnboardingStep(5);
     } catch (err) {
       console.error('Failed to create category:', err);
       alert('Failed to create category. Please try again.');
@@ -306,7 +421,7 @@ export default function OnboardingPage() {
       });
 
       setCreatedProduct(prod);
-      await updateOnboardingStep(5);
+      await updateOnboardingStep(6);
     } catch (err) {
       console.error('Failed to create product:', err);
       alert('Failed to create product. Please try again.');
@@ -315,7 +430,7 @@ export default function OnboardingPage() {
     }
   };
 
-  // Submit Step 5: Publish Store (Submits store for review)
+  // Submit Step 6: Publish Store (Submits store for review)
   const handlePublishStore = async () => {
     setIsSubmitting(true);
     setIsNavigatingToSuccess(true);
@@ -325,7 +440,7 @@ export default function OnboardingPage() {
       // 2. Mark profile onboarding complete
       await authService.updateProfile(user.id, {
         onboarding_completed: true,
-        onboarding_step: 5,
+        onboarding_step: 6,
       });
       // 3. Refresh contexts
       await refreshProfile();
@@ -350,12 +465,13 @@ export default function OnboardingPage() {
   const stepsList = [
     { num: 1, title: 'Welcome' },
     { num: 2, title: 'Store Details' },
-    { num: 3, title: 'Category' },
-    { num: 4, title: 'Product' },
-    { num: 5, title: 'Launch' },
+    { num: 3, title: 'Profile & KYC' },
+    { num: 4, title: 'Category' },
+    { num: 5, title: 'Product' },
+    { num: 6, title: 'Launch' },
   ];
 
-  const progressPercentage = currentStep * 20;
+  const progressPercentage = (currentStep / 6) * 100;
 
 
 
@@ -370,7 +486,7 @@ export default function OnboardingPage() {
             <span className="logo-icon">🚀</span>
             <h3>KreateStore</h3>
           </div>
-          <span className="step-indicator-text">Step {currentStep} of 5</span>
+          <span className="step-indicator-text">Step {currentStep} of 6</span>
         </div>
 
         {/* Stepper Dots & Labels */}
@@ -533,8 +649,227 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {/* STEP 3: Category Setup */}
+        {/* STEP 3: Profile & KYC Verification */}
         {currentStep === 3 && (
+          <div className="wizard-step fade-in">
+            <h2>Seller Profile & KYC</h2>
+            <p className="step-subtitle">
+              Verify your identity and provide business profile details to start selling.
+            </p>
+            <form onSubmit={handleSubmitProfileKyc} className="onboarding-form">
+              <h3 className="section-title" style={{ fontSize: '15px', color: '#475569', borderBottom: '1px solid #e2e8f0', paddingBottom: '6px', marginBottom: '12px', fontWeight: 600 }}>Personal Information</h3>
+              <div className="form-grid-two-cols" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div className="form-group">
+                  <label htmlFor="profileFullName">Full Name</label>
+                  <input
+                    type="text"
+                    id="profileFullName"
+                    value={profileFullName}
+                    onChange={(e) => setProfileFullName(e.target.value)}
+                    placeholder="Enter your full name"
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="profilePhone">Mobile Number</label>
+                  <input
+                    type="tel"
+                    id="profilePhone"
+                    value={profilePhone}
+                    onChange={(e) => setProfilePhone(e.target.value.replace(/[^0-9]/g, ''))}
+                    placeholder="9999999999"
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="profileDob">Date of Birth</label>
+                  <input
+                    type="date"
+                    id="profileDob"
+                    value={profileDob}
+                    onChange={(e) => setProfileDob(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="profileGender">Gender</label>
+                  <div className="select-wrapper" style={{ position: 'relative' }}>
+                    <select
+                      id="profileGender"
+                      value={profileGender}
+                      onChange={(e) => setProfileGender(e.target.value)}
+                      style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', background: '#fff', appearance: 'none' }}
+                    >
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Other">Other</option>
+                      <option value="Prefer not to say">Prefer not to say</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="form-group" style={{ marginTop: '12px' }}>
+                <label htmlFor="profileBio">Bio / About Yourself</label>
+                <textarea
+                  id="profileBio"
+                  value={profileBio}
+                  onChange={(e) => setProfileBio(e.target.value)}
+                  placeholder="Tell customers about your brand or store journey..."
+                  rows="2"
+                  required
+                />
+              </div>
+
+              <h3 className="section-title" style={{ fontSize: '15px', color: '#475569', borderBottom: '1px solid #e2e8f0', paddingBottom: '6px', marginBottom: '12px', marginTop: '20px', fontWeight: 600 }}>Business Information</h3>
+              <div className="form-grid-two-cols" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div className="form-group">
+                  <label htmlFor="profileBusinessName">Business Name</label>
+                  <input
+                    type="text"
+                    id="profileBusinessName"
+                    value={profileBusinessName}
+                    onChange={(e) => setProfileBusinessName(e.target.value)}
+                    placeholder="e.g. Anushka Designs"
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="profileBusinessType">Business Type</label>
+                  <div className="select-wrapper" style={{ position: 'relative' }}>
+                    <select
+                      id="profileBusinessType"
+                      value={profileBusinessType}
+                      onChange={(e) => setProfileBusinessType(e.target.value)}
+                      style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', background: '#fff', appearance: 'none' }}
+                    >
+                      <option value="Individual">Individual/Proprietor</option>
+                      <option value="Partnership">Partnership Company</option>
+                      <option value="LLP">Limited Liability Partnership</option>
+                      <option value="Private Limited">Private Limited Company</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="form-group" style={{ marginTop: '12px' }}>
+                <label htmlFor="profileAddress">Registered Business Address</label>
+                <input
+                  type="text"
+                  id="profileAddress"
+                  value={profileAddress}
+                  onChange={(e) => setProfileAddress(e.target.value)}
+                  placeholder="Office/House No, Building, Street Address"
+                  required
+                />
+              </div>
+
+              <div className="form-grid-three-cols" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginTop: '12px' }}>
+                <div className="form-group">
+                  <label htmlFor="profileCity">City</label>
+                  <input
+                    type="text"
+                    id="profileCity"
+                    value={profileCity}
+                    onChange={(e) => setProfileCity(e.target.value)}
+                    placeholder="New Delhi"
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="profileState">State</label>
+                  <input
+                    type="text"
+                    id="profileState"
+                    value={profileState}
+                    onChange={(e) => setProfileState(e.target.value)}
+                    placeholder="Delhi"
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="profilePostalCode">Postal Code</label>
+                  <input
+                    type="text"
+                    id="profilePostalCode"
+                    value={profilePostalCode}
+                    onChange={(e) => setProfilePostalCode(e.target.value.replace(/[^0-9]/g, ''))}
+                    placeholder="110001"
+                    required
+                  />
+                </div>
+              </div>
+
+              <h3 className="section-title" style={{ fontSize: '15px', color: '#475569', borderBottom: '1px solid #e2e8f0', paddingBottom: '6px', marginBottom: '12px', marginTop: '20px', fontWeight: 600 }}>Verification Documents (KYC)</h3>
+              <div className="upload-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div className="upload-box-wrapper">
+                  <label>Government ID Proof</label>
+                  <div 
+                    className="upload-zone" 
+                    onClick={() => document.getElementById('gov-id-upload').click()}
+                    style={{ border: '2px dashed #cbd5e1', borderRadius: '12px', padding: '16px', textAlign: 'center', cursor: 'pointer', minHeight: '120px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}
+                  >
+                    {documents.some(d => d.document_type === 'Government ID Proof') ? (
+                      <div style={{ color: '#10b981', fontWeight: 600 }}>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ margin: '0 auto 6px' }}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                        ID Proof Uploaded
+                      </div>
+                    ) : (
+                      <div>
+                        <strong>{uploadingDoc === 'Government ID Proof' ? 'Uploading...' : 'Upload ID Proof'}</strong>
+                        <p style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>PAN / Aadhaar / Passport</p>
+                      </div>
+                    )}
+                    <input
+                      type="file"
+                      id="gov-id-upload"
+                      accept=".pdf,image/*"
+                      onChange={(e) => handleKycUpload(e, 'Government ID Proof')}
+                      style={{ display: 'none' }}
+                      disabled={uploadingDoc !== ''}
+                    />
+                  </div>
+                </div>
+
+                <div className="upload-box-wrapper">
+                  <label>Address Proof</label>
+                  <div 
+                    className="upload-zone" 
+                    onClick={() => document.getElementById('address-proof-upload').click()}
+                    style={{ border: '2px dashed #cbd5e1', borderRadius: '12px', padding: '16px', textAlign: 'center', cursor: 'pointer', minHeight: '120px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}
+                  >
+                    {documents.some(d => d.document_type === 'Address Proof') ? (
+                      <div style={{ color: '#10b981', fontWeight: 600 }}>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ margin: '0 auto 6px' }}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                        Address Proof Uploaded
+                      </div>
+                    ) : (
+                      <div>
+                        <strong>{uploadingDoc === 'Address Proof' ? 'Uploading...' : 'Upload Address Proof'}</strong>
+                        <p style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>Utility Bill / Statement</p>
+                      </div>
+                    )}
+                    <input
+                      type="file"
+                      id="address-proof-upload"
+                      accept=".pdf,image/*"
+                      onChange={(e) => handleKycUpload(e, 'Address Proof')}
+                      style={{ display: 'none' }}
+                      disabled={uploadingDoc !== ''}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <button type="submit" className="action-btn next-btn w-full mt-6" disabled={isSubmitting || uploadingDoc !== ''}>
+                {isSubmitting ? 'Saving Profile Details...' : 'Save & Continue'}
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* STEP 4: Category Setup */}
+        {currentStep === 4 && (
           <div className="wizard-step fade-in">
             <h2>Create Your First Category</h2>
             <p className="step-subtitle">
@@ -586,7 +921,7 @@ export default function OnboardingPage() {
               <div className="btn-group-row mt-6">
                 <button
                   type="button"
-                  onClick={() => updateOnboardingStep(4)}
+                  onClick={() => updateOnboardingStep(5)}
                   className="action-btn skip-btn"
                   disabled={isSubmitting}
                 >
@@ -600,8 +935,8 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {/* STEP 4: First Product */}
-        {currentStep === 4 && (
+        {/* STEP 5: First Product */}
+        {currentStep === 5 && (
           <div className="wizard-step fade-in">
             <h2>Add Your First Product</h2>
             <p className="step-subtitle">
@@ -690,7 +1025,7 @@ export default function OnboardingPage() {
               <div className="btn-group-row mt-6">
                 <button
                   type="button"
-                  onClick={() => updateOnboardingStep(5)}
+                  onClick={() => updateOnboardingStep(6)}
                   className="action-btn skip-btn"
                   disabled={isSubmitting}
                 >
@@ -704,8 +1039,8 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {/* STEP 5: Publish Store */}
-        {currentStep === 5 && (
+        {/* STEP 6: Publish Store */}
+        {currentStep === 6 && (
           <div className="wizard-step fade-in">
             <h2>Ready to Launch!</h2>
             <p className="step-subtitle">
