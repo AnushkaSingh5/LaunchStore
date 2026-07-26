@@ -157,7 +157,7 @@ export function AdminProvider({ children }) {
       setAiInsights(derivedAI);
 
     } catch (error) {
-      console.error('[KreateStore - AdminContext] Error loading platform data:', error);
+      console.error('[Kreatorstore - AdminContext] Error loading platform data:', error);
     } finally {
       setLoading(false);
     }

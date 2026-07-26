@@ -13,8 +13,8 @@ import CompanyPortal from '@/components/landing/CompanyPortal';
 import Footer from '@/components/landing/Footer';
 
 export const metadata = {
-  title: 'KreateStore - Create Your Custom E-commerce Store in Minutes',
-  description: 'KreateStore is the premier multi-store e-commerce builder for creators, merchants, and agencies. Build and launch custom online stores with no coding required.',
+  title: 'Kreatorstore - Create Your Custom E-commerce Store in Minutes',
+  description: 'Kreatorstore is the premier multi-store e-commerce builder for creators, merchants, and agencies. Build and launch custom online stores with no coding required.',
 };
 
 export default function Home() {

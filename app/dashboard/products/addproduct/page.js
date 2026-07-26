@@ -69,6 +69,53 @@ function AddProductFormContent() {
     }
   }, [isEditing, productId, products]);
 
+  // Save form draft to sessionStorage as the user types (only when adding a new product)
+  useEffect(() => {
+    if (!isEditing) {
+      sessionStorage.setItem('add_product_draft_form', JSON.stringify(formData));
+    }
+  }, [formData, isEditing]);
+
+  useEffect(() => {
+    if (!isEditing && productImages.length > 0) {
+      sessionStorage.setItem('add_product_draft_images', JSON.stringify(productImages));
+    }
+  }, [productImages, isEditing]);
+
+  // Restore form draft on mount
+  useEffect(() => {
+    if (!isEditing) {
+      const savedForm = sessionStorage.getItem('add_product_draft_form');
+      const savedImages = sessionStorage.getItem('add_product_draft_images');
+      if (savedForm) {
+        try {
+          const parsed = JSON.parse(savedForm);
+          setFormData(prev => ({ ...prev, ...parsed }));
+        } catch (e) {
+          console.error('Failed to restore draft form:', e);
+        }
+      }
+      if (savedImages) {
+        try {
+          const parsed = JSON.parse(savedImages);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setProductImages(parsed);
+          }
+        } catch (e) {
+          console.error('Failed to restore draft images:', e);
+        }
+      }
+    }
+  }, [isEditing]);
+
+  const handleCancel = () => {
+    if (!isEditing) {
+      sessionStorage.removeItem('add_product_draft_form');
+      sessionStorage.removeItem('add_product_draft_images');
+    }
+    router.push('/dashboard/products');
+  };
+
   const handleProductImageUpload = (e) => {
     const files = Array.from(e.target.files);
     
@@ -165,6 +212,10 @@ function AddProductFormContent() {
         });
       }
       
+      if (!isEditing) {
+        sessionStorage.removeItem('add_product_draft_form');
+        sessionStorage.removeItem('add_product_draft_images');
+      }
       router.push('/dashboard/products');
     } catch (err) {
       console.error('Error saving product:', err);
@@ -473,7 +524,7 @@ function AddProductFormContent() {
             <h4>Google Search Preview</h4>
             <div className="google-preview-box">
               <div className="google-url">
-                {formData.canonical_url || `https://kreatestore.com/store/store-slug/product/${productId || 'product-slug'}`}
+                {formData.canonical_url || `https://kreatorstore.com/store/store-slug/product/${productId || 'product-slug'}`}
               </div>
               <div className="google-title">
                 {formData.seo_title || formData.name || 'Product Name'}
@@ -487,7 +538,7 @@ function AddProductFormContent() {
 
         {/* Submit Actions */}
         <div className="form-footer-actions">
-          <button type="button" className="cancel-btn" onClick={() => router.push('/dashboard/products')}>
+          <button type="button" className="cancel-btn" onClick={handleCancel}>
             Cancel
           </button>
           <button type="button" className="save-submit-btn" disabled={saving} onClick={handleSaveProduct}>
@@ -886,6 +937,24 @@ function AddProductFormContent() {
           color: #94a3b8;
           box-shadow: none;
           cursor: not-allowed;
+        }
+
+        @media (max-width: 768px) {
+          .product-form-card {
+            padding: 20px !important;
+          }
+          .form-row {
+            grid-template-columns: 1fr !important;
+            gap: 16px !important;
+          }
+          .form-footer-actions {
+            flex-direction: column-reverse;
+          }
+          .form-footer-actions button, .form-footer-actions .cancel-btn {
+            width: 100%;
+            justify-content: center;
+            text-align: center;
+          }
         }
       `}</style>
     </div>

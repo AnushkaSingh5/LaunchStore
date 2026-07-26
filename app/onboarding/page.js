@@ -76,7 +76,7 @@ export default function OnboardingPage() {
   useEffect(() => {
     if (!loading && !storeLoading && profile) {
       if (profile.onboarding_completed && store && !isNavigatingToSuccess) {
-        console.log('🔄 [KreateStore - Onboarding]: Onboarding complete and store exists, redirecting to dashboard...');
+        console.log('🔄 [Kreatorstore - Onboarding]: Onboarding complete and store exists, redirecting to dashboard...');
         router.push('/dashboard');
         return;
       }
@@ -214,7 +214,7 @@ export default function OnboardingPage() {
       }
     } catch (err) {
       const errMsg = err?.message || err?.error_description || (typeof err === 'object' ? JSON.stringify(err) : String(err));
-      console.error('❌ [KreateStore - updateOnboardingStep] Error updating onboarding step in DB:', errMsg);
+      console.error('❌ [Kreatorstore - updateOnboardingStep] Error updating onboarding step in DB:', errMsg);
       if (err && typeof err === 'object') {
         console.error('Error details:', {
           message: err.message,
@@ -484,7 +484,7 @@ export default function OnboardingPage() {
         <div className="stepper-header">
           <div className="logo-section">
             <span className="logo-icon">🚀</span>
-            <h3>KreateStore</h3>
+            <h3>Kreatorstore</h3>
           </div>
           <span className="step-indicator-text">Step {currentStep} of 6</span>
         </div>
@@ -514,7 +514,7 @@ export default function OnboardingPage() {
         {/* STEP 1: Welcome Screen */}
         {currentStep === 1 && (
           <div className="wizard-step fade-in">
-            <h2>Welcome to KreateStore!</h2>
+            <h2>Welcome to Kreatorstore!</h2>
             <p className="step-subtitle text-center">
               Let&apos;s build your online business together. In just 5 simple steps, we&apos;ll configure your store details, add categories, create your first product, and publish your storefront.
             </p>
@@ -569,7 +569,7 @@ export default function OnboardingPage() {
                   required
                 />
                 <span className="live-preview-url">
-                  Live URL Preview: <strong>kreatestore.com/store/{slug || '...'}</strong>
+                  Live URL Preview: <strong>kreatorstore.com/store/{slug || '...'}</strong>
                 </span>
               </div>
 

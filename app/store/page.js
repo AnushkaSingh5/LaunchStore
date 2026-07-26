@@ -56,7 +56,7 @@ export default function StoreDirectoryPage() {
       <main className="container main-content fade-in">
         <div className="header-row">
           <h1>Explore Platform Stores</h1>
-          <p>Discover beautiful online storefronts built entirely using KreateStore.</p>
+          <p>Discover beautiful online storefronts built entirely using Kreatorstore.</p>
         </div>
 
         {loading ? (

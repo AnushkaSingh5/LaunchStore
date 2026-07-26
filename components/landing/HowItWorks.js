@@ -28,7 +28,7 @@ export default function HowItWorks() {
         {/* Header */}
         <div className={styles.header}>
           <span className={styles.sub}>Zero Friction Setup</span>
-          <h2 className={styles.title}>How KreateStore Works</h2>
+          <h2 className={styles.title}>How Kreatorstore Works</h2>
           <p className={styles.description}>
             We built a streamlined onboarding workflow so you can launch your complete brand and take your first purchase in under 5 minutes.
           </p>

@@ -10,17 +10,17 @@ export async function generateMetadata({ params }) {
 
   if (!store) {
     return {
-      title: 'Store Not Found | KreateStore',
+      title: 'Store Not Found | Kreatorstore',
       description: 'The requested store could not be found.'
     };
   }
 
-  const title = `All Products | ${store.seo_title || `${store.name} | KreateStore`}`;
+  const title = `All Products | ${store.seo_title || `${store.name} | Kreatorstore`}`;
   const description = store.seo_description || store.description || `Welcome to ${store.name}`;
   const ogTitle = store.og_title || title;
   const ogDescription = store.og_description || description;
   const ogImage = store.logo_url || store.banner_url || '';
-  const canonical = store.canonical_url || `https://kreatestore.com/store/${slug}/products`;
+  const canonical = store.canonical_url || `https://kreatorstore.com/store/${slug}/products`;
 
   return {
     title,
@@ -76,7 +76,7 @@ export default async function StoreProductsPage({ params }) {
       ];
     }
   } catch (error) {
-    console.error('[KreateStore - StoreProductsPage Server] Failed to prefetch store catalog data:', error);
+    console.error('[Kreatorstore - StoreProductsPage Server] Failed to prefetch store catalog data:', error);
   }
 
   return (

@@ -595,7 +595,7 @@ ALTER TABLE public.admin_users ENABLE ROW LEVEL SECURITY;
 -- Manually seed a default company administrator with secure bcrypt password ('admin123')
 INSERT INTO public.admin_users (email, password_hash, full_name)
 VALUES (
-  'admin@kreatestore.com', 
+  'admin@kreatorstore.com', 
   crypt('admin123', gen_salt('bf')), 
   'System Administrator'
 )

@@ -11,7 +11,7 @@ const getAdminEmail = () => {
   } catch (e) {
     console.error('Error getting admin email:', e);
   }
-  return 'admin@kreatestore.com'; // Safe seeded fallback
+  return 'admin@kreatorstore.com'; // Safe seeded fallback
 };
 
 const toLocalDateString = (isoString) => {
@@ -87,7 +87,7 @@ export const adminService = {
           });
         }
       } catch (rpcErr) {
-        console.warn('⚠️ [KreateStore - AdminService]: admin_get_stores RPC failed, trying select fallback:', rpcErr.message);
+        console.warn('⚠️ [Kreatorstore - AdminService]: admin_get_stores RPC failed, trying select fallback:', rpcErr.message);
       }
 
       // 2. Direct fallback (original direct query for local testing/bootstrap)
@@ -141,7 +141,7 @@ export const adminService = {
         };
       });
     } catch (e) {
-      console.error('[KreateStore - AdminService] Error fetching stores:', e);
+      console.error('[Kreatorstore - AdminService] Error fetching stores:', e);
       return [];
     }
   },
@@ -191,7 +191,7 @@ export const adminService = {
           return { success: true };
         }
       } catch (rpcErr) {
-        console.warn('⚠️ [KreateStore - AdminService]: admin_approve_store RPC failed, trying update fallback:', rpcErr.message);
+        console.warn('⚠️ [Kreatorstore - AdminService]: admin_approve_store RPC failed, trying update fallback:', rpcErr.message);
       }
 
       // 2. Direct fallback
@@ -224,7 +224,7 @@ export const adminService = {
 
       return { success: true };
     } catch (e) {
-      console.error('[KreateStore - AdminService] Error approving store:', e);
+      console.error('[Kreatorstore - AdminService] Error approving store:', e);
       return { success: false, error: e.message };
     }
   },
@@ -247,7 +247,7 @@ export const adminService = {
           return { success: true };
         }
       } catch (rpcErr) {
-        console.warn('⚠️ [KreateStore - AdminService]: admin_reject_store RPC failed, trying update fallback:', rpcErr.message);
+        console.warn('⚠️ [Kreatorstore - AdminService]: admin_reject_store RPC failed, trying update fallback:', rpcErr.message);
       }
 
       // 2. Direct fallback
@@ -280,7 +280,7 @@ export const adminService = {
 
       return { success: true };
     } catch (e) {
-      console.error('[KreateStore - AdminService] Error rejecting store:', e);
+      console.error('[Kreatorstore - AdminService] Error rejecting store:', e);
       return { success: false, error: e.message };
     }
   },
@@ -303,7 +303,7 @@ export const adminService = {
           return { success: true };
         }
       } catch (rpcErr) {
-        console.warn('⚠️ [KreateStore - AdminService]: admin_disable_store RPC failed, trying update fallback:', rpcErr.message);
+        console.warn('⚠️ [Kreatorstore - AdminService]: admin_disable_store RPC failed, trying update fallback:', rpcErr.message);
       }
 
       // 2. Direct fallback
@@ -336,7 +336,7 @@ export const adminService = {
 
       return { success: true };
     } catch (e) {
-      console.error('[KreateStore - AdminService] Error disabling store:', e);
+      console.error('[Kreatorstore - AdminService] Error disabling store:', e);
       return { success: false, error: e.message };
     }
   },
@@ -367,7 +367,7 @@ export const adminService = {
           }));
         }
       } catch (rpcErr) {
-        console.warn('⚠️ [KreateStore - AdminService]: admin_get_products RPC failed, trying select fallback:', rpcErr.message);
+        console.warn('⚠️ [Kreatorstore - AdminService]: admin_get_products RPC failed, trying select fallback:', rpcErr.message);
       }
 
       // 2. Direct fallback
@@ -389,7 +389,7 @@ export const adminService = {
         image: p.image_url || 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=800'
       }));
     } catch (e) {
-      console.error('[KreateStore - AdminService] Error fetching products:', e);
+      console.error('[Kreatorstore - AdminService] Error fetching products:', e);
       return [];
     }
   },
@@ -411,7 +411,7 @@ export const adminService = {
           return { success: true };
         }
       } catch (rpcErr) {
-        console.warn('⚠️ [KreateStore - AdminService]: admin_remove_product RPC failed, trying delete fallback:', rpcErr.message);
+        console.warn('⚠️ [Kreatorstore - AdminService]: admin_remove_product RPC failed, trying delete fallback:', rpcErr.message);
       }
 
       // 2. Direct fallback
@@ -423,7 +423,7 @@ export const adminService = {
       if (error) throw error;
       return { success: true };
     } catch (e) {
-      console.error('[KreateStore - AdminService] Error removing product:', e);
+      console.error('[Kreatorstore - AdminService] Error removing product:', e);
       return { success: false, error: e.message };
     }
   },
@@ -457,7 +457,7 @@ export const adminService = {
           }));
         }
       } catch (rpcErr) {
-        console.warn('⚠️ [KreateStore - AdminService]: admin_get_orders RPC failed, trying select fallback:', rpcErr.message);
+        console.warn('⚠️ [Kreatorstore - AdminService]: admin_get_orders RPC failed, trying select fallback:', rpcErr.message);
       }
 
       // 2. Direct fallback
@@ -482,7 +482,7 @@ export const adminService = {
         address: o.shipping_address || 'Standard Shipping'
       }));
     } catch (e) {
-      console.error('[KreateStore - AdminService] Error fetching orders:', e);
+      console.error('[Kreatorstore - AdminService] Error fetching orders:', e);
       return [];
     }
   },
@@ -505,7 +505,7 @@ export const adminService = {
           ordersData = data;
         }
       } catch (rpcErr) {
-        console.warn('⚠️ [KreateStore - AdminService]: admin_get_orders RPC failed inside getCustomers, trying select fallback:', rpcErr.message);
+        console.warn('⚠️ [Kreatorstore - AdminService]: admin_get_orders RPC failed inside getCustomers, trying select fallback:', rpcErr.message);
       }
 
       // 2. Direct fallback
@@ -541,7 +541,7 @@ export const adminService = {
 
       return Object.values(customerMap);
     } catch (e) {
-      console.error('[KreateStore - AdminService] Error generating customer list:', e);
+      console.error('[Kreatorstore - AdminService] Error generating customer list:', e);
       return [];
     }
   }

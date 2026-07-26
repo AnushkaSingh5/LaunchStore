@@ -80,7 +80,7 @@ export default function AdminLoginPage() {
               id="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@kreatestore.com"
+              placeholder="admin@kreatorstore.com"
               required
               autoComplete="off"
             />

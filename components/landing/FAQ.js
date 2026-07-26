@@ -11,7 +11,7 @@ export default function FAQ() {
     },
     {
       q: 'Is coding required?',
-      a: 'Absolutely not! KreateStore is designed as a complete no-code platform. You can customize your storefront headers, layout sections, pricing rules, shipping options, and product inventories using our intuitive, highly visual UI panel.'
+      a: 'Absolutely not! Kreatorstore is designed as a complete no-code platform. You can customize your storefront headers, layout sections, pricing rules, shipping options, and product inventories using our intuitive, highly visual UI panel.'
     },
     {
       q: 'Can I customize my store?',
@@ -19,7 +19,7 @@ export default function FAQ() {
     },
     {
       q: 'How do payments work?',
-      a: 'You can enable multiple payment integrations (Stripe, Razorpay, or custom Cash on Delivery) in your Payments settings. KreateStore automatically calculates taxes, flats, and shipping costs at checkout, giving your clients a seamless buying flow.'
+      a: 'You can enable multiple payment integrations (Stripe, Razorpay, or custom Cash on Delivery) in your Payments settings. Kreatorstore automatically calculates taxes, flats, and shipping costs at checkout, giving your clients a seamless buying flow.'
     }
   ];
 

@@ -46,15 +46,15 @@ export default function StoreLoginPage({ params }) {
     setErrorMsg('');
     startLoading();
     try {
-      console.log('🔄 [KreateStore - StoreLoginPage]: Triggering signIn for customer:', email);
+      console.log('🔄 [Kreatorstore - StoreLoginPage]: Triggering signIn for customer:', email);
       const result = await authService.signIn(email, password);
       if (result && result.error) throw result.error;
       
-      console.log('✅ [KreateStore - StoreLoginPage]: SignIn response success. Redirecting to:', redirect);
+      console.log('✅ [Kreatorstore - StoreLoginPage]: SignIn response success. Redirecting to:', redirect);
       console.log("Navigation triggered");
       router.push(redirect);
     } catch (err) {
-      console.error('❌ [KreateStore - StoreLoginPage]: Login error:', err);
+      console.error('❌ [Kreatorstore - StoreLoginPage]: Login error:', err);
       setErrorMsg(err.message || 'Failed to authenticate. Check email/password.');
     } finally {
       setLoading(false);
@@ -66,7 +66,7 @@ export default function StoreLoginPage({ params }) {
     setErrorMsg('');
     try {
       const callbackUrl = `${window.location.origin}${redirect}`;
-      console.log(`🔄 [KreateStore - StoreLoginPage]: Triggering OAuth login for ${provider} with callback ${callbackUrl}`);
+      console.log(`🔄 [Kreatorstore - StoreLoginPage]: Triggering OAuth login for ${provider} with callback ${callbackUrl}`);
       const { error } = await supabaseClient.auth.signInWithOAuth({
         provider,
         options: {
@@ -78,7 +78,7 @@ export default function StoreLoginPage({ params }) {
       });
       if (error) throw error;
     } catch (err) {
-      console.error(`❌ [KreateStore - StoreLoginPage]: ${provider} OAuth error:`, err);
+      console.error(`❌ [Kreatorstore - StoreLoginPage]: ${provider} OAuth error:`, err);
       setErrorMsg(err.message || `Failed to sign in with ${provider}.`);
     }
   };

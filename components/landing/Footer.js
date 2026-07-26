@@ -15,7 +15,7 @@ export default function Footer() {
                 <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
               </svg>
             </div>
-            <span className={styles.logoText}>KreateStore</span>
+            <span className={styles.logoText}>Kreatorstore</span>
           </Link>
           <p className={styles.brandDesc}>
             The multi-store e-commerce engine designed for modern brand owners, creators, and merchants. Build, customize, and deploy fully functional storefronts in under 5 minutes.
@@ -62,7 +62,7 @@ export default function Footer() {
             Have questions? Get in touch with our product experts.
           </p>
           <div className={styles.contactDetails}>
-            <span>✉️ support@kreatestore.com</span>
+            <span>✉️ support@kreatorstore.com</span>
             <span>📞 +1 (800) 555-0199</span>
           </div>
         </div>
@@ -72,7 +72,7 @@ export default function Footer() {
       <div className={styles.bottomBar}>
         <div className={`${styles.bottomContainer} container`}>
           <span className={styles.copyright}>
-            © {currentYear} KreateStore Inc. All rights reserved.
+            © {currentYear} Kreatorstore Inc. All rights reserved.
           </span>
           <div className={styles.bottomLinks}>
             <Link href="/privacy" className={styles.bottomLink}>Privacy Policy</Link>

@@ -95,7 +95,7 @@ export default function Features() {
           <span className={styles.sub}>Powerful Capabilities</span>
           <h2 className={styles.title}>Everything You Need to Run & Grow Your Brand</h2>
           <p className={styles.description}>
-            KreateStore gives you a fully functional storefront alongside an industrial-grade backoffice. Stop worrying about servers or templates, start focusing on selling.
+            Kreatorstore gives you a fully functional storefront alongside an industrial-grade backoffice. Stop worrying about servers or templates, start focusing on selling.
           </p>
         </div>
 

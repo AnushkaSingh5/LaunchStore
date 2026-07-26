@@ -12,6 +12,12 @@ export default function CartClientPage({ slug }) {
   const { cart: globalCart, updateQuantity, removeFromCart, clearCart } = useStore();
   const [storeDetails, setStoreDetails] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [selectedItems, setSelectedItems] = useState([]);
+  const [hasInitializedSelection, setHasInitializedSelection] = useState(false);
+
+  const cart = (globalCart || []).filter(
+    item => item.store_slug === slug
+  );
 
   useEffect(() => {
     setLoading(true);
@@ -19,6 +25,14 @@ export default function CartClientPage({ slug }) {
     setStoreDetails(data);
     setLoading(false);
   }, [slug]);
+
+  useEffect(() => {
+    if (cart && cart.length > 0 && !hasInitializedSelection) {
+      const initialSelected = cart.map(item => item.id);
+      setSelectedItems(initialSelected);
+      setHasInitializedSelection(true);
+    }
+  }, [cart, hasInitializedSelection]);
 
   if (loading) {
     return (
@@ -105,12 +119,10 @@ export default function CartClientPage({ slug }) {
     );
   }
 
-  const cart = (globalCart || []).filter(
-    item => item.store_slug === slug
-  );
-  const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const selectedCartItems = cart.filter(item => selectedItems.includes(item.id));
+  const cartTotal = selectedCartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-  const shipping = cart.length > 0 ? 0 : 0; 
+  const shipping = selectedCartItems.length > 0 ? 0 : 0; 
   const tax = cartTotal * 0.08;
   const total = cartTotal + tax + shipping;
 
@@ -133,6 +145,21 @@ export default function CartClientPage({ slug }) {
           <div className="cart-layout">
             <div className="cart-items dashboard-card fade-in">
               <div className="items-header">
+                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <input
+                    type="checkbox"
+                    checked={selectedItems.length > 0 && selectedItems.length === cart.length}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        const allAvailableIds = cart.map(item => item.id);
+                        setSelectedItems(allAvailableIds);
+                      } else {
+                        setSelectedItems([]);
+                      }
+                    }}
+                    style={{ cursor: 'pointer', transform: 'scale(1.2)' }}
+                  />
+                </span>
                 <span>Product</span>
                 <span>Quantity</span>
                 <span>Total</span>
@@ -140,7 +167,22 @@ export default function CartClientPage({ slug }) {
               </div>
 
               {cart.map((item) => (
-                <div key={item.id} className="cart-item">
+                <div key={item.id} className="cart-item" style={{ position: 'relative' }}>
+                  <div className="item-checkbox-wrapper" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 12 }}>
+                    <input
+                      type="checkbox"
+                      checked={selectedItems.includes(item.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedItems([...selectedItems, item.id]);
+                        } else {
+                          setSelectedItems(selectedItems.filter(id => id !== item.id));
+                        }
+                      }}
+                      style={{ cursor: 'pointer', transform: 'scale(1.2)' }}
+                    />
+                  </div>
+
                   <div className="item-info">
                     <div className="item-image">
                       <img src={item.image} alt={item.name} />
@@ -168,9 +210,17 @@ export default function CartClientPage({ slug }) {
                   </div>
 
                   <div className="item-action">
-                    <Link href={`/demo-store/${slug}/checkout`} className="row-buy-btn">
+                    <Link href={`/demo-store/${slug}/checkout?items=${item.id}`} className="row-buy-btn">
                       Buy
                     </Link>
+                    <button className="action-delete-btn" onClick={() => removeFromCart(item.id)} title="Remove from cart">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        <line x1="10" y1="11" x2="10" y2="17"></line>
+                        <line x1="14" y1="11" x2="14" y2="17"></line>
+                      </svg>
+                    </button>
                   </div>
                 </div>
               ))}
@@ -202,9 +252,15 @@ export default function CartClientPage({ slug }) {
                 <span>₹{total.toLocaleString()}</span>
               </div>
 
-              <Link href={`/demo-store/${slug}/checkout`} className="checkout-btn" style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}>
-                Proceed to Checkout
-              </Link>
+              {selectedItems.length === 0 ? (
+                <button className="checkout-btn disabled-btn" disabled style={{ width: '100%', border: 'none', cursor: 'not-allowed' }}>
+                  Proceed to Checkout
+                </button>
+              ) : (
+                <Link href={`/demo-store/${slug}/checkout?items=${selectedItems.join(',')}`} className="checkout-btn" style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}>
+                  Proceed to Checkout
+                </Link>
+              )}
 
               <div className="payment-icons">
                 <span>Secure payments via</span>
@@ -293,8 +349,8 @@ export default function CartClientPage({ slug }) {
 
         .items-header {
           display: grid;
-          grid-template-columns: 1fr 140px 100px 120px;
-          gap: 40px;
+          grid-template-columns: 32px 1fr 120px 90px 110px;
+          gap: 20px;
           padding: 24px 40px;
           border-bottom: 1px solid var(--secondary);
           font-size: 13px;
@@ -306,8 +362,8 @@ export default function CartClientPage({ slug }) {
 
         .cart-item {
           display: grid;
-          grid-template-columns: 1fr 140px 100px 120px;
-          gap: 40px;
+          grid-template-columns: 32px 1fr 120px 90px 110px;
+          gap: 20px;
           align-items: center;
           padding: 30px 40px;
           border-bottom: 1px solid var(--secondary);
@@ -393,9 +449,12 @@ export default function CartClientPage({ slug }) {
 
         .item-action {
           justify-self: center;
+          display: flex;
+          align-items: center;
+          gap: 12px;
         }
 
-        .row-buy-btn {
+        :global(.row-buy-btn) {
           display: inline-block;
           padding: 8px 20px;
           background: var(--accent);
@@ -411,10 +470,31 @@ export default function CartClientPage({ slug }) {
           cursor: pointer;
         }
 
-        .row-buy-btn:hover {
+        :global(.row-buy-btn:hover) {
           background: var(--primary);
           transform: scale(1.05);
           box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .action-delete-btn {
+          background: transparent;
+          border: none;
+          color: #ef4444;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 8px;
+          border-radius: 8px;
+          transition: all 0.2s ease;
+          position: relative;
+          z-index: 15;
+        }
+
+        .action-delete-btn:hover {
+          background: rgba(239, 68, 68, 0.08);
+          color: #b91c1c;
+          transform: scale(1.08);
         }
 
         .remove-btn {
@@ -504,7 +584,7 @@ export default function CartClientPage({ slug }) {
           margin-bottom: 40px;
         }
 
-        .checkout-btn {
+        :global(.checkout-btn) {
           width: 100%;
           padding: 16px;
           background: var(--primary);
@@ -516,10 +596,19 @@ export default function CartClientPage({ slug }) {
           transition: var(--transition-smooth);
         }
 
-        .checkout-btn:hover {
+        :global(.checkout-btn:hover) {
           background: var(--accent);
           transform: translateY(-2px);
           box-shadow: var(--shadow-md);
+        }
+
+        .disabled-btn {
+          opacity: 0.6;
+          cursor: not-allowed !important;
+          background: #cbd5e1 !important;
+          color: #64748b !important;
+          box-shadow: none !important;
+          transform: none !important;
         }
 
         .payment-icons {
@@ -557,6 +646,12 @@ export default function CartClientPage({ slug }) {
             padding: 24px 15px;
             position: relative;
           }
+          .item-checkbox-wrapper {
+            position: absolute;
+            top: 20px;
+            left: 15px;
+            z-index: 12;
+          }
           .item-info {
             flex-direction: column;
             text-align: center;
@@ -584,7 +679,7 @@ export default function CartClientPage({ slug }) {
             text-align: center;
             margin-top: 8px;
           }
-          .row-buy-btn {
+          :global(.row-buy-btn) {
             display: block;
             width: 100%;
             max-width: 200px;

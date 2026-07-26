@@ -275,7 +275,7 @@ export default function CheckoutClientPage({ slug }) {
             margin-top: 10px;
             width: 100%;
           }
-          .primary-btn {
+          :global(.primary-btn) {
             flex: 1;
             padding: 14px;
             border-radius: 12px;
@@ -287,7 +287,7 @@ export default function CheckoutClientPage({ slug }) {
             background: var(--primary);
             color: var(--white);
           }
-          .primary-btn:hover {
+          :global(.primary-btn:hover) {
             background: var(--accent);
             transform: translateY(-1px);
           }
@@ -493,7 +493,7 @@ export default function CheckoutClientPage({ slug }) {
           max-width: 400px;
           line-height: 1.6;
         }
-        .shop-btn {
+        :global(.shop-btn) {
           margin-top: 20px;
           padding: 14px 40px;
           background: var(--primary);
@@ -502,7 +502,7 @@ export default function CheckoutClientPage({ slug }) {
           font-weight: 700;
           transition: var(--transition-smooth);
         }
-        .shop-btn:hover {
+        :global(.shop-btn:hover) {
           background: var(--accent);
           transform: translateY(-2px);
         }

@@ -122,7 +122,7 @@ export class ShiprocketProvider {
         const queryStr = encodeURIComponent(`${settings.address}, ${settings.city}, ${settings.state}, ${settings.pincode}, ${settings.country || 'India'}`);
         console.log(`Refgeocoding [ShiprocketProvider]: Looking up geocoding coordinates for: "${queryStr}"`);
         const geoResponse = await fetch(`https://nominatim.openstreetmap.org/search?q=${queryStr}&format=json&limit=1`, {
-          headers: { 'User-Agent': 'KreateStore E-commerce Platform' }
+          headers: { 'User-Agent': 'Kreatorstore E-commerce Platform' }
         });
         if (geoResponse.ok) {
           const geoData = await geoResponse.json();

@@ -28,12 +28,12 @@ export function CustomerAuthProvider({ children }) {
         .maybeSingle();
 
       if (userProfile && userProfile.role !== 'customer') {
-        console.log(`[KreateStore - CustomerAuth] User role is: ${userProfile.role}. Skipping customer profile loading.`);
+        console.log(`[Kreatorstore - CustomerAuth] User role is: ${userProfile.role}. Skipping customer profile loading.`);
         setCustomerProfile(null);
         return { success: true, profile: null };
       }
     } catch (e) {
-      console.warn('[KreateStore - CustomerAuth] Failed to pre-check user profile role:', e);
+      console.warn('[Kreatorstore - CustomerAuth] Failed to pre-check user profile role:', e);
       if (e.message?.includes('fetch') || e.message?.includes('Network') || e.status === 0 || e.message === 'TypeError: fetch failed') {
         throw e;
       }
@@ -45,7 +45,7 @@ export function CustomerAuthProvider({ children }) {
         const { data: { user } } = await supabaseClient.auth.getUser();
         userObj = user;
       } catch (err) {
-        console.warn('[KreateStore - CustomerAuth] Failed to fetch current authenticated user:', err);
+        console.warn('[Kreatorstore - CustomerAuth] Failed to fetch current authenticated user:', err);
       }
     }
 
@@ -67,7 +67,7 @@ export function CustomerAuthProvider({ children }) {
         console.log("Profile fetch complete");
         return { success: true, profile: profileData };
       } catch (err) {
-        console.warn(`❌ [KreateStore - CustomerAuth]: Error fetching customer profile (Attempt ${attempt}/${maxAttempts}):`, err.message || err);
+        console.warn(`❌ [Kreatorstore - CustomerAuth]: Error fetching customer profile (Attempt ${attempt}/${maxAttempts}):`, err.message || err);
         
         const isJwtFuture = err.message?.includes('JWT issued at future') || 
                              err.message?.includes('issued at future') ||
@@ -82,7 +82,7 @@ export function CustomerAuthProvider({ children }) {
         }
 
         if (isJwtFuture && attempt < maxAttempts) {
-          console.log(`[KreateStore - CustomerAuth] Retrying profile fetch in 1.5s due to authorization error...`);
+          console.log(`[Kreatorstore - CustomerAuth] Retrying profile fetch in 1.5s due to authorization error...`);
           await new Promise(resolve => setTimeout(resolve, 1500));
           continue;
         }
@@ -107,7 +107,7 @@ export function CustomerAuthProvider({ children }) {
         console.log("Session restore started");
         const getSessionTimeout = new Promise((resolve) => {
           setTimeout(() => {
-            console.warn('⚠️ [KreateStore - CustomerAuth]: Initial getSession check timed out after 10s.');
+            console.warn('⚠️ [Kreatorstore - CustomerAuth]: Initial getSession check timed out after 10s.');
             resolve({ data: { session: null } });
           }, 10000);
         });
@@ -129,7 +129,7 @@ export function CustomerAuthProvider({ children }) {
               }
             }
           } catch (err) {
-            console.warn('⚠️ [KreateStore - CustomerAuth] Failed to load session profile due to network/timeout error:', err);
+            console.warn('⚠️ [Kreatorstore - CustomerAuth] Failed to load session profile due to network/timeout error:', err);
             // Retain active auth session instead of logging out
             setCustomer(session.user);
           }
@@ -138,7 +138,7 @@ export function CustomerAuthProvider({ children }) {
           setCustomerProfile(null);
         }
       } catch (err) {
-        console.warn('❌ [KreateStore - CustomerAuth]: Session load failed:', err);
+        console.warn('❌ [Kreatorstore - CustomerAuth]: Session load failed:', err);
       } finally {
         if (isSubscribed) {
           initialSessionLoadedRef.current = true;
@@ -155,14 +155,14 @@ export function CustomerAuthProvider({ children }) {
       setTimeout(async () => {
         if (!isSubscribed) return;
 
-        console.log(`🔑 [KreateStore - CustomerAuth]: auth state changes: event="${event}"`);
+        console.log(`🔑 [Kreatorstore - CustomerAuth]: auth state changes: event="${event}"`);
 
         if (event === 'INITIAL_SESSION') {
           return; // Handled by loadSession
         }
 
         if (!initialSessionLoadedRef.current) {
-          console.log(`🔔 [KreateStore - CustomerAuth]: onAuthStateChange event "${event}" ignored during initial session load.`);
+          console.log(`🔔 [Kreatorstore - CustomerAuth]: onAuthStateChange event "${event}" ignored during initial session load.`);
           return;
         }
 
@@ -182,7 +182,7 @@ export function CustomerAuthProvider({ children }) {
             setCustomerProfile(null);
           }
         } catch (err) {
-          console.warn('❌ [KreateStore - CustomerAuth]: Auth state change error:', err);
+          console.warn('❌ [Kreatorstore - CustomerAuth]: Auth state change error:', err);
           if (session && session.user) {
             setCustomer(session.user);
           }
@@ -222,7 +222,7 @@ export function CustomerAuthProvider({ children }) {
       setCustomer(data.user);
       return { success: true };
     } catch (err) {
-      console.error('❌ [KreateStore - CustomerAuth]: Login failed:', err);
+      console.error('❌ [Kreatorstore - CustomerAuth]: Login failed:', err);
       throw err;
     } finally {
       setLoading(false);
@@ -318,7 +318,7 @@ export function CustomerAuthProvider({ children }) {
       setCustomerProfile(profileData);
       return { success: true };
     } catch (err) {
-      console.warn('❌ [KreateStore - CustomerAuth]: Signup failed:', err);
+      console.warn('❌ [Kreatorstore - CustomerAuth]: Signup failed:', err);
       throw err;
     } finally {
       setLoading(false);
@@ -334,15 +334,15 @@ export function CustomerAuthProvider({ children }) {
       localStorage.removeItem('remember_me');
       sessionStorage.removeItem('session_active');
       await supabaseClient.auth.signOut();
-      console.log('✅ [KreateStore - CustomerAuth]: Supabase signOut completed.');
+      console.log('✅ [Kreatorstore - CustomerAuth]: Supabase signOut completed.');
     } catch (err) {
-      console.warn('❌ [KreateStore - CustomerAuth]: Logout failed:', err);
+      console.warn('❌ [Kreatorstore - CustomerAuth]: Logout failed:', err);
     } finally {
       setCustomer(null);
       setCustomerProfile(null);
       setLoading(false);
       completeLoading();
-      console.log('✅ [KreateStore - CustomerAuth]: Local customer states cleared.');
+      console.log('✅ [Kreatorstore - CustomerAuth]: Local customer states cleared.');
     }
   };
 
@@ -351,7 +351,7 @@ export function CustomerAuthProvider({ children }) {
     setLoading(true);
     startLoading();
     try {
-      console.log(`🔄 [KreateStore - CustomerAuth]: Logging in with provider: ${provider}`);
+      console.log(`🔄 [Kreatorstore - CustomerAuth]: Logging in with provider: ${provider}`);
       const { data, error } = await supabaseClient.auth.signInWithOAuth({
         provider,
         options: {
@@ -368,7 +368,7 @@ export function CustomerAuthProvider({ children }) {
       if (error) throw error;
       return data;
     } catch (err) {
-      console.error(`❌ [KreateStore - CustomerAuth]: Provider ${provider} login failed:`, err);
+      console.error(`❌ [Kreatorstore - CustomerAuth]: Provider ${provider} login failed:`, err);
       throw err;
     } finally {
       setLoading(false);
@@ -381,7 +381,7 @@ export function CustomerAuthProvider({ children }) {
     setLoading(true);
     startLoading();
     try {
-      console.log(`🔄 [KreateStore - CustomerAuth]: Sending OTP to phone: ${phone}`);
+      console.log(`🔄 [Kreatorstore - CustomerAuth]: Sending OTP to phone: ${phone}`);
       const { data, error } = await supabaseClient.auth.signInWithOtp({
         phone,
         options: {
@@ -394,7 +394,7 @@ export function CustomerAuthProvider({ children }) {
       if (error) throw error;
       return { success: true, data };
     } catch (err) {
-      console.error('❌ [KreateStore - CustomerAuth]: Phone OTP send failed:', err);
+      console.error('❌ [Kreatorstore - CustomerAuth]: Phone OTP send failed:', err);
       throw err;
     } finally {
       setLoading(false);
@@ -407,7 +407,7 @@ export function CustomerAuthProvider({ children }) {
     setLoading(true);
     startLoading();
     try {
-      console.log(`🔄 [KreateStore - CustomerAuth]: Verifying OTP for phone: ${phone}`);
+      console.log(`🔄 [Kreatorstore - CustomerAuth]: Verifying OTP for phone: ${phone}`);
       const { data, error } = await supabaseClient.auth.verifyOtp({
         phone,
         token,
@@ -420,7 +420,7 @@ export function CustomerAuthProvider({ children }) {
       setCustomer(data.user);
       return { success: true, user: data.user, profile: profileData };
     } catch (err) {
-      console.error('❌ [KreateStore - CustomerAuth]: Phone OTP verification failed:', err);
+      console.error('❌ [Kreatorstore - CustomerAuth]: Phone OTP verification failed:', err);
       throw err;
     } finally {
       setLoading(false);

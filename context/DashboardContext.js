@@ -23,13 +23,13 @@ export function DashboardProvider({ children }) {
   useEffect(() => {
     const loadStoreData = async () => {
       if (!user) {
-        console.log('[KreateStore - DashboardContext]: No user logged in, setting loading to false');
+        console.log('[Kreatorstore - DashboardContext]: No user logged in, setting loading to false');
         setLoading(false);
         return;
       }
       
       if (!store) {
-        console.log('[KreateStore - DashboardContext]: No store found, clearing states and setting loading to false');
+        console.log('[Kreatorstore - DashboardContext]: No store found, clearing states and setting loading to false');
         // Clear previous store data
         setCategories([]);
         setProducts([]);
@@ -40,11 +40,11 @@ export function DashboardProvider({ children }) {
         return;
       }
 
-      console.log('[KreateStore - DashboardContext]: Beginning loadStoreData for store:', store.id);
+      console.log('[Kreatorstore - DashboardContext]: Beginning loadStoreData for store:', store.id);
       setLoading(true);
       try {
         if (!supabaseClient) {
-          console.log('[KreateStore - DashboardContext]: Supabase client missing, falling back to mock data');
+          console.log('[Kreatorstore - DashboardContext]: Supabase client missing, falling back to mock data');
           // Fallback to mock data if offline
           setCategories(mockDashboardData.categories.map(c => ({ ...c, title: c.name, image: '' })));
           setProducts(mockDashboardData.products.map(p => ({ ...p, image: '', images: [] })));
@@ -56,7 +56,7 @@ export function DashboardProvider({ children }) {
           return;
         }
 
-        console.log('[KreateStore - DashboardContext]: Fetching products, categories and coupons from services...');
+        console.log('[Kreatorstore - DashboardContext]: Fetching products, categories and coupons from services...');
         // Fetch from Supabase
         const [prodData, catData, couponData] = await Promise.all([
           productService.getProductsByStore(store.id, true),
@@ -64,7 +64,7 @@ export function DashboardProvider({ children }) {
           couponService.getCouponsByStore(store.id)
         ]);
         
-        console.log('[KreateStore - DashboardContext]: Fetching orders...');
+        console.log('[Kreatorstore - DashboardContext]: Fetching orders...');
         // Fetch orders for this store
         const { data: ordData, error: ordErr } = await supabaseClient
           .from('orders')
@@ -73,13 +73,13 @@ export function DashboardProvider({ children }) {
           .order('created_at', { ascending: false });
 
         if (ordErr) {
-          console.error('[KreateStore - DashboardContext]: Orders query error:', ordErr);
+          console.error('[Kreatorstore - DashboardContext]: Orders query error:', ordErr);
         }
 
         const safeProdData = prodData || [];
         const safeCatData = catData || [];
         
-        console.log('[KreateStore - DashboardContext]: Fetched counts:', {
+        console.log('[Kreatorstore - DashboardContext]: Fetched counts:', {
           productsRaw: safeProdData.length,
           categoriesRaw: safeCatData.length,
           ordersRaw: ordData?.length || 0,
@@ -103,7 +103,7 @@ export function DashboardProvider({ children }) {
           };
         });
 
-        console.log('[KreateStore - DashboardContext]: Successfully mapped products and categories.');
+        console.log('[Kreatorstore - DashboardContext]: Successfully mapped products and categories.');
         setProducts(mappedProducts);
         setCategories(mappedCategories);
         setCoupons(couponData || []);
@@ -126,15 +126,15 @@ export function DashboardProvider({ children }) {
               });
             }
           });
-          console.log('[KreateStore - DashboardContext]: Derived customers count:', uniqueCustomers.length);
+          console.log('[Kreatorstore - DashboardContext]: Derived customers count:', uniqueCustomers.length);
           setCustomers(uniqueCustomers);
         } else {
           setCustomers([]);
         }
       } catch (error) {
-        console.error('[KreateStore - DashboardContext]: Error loading dashboard data from Supabase:', error);
+        console.error('[Kreatorstore - DashboardContext]: Error loading dashboard data from Supabase:', error);
       } finally {
-        console.log('[KreateStore - DashboardContext]: Finished loading. Setting loading to false');
+        console.log('[Kreatorstore - DashboardContext]: Finished loading. Setting loading to false');
         setLoading(false);
       }
     };
@@ -202,11 +202,11 @@ export function DashboardProvider({ children }) {
   // Product Actions
   const addProduct = async (productData) => {
     if (!store) {
-      console.warn('[KreateStore - DashboardContext] Attempted to add product, but store was null/undefined');
+      console.warn('[Kreatorstore - DashboardContext] Attempted to add product, but store was null/undefined');
       return;
     }
     try {
-      console.log('[KreateStore - DashboardContext] addProduct input data:', productData);
+      console.log('[Kreatorstore - DashboardContext] addProduct input data:', productData);
       
       // Find category UUID by title if category is represented as string in form
       let categoryId = null;
@@ -215,7 +215,7 @@ export function DashboardProvider({ children }) {
         if (catObj) categoryId = catObj.id;
       }
       
-      console.log('[KreateStore - DashboardContext] Resolved category ID for product insertion:', categoryId);
+      console.log('[Kreatorstore - DashboardContext] Resolved category ID for product insertion:', categoryId);
 
       const newProduct = await productService.createProduct({
         ...productData,
@@ -223,7 +223,7 @@ export function DashboardProvider({ children }) {
         category_id: categoryId
       });
       
-      console.log('[KreateStore - DashboardContext] Received new product from service:', newProduct);
+      console.log('[Kreatorstore - DashboardContext] Received new product from service:', newProduct);
 
       // Map string-based category property back for the UI grid to prevent "Uncategorized" display
       const catObj = categories.find(c => c.id === newProduct.category_id);
@@ -232,17 +232,17 @@ export function DashboardProvider({ children }) {
         category: catObj ? (catObj.name || catObj.title) : 'Uncategorized'
       };
 
-      console.log('[KreateStore - DashboardContext] Prepending mapped product to products list:', mappedProduct);
+      console.log('[Kreatorstore - DashboardContext] Prepending mapped product to products list:', mappedProduct);
       setProducts(prev => [mappedProduct, ...prev]);
     } catch (e) {
-      console.error('[KreateStore - DashboardContext] Error in addProduct action:', e);
+      console.error('[Kreatorstore - DashboardContext] Error in addProduct action:', e);
       alert('Error adding product: ' + e.message);
     }
   };
 
   const updateProduct = async (id, updatedData) => {
     try {
-      console.log('[KreateStore - DashboardContext] updateProduct input data:', { id, updatedData });
+      console.log('[Kreatorstore - DashboardContext] updateProduct input data:', { id, updatedData });
       
       let categoryId = null;
       if (updatedData.category) {
@@ -250,14 +250,14 @@ export function DashboardProvider({ children }) {
         if (catObj) categoryId = catObj.id;
       }
 
-      console.log('[KreateStore - DashboardContext] Resolved category ID for product update:', categoryId);
+      console.log('[Kreatorstore - DashboardContext] Resolved category ID for product update:', categoryId);
 
       const updatedProduct = await productService.updateProduct(id, {
         ...updatedData,
         category_id: categoryId
       });
 
-      console.log('[KreateStore - DashboardContext] Received updated product from service:', updatedProduct);
+      console.log('[Kreatorstore - DashboardContext] Received updated product from service:', updatedProduct);
 
       // Map string-based category property back for the UI grid
       const catObj = categories.find(c => c.id === updatedProduct.category_id);
@@ -266,22 +266,22 @@ export function DashboardProvider({ children }) {
         category: catObj ? (catObj.name || catObj.title) : 'Uncategorized'
       };
 
-      console.log('[KreateStore - DashboardContext] Updating product in state products list:', mappedProduct);
+      console.log('[Kreatorstore - DashboardContext] Updating product in state products list:', mappedProduct);
       setProducts(prev => prev.map(p => p.id === id ? mappedProduct : p));
     } catch (e) {
-      console.error('[KreateStore - DashboardContext] Error in updateProduct action:', e);
+      console.error('[Kreatorstore - DashboardContext] Error in updateProduct action:', e);
       alert('Error updating product: ' + e.message);
     }
   };
 
   const deleteProduct = async (id) => {
     try {
-      console.log('[KreateStore - DashboardContext] deleteProduct triggered for product ID:', id);
+      console.log('[Kreatorstore - DashboardContext] deleteProduct triggered for product ID:', id);
       await productService.deleteProduct(id);
-      console.log('[KreateStore - DashboardContext] Product successfully deleted in backend. Removing from state list.');
+      console.log('[Kreatorstore - DashboardContext] Product successfully deleted in backend. Removing from state list.');
       setProducts(prev => prev.filter(p => p.id !== id));
     } catch (e) {
-      console.error('[KreateStore - DashboardContext] Error in deleteProduct action:', e);
+      console.error('[Kreatorstore - DashboardContext] Error in deleteProduct action:', e);
       alert('Error deleting product: ' + e.message);
     }
   };

@@ -11,7 +11,7 @@ export default function ProductsPage() {
   const router = useRouter();
   const { products, categories, loading, deleteProduct } = useDashboard();
   
-  console.log('[KreateStore - ProductsPage] render values:', { 
+  console.log('[Kreatorstore - ProductsPage] render values:', { 
     productsCount: products?.length, 
     categoriesCount: categories?.length, 
     loading 
@@ -1340,6 +1340,10 @@ export default function ProductsPage() {
             border: 1px solid #cbd5e1;
             color: #475569;
             padding: 0;
+          }
+          .form-row {
+            grid-template-columns: 1fr !important;
+            gap: 16px !important;
           }
         }
         .modal-custom-header {

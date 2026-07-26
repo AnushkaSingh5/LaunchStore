@@ -57,7 +57,7 @@ function SignupContent() {
   // Auto-redirect if already logged in (essential for OAuth callback landing)
   useEffect(() => {
     if (isAuthenticated) {
-      console.log('✅ [KreateStore - CustomerSignup]: Customer is already authenticated. Redirecting to:', redirect);
+      console.log('✅ [Kreatorstore - CustomerSignup]: Customer is already authenticated. Redirecting to:', redirect);
       router.push(redirect);
     }
   }, [isAuthenticated, redirect, router]);
@@ -84,17 +84,17 @@ function SignupContent() {
     }
 
     try {
-      console.log('🔄 [KreateStore - CustomerSignup]: Creating account:', email);
+      console.log('🔄 [Kreatorstore - CustomerSignup]: Creating account:', email);
       const res = await signup(email, password, fullName, phone);
       if (res && res.success) {
         setSuccessMsg('Account created successfully! Redirecting...');
-        console.log('✅ [KreateStore - CustomerSignup]: Signup success. Redirecting to:', redirect);
+        console.log('✅ [Kreatorstore - CustomerSignup]: Signup success. Redirecting to:', redirect);
         setTimeout(() => {
           router.push(redirect);
         }, 1500);
       }
     } catch (err) {
-      console.error('❌ [KreateStore - CustomerSignup]: Signup error:', err);
+      console.error('❌ [Kreatorstore - CustomerSignup]: Signup error:', err);
       setErrorMsg(err.message || 'Failed to create account. Please try again.');
     } finally {
       setLoading(false);
@@ -105,10 +105,10 @@ function SignupContent() {
     setErrorMsg('');
     try {
       const callbackUrl = `${window.location.origin}/customer/login?redirect=${encodeURIComponent(redirect)}`;
-      console.log(`🔄 [KreateStore - CustomerSignup]: Triggering OAuth signup for ${provider} with callback ${callbackUrl}`);
+      console.log(`🔄 [Kreatorstore - CustomerSignup]: Triggering OAuth signup for ${provider} with callback ${callbackUrl}`);
       await loginWithProvider(provider, callbackUrl);
     } catch (err) {
-      console.error(`❌ [KreateStore - CustomerSignup]: ${provider} OAuth error:`, err);
+      console.error(`❌ [Kreatorstore - CustomerSignup]: ${provider} OAuth error:`, err);
       setErrorMsg(err.message || `Failed to sign up with ${provider}.`);
     }
   };

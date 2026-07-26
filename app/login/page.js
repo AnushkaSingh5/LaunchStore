@@ -55,7 +55,7 @@ export default function LoginPage() {
     } else if (params.get('verified') === 'true' || hash.includes('type=signup') || params.get('type') === 'signup') {
       setSuccessMsg('Email verified successfully! You can now sign in.');
     } else if (hash.includes('type=recovery') || params.get('type') === 'recovery') {
-      console.log('🔄 [KreateStore - Login]: Password recovery link detected, redirecting...');
+      console.log('🔄 [Kreatorstore - Login]: Password recovery link detected, redirecting...');
       router.push('/reset-password');
     }
   }, [router]);
@@ -72,7 +72,7 @@ export default function LoginPage() {
         throw new Error('Please enter a valid email address.');
       }
 
-      console.log('🔄 [KreateStore - LoginPage]: Triggering signIn for creator:', email);
+      console.log('🔄 [Kreatorstore - LoginPage]: Triggering signIn for creator:', email);
       const result = await authService.signIn(email, password);
       if (result && result.error) throw result.error;
       
@@ -80,7 +80,7 @@ export default function LoginPage() {
       if (sessionUser) {
         // Email Verification check: if unconfirmed, sign out immediately
         if (!sessionUser.email_confirmed_at) {
-          console.warn('❌ [KreateStore - LoginPage]: Email not verified.');
+          console.warn('❌ [Kreatorstore - LoginPage]: Email not verified.');
           await authService.signOut();
           throw new Error('Please verify your email before signing in.');
         }
@@ -94,10 +94,10 @@ export default function LoginPage() {
         sessionStorage.removeItem('session_active');
       }
 
-      console.log('✅ [KreateStore - LoginPage]: SignIn response success, redirecting...');
+      console.log('✅ [Kreatorstore - LoginPage]: SignIn response success, redirecting...');
       router.push('/dashboard');
     } catch (err) {
-      console.error('❌ [KreateStore - LoginPage]: Login error:', err);
+      console.error('❌ [Kreatorstore - LoginPage]: Login error:', err);
       const msg = err.message || '';
       if (msg.includes('Invalid login credentials') || msg.includes('Failed to authenticate') || msg.includes('invalid_credentials')) {
         setErrorMsg('Incorrect email or password.');
@@ -159,7 +159,7 @@ export default function LoginPage() {
     setErrorMsg('');
     try {
       const callbackUrl = `${window.location.origin}/dashboard`;
-      console.log(`🔄 [KreateStore - LoginPage]: Triggering OAuth login for ${provider} with callback ${callbackUrl}`);
+      console.log(`🔄 [Kreatorstore - LoginPage]: Triggering OAuth login for ${provider} with callback ${callbackUrl}`);
       const { error } = await supabaseClient.auth.signInWithOAuth({
         provider,
         options: {
@@ -171,7 +171,7 @@ export default function LoginPage() {
       });
       if (error) throw error;
     } catch (err) {
-      console.error(`❌ [KreateStore - LoginPage]: ${provider} OAuth error:`, err);
+      console.error(`❌ [Kreatorstore - LoginPage]: ${provider} OAuth error:`, err);
       setErrorMsg(err.message || `Failed to sign in with ${provider}.`);
     }
   };
@@ -266,7 +266,7 @@ export default function LoginPage() {
                 </svg>
               </div>
               <h2>Welcome Back</h2>
-              <p>Sign in to your KreateStore creator dashboard</p>
+              <p>Sign in to your Kreatorstore creator dashboard</p>
             </div>
 
             {errorMsg && (
