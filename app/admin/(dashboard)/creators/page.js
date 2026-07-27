@@ -413,10 +413,10 @@ export default function AdminCreators() {
                 <button 
                   className="btn-moderate verify" 
                   onClick={handleVerifyCreator} 
-                  disabled={actionLoading || isProfileIncomplete(extendedProfile, documents)}
+                  disabled={actionLoading}
                   style={{
-                    opacity: (actionLoading || isProfileIncomplete(extendedProfile, documents)) ? 0.5 : 1,
-                    cursor: (actionLoading || isProfileIncomplete(extendedProfile, documents)) ? 'not-allowed' : 'pointer'
+                    opacity: actionLoading ? 0.5 : 1,
+                    cursor: actionLoading ? 'not-allowed' : 'pointer'
                   }}
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ marginRight: '6px' }}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
@@ -452,9 +452,9 @@ export default function AdminCreators() {
                   <line x1="12" y1="17" x2="12.01" y2="17"></line>
                 </svg>
                 <div style={{ fontSize: '14px' }}>
-                  <strong style={{ display: 'block', marginBottom: '4px' }}>Verification Disabled</strong>
+                  <strong style={{ display: 'block', marginBottom: '4px' }}>Incomplete Profile & Documents</strong>
                   <span style={{ color: '#c2410c', lineHeight: '1.5' }}>
-                    This creator has not completed all profile details or is missing mandatory KYC documents (Government ID Proof & Address Proof).
+                    This creator has not completed all profile details or is missing mandatory KYC documents (Government ID Proof & Address Proof). You can still proceed with manual verification.
                   </span>
                 </div>
               </div>

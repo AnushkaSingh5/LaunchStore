@@ -8,6 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import { authService } from '@/services/authService';
 import { storeService } from '@/services/storeService';
 import { payoutService } from '@/services/payoutService';
+import { profileService } from '@/services/profileService';
 
 const Sparkline = ({ color, path }) => (
   <svg width="60" height="24" viewBox="0 0 60 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -100,10 +101,20 @@ export default function DashboardOverview() {
   const [timeframe, setTimeframe] = useState('Last 7 Days');
   const [isTimeframeOpen, setIsTimeframeOpen] = useState(false);
   const [chartData, setChartData] = useState([]);
+  const [documents, setDocuments] = useState([]);
+
+  useEffect(() => {
+    if (profile?.id) {
+      profileService.getCreatorDocuments(profile.id).then(res => {
+        if (res.success) setDocuments(res.documents || []);
+      });
+    }
+  }, [profile]);
 
   const [onboardingProgress, setOnboardingProgress] = useState(0);
   const [checklist, setChecklist] = useState({
     createStore: true,
+    completeProfile: false,
     addCategory: false,
     addProduct: false,
     publishStore: false,
@@ -132,33 +143,39 @@ export default function DashboardOverview() {
 
   useEffect(() => {
     if (store && categories && products) {
+      const hasIncompleteProfile = !profile?.name || !profile?.phone || !profile?.date_of_birth || !profile?.address || !profile?.city || !profile?.state || !profile?.postal_code;
+      const hasUploadedDocs = documents.some(d => d.document_type === 'Government ID Proof') && documents.some(d => d.document_type === 'Address Proof');
+      const isProfileComplete = !hasIncompleteProfile && hasUploadedDocs;
+
       const hasCategory = categories.length > 0;
       const hasProduct = products.length > 0;
       const isPublished = store.status === 'approved' || store.status === 'pending';
       
       setChecklist({
         createStore: true,
+        completeProfile: isProfileComplete,
         addCategory: hasCategory,
         addProduct: hasProduct,
         publishStore: isPublished,
       });
 
       let completedCount = 1; // store creation is complete since store !== null
+      if (isProfileComplete) completedCount += 1;
       if (hasCategory) completedCount += 1;
       if (hasProduct) completedCount += 1;
       if (isPublished) completedCount += 1;
 
-      const progress = (completedCount / 4) * 100;
+      const progress = (completedCount / 5) * 100;
       setOnboardingProgress(progress);
 
-      // Auto-complete onboarding if all 4 checklist items are satisfied and profile onboarding_completed is false
-      if (completedCount === 4 && profile && !profile.onboarding_completed) {
+      // Auto-complete onboarding if all 5 checklist items are satisfied and profile onboarding_completed is false
+      if (completedCount === 5 && profile && !profile.onboarding_completed) {
         const completeOnboarding = async () => {
           try {
             console.log('🔄 [Kreatorstore - Dashboard]: Auto-completing onboarding...');
             await authService.updateProfile(profile.id, {
               onboarding_completed: true,
-              onboarding_step: 5
+              onboarding_step: 6
             });
             await refreshProfile();
             console.log('✅ [Kreatorstore - Dashboard]: Onboarding complete.');
@@ -169,7 +186,7 @@ export default function DashboardOverview() {
         completeOnboarding();
       }
     }
-  }, [store, categories, products, profile, refreshProfile]);
+  }, [store, categories, products, profile, refreshProfile, documents]);
 
   const handlePublishFromDashboard = async () => {
     if (!store) return;
@@ -311,6 +328,10 @@ export default function DashboardOverview() {
     chartData
   };
 
+  const hasIncompleteProfile = !profile?.name || !profile?.phone || !profile?.date_of_birth || !profile?.address || !profile?.city || !profile?.state || !profile?.postal_code;
+  const hasUploadedDocs = documents.some(d => d.document_type === 'Government ID Proof') && documents.some(d => d.document_type === 'Address Proof');
+  const isProfileOrKycIncomplete = hasIncompleteProfile || !hasUploadedDocs;
+
   return (
     <div className="overview-page">
       <div className="header-subtitle" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
@@ -325,6 +346,25 @@ export default function DashboardOverview() {
           </span>
         )}
       </div>
+
+      {store && isProfileOrKycIncomplete && (
+        <div className="incomplete-profile-alert">
+          <div className="alert-content">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ea580c" strokeWidth="2.5">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+              <line x1="12" y1="9" x2="12" y2="13"></line>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+            <div className="alert-text">
+              <h4>Action Required: Complete Profile & Upload KYC Documents</h4>
+              <p>Please complete your seller profile details and upload the required verification documents to ensure your store review is processed.</p>
+            </div>
+          </div>
+          <button className="alert-action-btn" onClick={() => router.push('/dashboard/profile')}>
+            Complete Profile
+          </button>
+        </div>
+      )}
 
       {store && (
         <div className={`store-status-banner-card ${store.status}`}>
@@ -382,8 +422,22 @@ export default function DashboardOverview() {
             </div>
 
             {/* Item 2 */}
+            <div className={`checklist-item ${checklist.completeProfile ? 'done' : ''}`}>
+              <div className="status-indicator">{checklist.completeProfile ? '✓' : '2'}</div>
+              <div className="item-content">
+                <h4>Complete Profile & KYC</h4>
+                <p>Provide contact information and upload identity verification documents.</p>
+                {!checklist.completeProfile && (
+                  <button onClick={() => router.push('/dashboard/profile')} className="action-btn">
+                    Complete Profile
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Item 3 */}
             <div className={`checklist-item ${checklist.addCategory ? 'done' : ''}`}>
-              <div className="status-indicator">{checklist.addCategory ? '✓' : '2'}</div>
+              <div className="status-indicator">{checklist.addCategory ? '✓' : '3'}</div>
               <div className="item-content">
                 <h4>Add first category</h4>
                 <p>Group products together into a collection.</p>
@@ -395,9 +449,9 @@ export default function DashboardOverview() {
               </div>
             </div>
 
-            {/* Item 3 */}
+            {/* Item 4 */}
             <div className={`checklist-item ${checklist.addProduct ? 'done' : ''}`}>
-              <div className="status-indicator">{checklist.addProduct ? '✓' : '3'}</div>
+              <div className="status-indicator">{checklist.addProduct ? '✓' : '4'}</div>
               <div className="item-content">
                 <h4>Add first product</h4>
                 <p>Add images, pricing and inventory levels.</p>
@@ -409,9 +463,9 @@ export default function DashboardOverview() {
               </div>
             </div>
 
-            {/* Item 4 */}
+            {/* Item 5 */}
             <div className={`checklist-item ${checklist.publishStore ? 'done' : ''}`}>
-              <div className="status-indicator">{checklist.publishStore ? '✓' : '4'}</div>
+              <div className="status-indicator">{checklist.publishStore ? '✓' : '5'}</div>
               <div className="item-content">
                 <h4>Publish store storefront</h4>
                 <p>Make your online store visible to the public.</p>
@@ -635,6 +689,63 @@ export default function DashboardOverview() {
           display: flex;
           flex-direction: column;
           gap: 24px;
+        }
+
+        .incomplete-profile-alert {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          background: #fff7ed;
+          border: 1px solid #ffedd5;
+          border-radius: 16px;
+          padding: 16px 24px;
+          margin-bottom: 8px;
+          gap: 16px;
+          flex-wrap: wrap;
+        }
+
+        .incomplete-profile-alert .alert-content {
+          display: flex;
+          align-items: flex-start;
+          gap: 16px;
+        }
+
+        .incomplete-profile-alert .alert-content svg {
+          flex-shrink: 0;
+          margin-top: 2px;
+        }
+
+        .incomplete-profile-alert .alert-text h4 {
+          margin: 0 0 4px 0;
+          color: #9a3412;
+          font-size: 15px;
+          font-weight: 700;
+        }
+
+        .incomplete-profile-alert .alert-text p {
+          margin: 0;
+          color: #c2410c;
+          font-size: 13.5px;
+          line-height: 1.5;
+        }
+
+        .incomplete-profile-alert .alert-action-btn {
+          background: #ea580c;
+          color: white;
+          border: none;
+          padding: 10px 20px;
+          border-radius: 10px;
+          font-weight: 600;
+          font-size: 13.5px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          box-shadow: 0 2px 8px rgba(234, 88, 12, 0.15);
+        }
+
+        .incomplete-profile-alert .alert-action-btn:hover {
+          background: #d97706;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(234, 88, 12, 0.25);
         }
 
         .header-subtitle {

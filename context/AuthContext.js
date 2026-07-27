@@ -72,6 +72,17 @@ export function AuthProvider({ children }) {
             setRole(profs[0].role);
             console.log("Profile fetch complete");
             return;
+          } else {
+            console.warn("⚠️ [Kreatorstore - Auth]: User session exists but profile not found in database. Auto-signing out.");
+            if (supabaseClient && supabaseClient.auth) {
+              await supabaseClient.auth.signOut();
+            }
+            setSession(null);
+            setUser(null);
+            setProfile(null);
+            setRole(null);
+            setStoreLoading(false);
+            return;
           }
         } else {
           console.warn(`❌ [Kreatorstore - Auth]: Profile HTTP Error ${response.status}:`, response.statusText);

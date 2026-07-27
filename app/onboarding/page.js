@@ -868,9 +868,19 @@ export default function OnboardingPage() {
                 </div>
               </div>
 
-              <button type="submit" className="action-btn next-btn w-full mt-6" disabled={isSubmitting || uploadingDoc !== ''}>
-                {isSubmitting ? 'Saving Profile Details...' : 'Save & Continue'}
-              </button>
+              <div className="btn-group-row mt-6">
+                <button
+                  type="button"
+                  onClick={() => updateOnboardingStep(4)}
+                  className="action-btn skip-btn"
+                  disabled={isSubmitting || uploadingDoc !== ''}
+                >
+                  Skip Step
+                </button>
+                <button type="submit" className="action-btn next-btn" disabled={isSubmitting || uploadingDoc !== ''}>
+                  {isSubmitting ? 'Saving Profile Details...' : 'Save & Continue'}
+                </button>
+              </div>
             </form>
           </div>
         )}
@@ -1279,6 +1289,7 @@ export default function OnboardingPage() {
 
         .form-group input,
         .form-group textarea {
+          width: 100%;
           padding: 12px 16px;
           border-radius: 12px;
           border: 1px solid #cbd5e1;

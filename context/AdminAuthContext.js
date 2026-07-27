@@ -117,6 +117,9 @@ export function AdminAuthProvider({ children }) {
     try {
       sessionStorage.removeItem('admin_session');
       setAdminUser(null);
+      if (supabaseClient && supabaseClient.auth) {
+        await supabaseClient.auth.signOut();
+      }
     } catch (e) {
       console.error('Logout error:', e);
     } finally {
