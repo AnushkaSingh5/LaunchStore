@@ -16,6 +16,7 @@ export default function OnboardingPage() {
   const { user, profile, store, loading, storeLoading, refreshStore, refreshProfile } = useAuth();
 
   const initialStepLoadedRef = useRef(false);
+  const initialFormLoadedRef = useRef(false);
 
   // Wizard Step State (1 to 5)
   const [currentStep, setCurrentStep] = useState(1);
@@ -93,40 +94,46 @@ export default function OnboardingPage() {
     }
   }, [profile, store, loading, storeLoading, router]);
 
-  // Pre-populate store details if store already exists
+  // Pre-populate store details if store already exists (once on initial load)
   useEffect(() => {
-    if (store) {
-      setStoreName(store.name || '');
-      setSlug(store.slug || '');
-      setDescription(store.description || '');
-      if (store.logo_url) setLogoPreview(store.logo_url);
-      if (store.banner_url) setBannerPreview(store.banner_url);
-    } else if (profile && profile.name && profile.name !== 'New Merchant' && !storeName) {
-      setStoreName(profile.name);
-      setSlug(profile.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''));
-    }
+    if (!loading && !storeLoading && (profile || store) && !initialFormLoadedRef.current) {
+      initialFormLoadedRef.current = true;
+      if (store) {
+        setStoreName(store.name || '');
+        setSlug(store.slug || '');
+        setDescription(store.description || '');
+        if (store.logo_url) setLogoPreview(store.logo_url);
+        if (store.banner_url) setBannerPreview(store.banner_url);
+      } else if (profile && profile.name && profile.name !== 'New Merchant') {
+        setStoreName(profile.name);
+        setSlug(profile.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''));
+      }
 
-    if (profile) {
-      setProfileFullName(profile.name || '');
-      setProfilePhone(profile.phone || '');
-      setProfileDob(profile.date_of_birth || '');
-      setProfileGender(profile.gender || 'Male');
-      setProfileBio(profile.bio || '');
-      setProfileBusinessName(profile.business_name || '');
-      setProfileBusinessType(profile.business_type || 'Individual');
-      setProfileAddress(profile.address || '');
-      setProfileCity(profile.city || '');
-      setProfileState(profile.state || '');
-      setProfileCountry(profile.country || 'India');
-      setProfilePostalCode(profile.postal_code || '');
+      if (profile) {
+        setProfileFullName(profile.name || '');
+        setProfilePhone(profile.phone || '');
+        setProfileDob(profile.date_of_birth || '');
+        setProfileGender(profile.gender || 'Male');
+        setProfileBio(profile.bio || '');
+        setProfileBusinessName(profile.business_name || '');
+        setProfileBusinessType(profile.business_type || 'Individual');
+        setProfileAddress(profile.address || '');
+        setProfileCity(profile.city || '');
+        setProfileState(profile.state || '');
+        setProfileCountry(profile.country || 'India');
+        setProfilePostalCode(profile.postal_code || '');
+      }
     }
+  }, [store, profile, loading, storeLoading]);
 
+  // Load creator verification documents
+  useEffect(() => {
     if (user?.id) {
       profileService.getCreatorDocuments(user.id).then(res => {
         if (res.success) setDocuments(res.documents || []);
       });
     }
-  }, [store, profile, user]);
+  }, [user]);
 
   const handleNameChange = (e) => {
     const val = e.target.value;
